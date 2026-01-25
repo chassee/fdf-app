@@ -1,101 +1,176 @@
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { trpc } from "@/lib/trpc";
+import { ArrowLeft, Gem, Lock, Sparkles } from "lucide-react";
+import { toast } from "sonner";
+import { Link } from "wouter";
 
 export default function Rewards() {
-  const rewards = [
-    {
-      id: 1,
-      title: "Builder Badge",
-      cost: 200,
-      image: "/images/badge-builder.png",
-      bg: "bg-gradient-to-b from-orange-500 to-red-600",
-      status: "claimable"
+  const { data: rewardsData, refetch } = trpc.fdf.getRewards.useQuery();
+  const { data: profile, refetch: refetchProfile } = trpc.fdf.getProfile.useQuery();
+  
+  const unlockReward = trpc.fdf.unlockReward.useMutation({
+    onSuccess: () => {
+      toast.success("Reward unlocked!");
+      refetch();
+      refetchProfile();
     },
-    {
-      id: 2,
-      title: "Atlas Dawg",
-      cost: 300,
-      image: "/images/badge-atlas.png",
-      bg: "bg-gradient-to-b from-blue-500 to-indigo-600",
-      tag: "NEW",
-      status: "locked"
+    onError: (error) => {
+      toast.error(error.message);
     },
-    {
-      id: 3,
-      title: "Genesis Sticker",
-      cost: 350,
-      image: "/images/sticker-genesis.png",
-      bg: "bg-gradient-to-b from-purple-500 to-pink-600",
-      status: "locked"
+  });
+
+  if (!rewardsData || !profile) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-neon-cyan"></div>
+      </div>
+    );
+  }
+
+  const { allRewards, userRewards } = rewardsData;
+  const userGems = profile.progress?.gemsTotal || 0;
+
+  const isUnlocked = (rewardId: number) => {
+    return userRewards.some(ur => ur.rewardId === rewardId);
+  };
+
+  const getRarityColor = (rarity: string) => {
+    switch (rarity) {
+      case "legendary": return "from-yellow-500 to-orange-500";
+      case "rare": return "from-purple-500 to-pink-500";
+      case "common": return "from-blue-500 to-cyan-500";
+      default: return "from-gray-500 to-gray-600";
     }
-  ];
+  };
 
   return (
-    <div className="space-y-6 pb-8">
-      <div className="text-center space-y-2 pt-4">
-        <h1 className="text-3xl font-display text-white drop-shadow-lg">Rewards</h1>
-        <p className="text-gray-300 text-sm max-w-xs mx-auto">
-          Collect loot and unlock badges with your <span className="text-neon-cyan font-bold">XP</span>!
-        </p>
-      </div>
-
-      <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-        {rewards.map((reward) => (
-          <Card key={reward.id} className="glass-panel border-0 overflow-hidden flex flex-col relative group">
-            {/* Card Background */}
-            <div className={`absolute inset-0 opacity-20 ${reward.bg}`} />
-            
-            {/* Content */}
-            <div className="relative p-3 flex flex-col items-center flex-1">
-              {reward.tag && (
-                <span className="absolute top-2 right-2 bg-neon-pink text-white text-[10px] font-bold px-1.5 py-0.5 rounded shadow-lg animate-pulse">
-                  {reward.tag}
-                </span>
-              )}
-              
-              <div className="w-20 h-20 mb-3 relative drop-shadow-2xl group-hover:scale-110 transition-transform duration-300">
-                <img src={reward.image} alt={reward.title} className="w-full h-full object-contain" />
-              </div>
-              
-              <h3 className="font-display text-white text-sm text-center leading-tight mb-1">{reward.title}</h3>
-              
-              <div className="flex items-center gap-1 bg-black/40 rounded px-2 py-0.5 border border-white/5 mb-3">
-                <span className="text-neon-cyan text-xs font-bold">💎 {reward.cost}</span>
-              </div>
-
-              <Button 
-                className={`w-full h-8 text-xs font-bold rounded-lg shadow-lg mt-auto ${
-                  reward.status === 'claimable'
-                    ? 'bg-yellow-400 hover:bg-yellow-300 text-black border-b-4 border-yellow-600 active:border-b-0 active:translate-y-1'
-                    : 'bg-gray-700/50 text-gray-400 cursor-not-allowed'
-                }`}
-                disabled={reward.status !== 'claimable'}
-              >
-                {reward.status === 'claimable' ? 'Claim' : 'Locked'}
-              </Button>
-            </div>
-          </Card>
-        ))}
-      </div>
-
-      {/* User Stats Bar */}
-      <div className="glass-panel rounded-2xl p-4 flex items-center gap-4 border-neon-pink/30 shadow-[0_0_15px_rgba(255,0,255,0.15)]">
-        <div className="w-12 h-12 rounded-full bg-black border-2 border-neon-pink overflow-hidden shrink-0">
-          <img src="/images/paw-1.png" alt="Profile" className="w-full h-full object-cover" />
+    <div className="min-h-screen pb-20">
+      {/* Header */}
+      <div className="sticky top-0 z-10 glass-panel border-b border-white/10">
+        <div className="container max-w-md mx-auto flex items-center justify-between py-4">
+          <Link href="/">
+            <Button variant="ghost" size="icon" className="text-white">
+              <ArrowLeft className="h-5 w-5" />
+            </Button>
+          </Link>
+          <h1 className="font-display text-xl text-white">Rewards</h1>
+          <div className="flex items-center gap-1 text-neon-cyan font-bold">
+            <Gem className="h-5 w-5" />
+            {userGems}
+          </div>
         </div>
-        <div className="flex-1">
-          <div className="flex justify-between items-center mb-1">
-            <h3 className="font-bold text-white">1 Hunter</h3>
-            <div className="flex items-center gap-1 bg-yellow-500/20 px-2 py-0.5 rounded text-yellow-400 text-xs font-bold border border-yellow-500/30">
-              <span>💰 660</span>
-            </div>
+      </div>
+
+      <div className="container max-w-md mx-auto space-y-6 pt-6">
+        {/* Header Section */}
+        <div className="text-center space-y-2">
+          <div className="flex items-center justify-center gap-2">
+            <Sparkles className="h-6 w-6 text-neon-cyan" />
+            <h2 className="font-display text-2xl text-white">Loot Locker</h2>
           </div>
-          <div className="flex items-center gap-2 text-xs text-gray-400">
-            <span className="text-neon-pink font-bold">XP 550</span>
-            <div className="h-1.5 flex-1 bg-gray-800 rounded-full overflow-hidden">
-              <div className="h-full w-3/4 bg-neon-pink shadow-[0_0_5px_rgba(255,0,255,0.8)]" />
-            </div>
+          <p className="text-gray-400 text-sm">
+            Collect loot and unlock badges with your XP!
+          </p>
+        </div>
+
+        {/* Rewards Grid */}
+        <div className="grid grid-cols-2 gap-4">
+          {allRewards.map((reward) => {
+            const unlocked = isUnlocked(reward.id);
+            const canAfford = userGems >= reward.costGems;
+            
+            return (
+              <Card key={reward.id} className={`glass-panel overflow-hidden ${unlocked ? 'border-neon-lime border-2' : ''}`}>
+                <div className={`bg-gradient-to-br ${getRarityColor(reward.rarity)} p-3 relative`}>
+                  {unlocked && (
+                    <div className="absolute top-1 right-1 bg-green-600 rounded-full p-1">
+                      <Sparkles className="h-3 w-3 text-white" />
+                    </div>
+                  )}
+                  <div className="aspect-square bg-black/30 rounded-xl flex items-center justify-center">
+                    {reward.imageUrl ? (
+                      <img src={reward.imageUrl} alt={reward.name} className="w-full h-full object-cover rounded-xl" />
+                    ) : (
+                      <span className="text-4xl">
+                        {reward.type === "badge" ? "🏆" : reward.type === "sticker" ? "⭐" : "🖼️"}
+                      </span>
+                    )}
+                  </div>
+                </div>
+                <div className="p-3 space-y-2">
+                  <div>
+                    <h3 className="font-bold text-white text-sm truncate">{reward.name}</h3>
+                    <p className="text-xs text-gray-400 capitalize">{reward.type}</p>
+                  </div>
+                  
+                  {unlocked ? (
+                    <div className="bg-green-600/20 border border-green-600/50 rounded-lg py-2 text-center">
+                      <span className="text-green-400 text-xs font-bold">UNLOCKED</span>
+                    </div>
+                  ) : (
+                    <Button
+                      onClick={() => unlockReward.mutate({ rewardId: reward.id })}
+                      disabled={!canAfford || unlockReward.isPending}
+                      className={`
+                        w-full h-9 font-bold rounded-lg
+                        ${canAfford
+                          ? 'bg-gradient-to-r from-yellow-400 to-orange-500 hover:from-yellow-300 hover:to-orange-400 text-black border-b-4 border-orange-700'
+                          : 'bg-gray-700 text-gray-400 cursor-not-allowed'
+                        }
+                      `}
+                    >
+                      {canAfford ? (
+                        <span className="flex items-center gap-1">
+                          <Gem className="h-3 w-3" />
+                          {reward.costGems}
+                        </span>
+                      ) : (
+                        <span className="flex items-center gap-1">
+                          <Lock className="h-3 w-3" />
+                          {reward.costGems}
+                        </span>
+                      )}
+                    </Button>
+                  )}
+                </div>
+              </Card>
+            );
+          })}
+        </div>
+
+        {/* Collection Progress */}
+        <Card className="glass-panel p-4">
+          <div className="flex justify-between items-center mb-2">
+            <span className="text-sm text-gray-400">Collection Progress</span>
+            <span className="text-white font-bold">{userRewards.length}/{allRewards.length}</span>
           </div>
+          <div className="w-full bg-gray-800 rounded-full h-3 overflow-hidden">
+            <div 
+              className="h-full bg-gradient-to-r from-neon-pink to-neon-cyan transition-all duration-500"
+              style={{ width: `${(userRewards.length / allRewards.length) * 100}%` }}
+            />
+          </div>
+        </Card>
+      </div>
+
+      {/* Bottom Navigation */}
+      <div className="fixed bottom-0 left-0 right-0 glass-panel border-t border-white/10">
+        <div className="container max-w-md mx-auto flex justify-around py-3">
+          {[
+            { name: "Home", icon: "🏠", href: "/" },
+            { name: "Ranks", icon: "👑", href: "/ranks" },
+            { name: "Missions", icon: "🎯", href: "/missions" },
+            { name: "Rewards", icon: "🎁", href: "/rewards", active: true },
+            { name: "Graduation", icon: "🎓", href: "/graduation" },
+          ].map((item) => (
+            <Link key={item.name} href={item.href}>
+              <button className={`flex flex-col items-center gap-1 ${item.active ? 'text-neon-cyan' : 'text-gray-400'}`}>
+                <span className="text-xl">{item.icon}</span>
+                <span className="text-[10px] font-bold">{item.name}</span>
+              </button>
+            </Link>
+          ))}
         </div>
       </div>
     </div>
