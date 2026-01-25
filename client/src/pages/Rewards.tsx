@@ -23,7 +23,10 @@ export default function Rewards() {
   if (!rewardsData || !profile) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-neon-cyan"></div>
+        <div className="space-y-3">
+          <div className="skeleton h-32 w-full max-w-md rounded-2xl"></div>
+          <div className="skeleton h-24 w-full max-w-md rounded-2xl"></div>
+        </div>
       </div>
     );
   }
@@ -70,7 +73,7 @@ export default function Rewards() {
             <h2 className="font-display text-2xl text-white">Loot Locker</h2>
           </div>
           <p className="text-gray-400 text-sm">
-            Collect loot and unlock badges with your XP!
+            Earn rewards by completing missions and building XP.
           </p>
         </div>
 

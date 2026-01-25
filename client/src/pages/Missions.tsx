@@ -11,7 +11,7 @@ export default function Missions() {
   
   const claimMission = trpc.fdf.claimMission.useMutation({
     onSuccess: () => {
-      toast.success("Mission claimed! XP & Gems added!");
+      toast.success("Mission collected! XP & Gems added!");
       refetch();
       refetchProfile();
     },
@@ -58,7 +58,7 @@ export default function Missions() {
             <h2 className="font-display text-2xl text-white">Weekly Missions</h2>
           </div>
           <p className="text-gray-400 text-sm">
-            Complete fun missions every week to earn XP and FDF ranks!
+            Complete weekly missions to build real skills and earn XP.
           </p>
         </div>
 
@@ -140,7 +140,7 @@ export default function Missions() {
                           active:border-b-0 active:translate-y-1 transition-all
                         `}
                       >
-                        {isClaimed ? "Claimed" : "Claim"}
+                        {isClaimed ? "Collected" : "Collect"}
                       </Button>
                     </div>
                   </div>

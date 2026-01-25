@@ -41,3 +41,31 @@
 - [ ] Verify mobile iPhone layout
 - [ ] Verify "Crypdawgs" spelling everywhere
 - [ ] Deploy to Netlify at fdf.crypdawgs.com
+
+## UI/UX Refinements (Kid-Friendly & Parent-Trustworthy)
+- [x] Lighten background gradients (lavender → deep purple)
+- [x] Reduce neon glow and shadows by 30-50%
+- [x] Increase body text contrast for readability)
+- [x] Update button styling (less glossy, more clean modern)
+- [x] Replace all mascot images with friendly versions (no teeth, no screaming, no tongues)
+- [x] Replace loading spinners with skeleton UI placeholders
+- [ ] Add consistent spacing between cards
+- [ ] Ensure bottom nav never covers content
+
+## Copy Updates
+- [x] Update Home subtext to "Start learning real money skills at 13. Graduate into the Vault at 18."
+- [x] Add trust line: "100% Free (Ages 13–17) • Sponsor-Funded • No Purchases"
+- [x] Replace "Claim" buttons with "Collect"
+- [x] Update Rewards subtitle to "Earn rewards by completing missions and building XP."
+- [x] Update Missions subtitle to "Complete weekly missions to build real skills and earn XP."
+- [ ] Replace "FDF accounts become read-only at 18" with "At 18, your account upgrades into Vault Activation."
+- [x] Update all parent contact emails to admin@crypdawgs.com
+
+## Parents Page Rebuild
+- [x] Create "Parent Trust Panel" layout
+- [x] Add "100% Free & Safe" section
+- [x] Add "What Students Learn" section
+- [x] Add "Privacy First" section
+- [x] Add "Sponsor Funded" section
+- [x] Add "Need Help?" section with admin@crypdawgs.com
+- [x] Add footer links (Privacy Policy, Terms, Safety)

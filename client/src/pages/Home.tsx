@@ -46,7 +46,10 @@ export default function Home() {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-neon-lime"></div>
+        <div className="space-y-3">
+          <div className="skeleton h-32 w-full max-w-md rounded-2xl"></div>
+          <div className="skeleton h-24 w-full max-w-md rounded-2xl"></div>
+        </div>
       </div>
     );
   }
@@ -66,7 +69,7 @@ export default function Home() {
           </div>
           
           <p className="text-lg text-gray-300 font-medium max-w-xs mx-auto leading-relaxed">
-            Start building at <span className="text-neon-lime font-bold">13</span>. 
+            Start learning real money skills at <span className="text-neon-lime font-bold">13</span>. 
             Graduate into the Vault at <span className="text-neon-cyan font-bold">18</span>.
           </p>
 
@@ -78,7 +81,7 @@ export default function Home() {
                 </Button>
               </a>
               <p className="text-xs text-gray-400 text-center">
-                100% Free (13–17) • Sponsor-Funded
+                100% Free (Ages 13–17) • Sponsor-Funded • No Purchases
               </p>
               <Link href="/parents">
                 <Button variant="outline" className="w-full bg-blue-600/20 border-blue-500/50 text-blue-200 hover:bg-blue-600/40 hover:text-white font-bold rounded-xl h-10">
@@ -118,13 +121,13 @@ export default function Home() {
         {/* Mascots Preview */}
         <div className="relative h-48 w-full max-w-sm mx-auto">
           <img 
-            src="/images/paw-1.png" 
+            src="/images/mascot-friendly-1.png" 
             alt="Mascot 1" 
             className="absolute left-0 bottom-0 w-32 h-32 object-contain animate-bounce duration-[2000ms]" 
             style={{ animationDelay: '0ms' }}
           />
           <img 
-            src="/images/paw-2.png" 
+            src="/images/mascot-friendly-2.png" 
             alt="Mascot 2" 
             className="absolute right-0 bottom-4 w-36 h-36 object-contain animate-bounce duration-[2200ms]" 
             style={{ animationDelay: '500ms' }}
