@@ -30,7 +30,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             <span className="text-neon-cyan text-xs font-bold">💎 120</span>
           </div>
           <div className="w-8 h-8 rounded-full bg-gray-700 border-2 border-white/20 overflow-hidden">
-            <img src="/images/paw-1.png" alt="Profile" className="w-full h-full object-cover" />
+            <img src="https://files.manuscdn.com/user_upload_by_module/session_file/310519663182301791/mrlBFsvvNvSVuXCx.png" alt="Profile" className="w-full h-full object-cover" />
           </div>
         </div>
       </header>
