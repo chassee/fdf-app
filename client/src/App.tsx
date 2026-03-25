@@ -13,8 +13,8 @@ import Rewards from "./pages/Rewards";
 import Ranks from "./pages/Ranks";
 import Graduation from "./pages/Graduation";
 import Parents from "./pages/Parents";
+
 function Router() {
-  // make sure to consider if you need authentication for certain routes
   return (
     <Layout>
       <Switch>
@@ -33,7 +33,8 @@ function Router() {
 function App() {
   return (
     <ErrorBoundary>
-      <ThemeProvider defaultTheme="dark">
+      {/* Light theme — premium academy interface */}
+      <ThemeProvider defaultTheme="light">
         <TooltipProvider>
           <Toaster />
           <Router />

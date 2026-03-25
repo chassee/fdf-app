@@ -1,457 +1,664 @@
 import { useAuth } from "@/_core/hooks/useAuth";
-import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { getLoginUrl } from "@/const";
 import { trpc } from "@/lib/trpc";
-import {
-  Activity,
-  ArrowRight,
-  CheckCircle2,
-  ChevronRight,
-  Gem,
-  Lock,
-  Shield,
-  Target,
-  TrendingUp,
-  Zap,
-} from "lucide-react";
+import { getLoginUrl } from "@/const";
 import { useState } from "react";
-import { toast } from "sonner";
 import { Link } from "wouter";
+import { toast } from "sonner";
+import {
+  ArrowRight,
+  Target,
+  Trophy,
+  Zap,
+  CheckCircle2,
+  Lock,
+  ChevronRight,
+  Shield,
+  Users,
+  Star,
+} from "lucide-react";
 
 const DAWG_CLASSES = [
   {
     id: "builder",
     label: "Builder Dawg",
-    desc: "Build products, services, and systems",
-    icon: "⚙️",
+    icon: "🏗️",
+    desc: "Build products, services & businesses",
+    color: "#f59e0b",
+    bg: "#fef3c7",
   },
   {
     id: "creator",
     label: "Creator Dawg",
-    desc: "Create content, brands, and media",
     icon: "🎨",
+    desc: "Create content, art & digital media",
+    color: "#8b5cf6",
+    bg: "#ede9fe",
   },
   {
     id: "tech",
     label: "Tech Dawg",
-    desc: "Code, automate, and engineer solutions",
-    icon: "💻",
+    icon: "⚙️",
+    desc: "Code, engineer & build with technology",
+    color: "#3b82f6",
+    bg: "#eff6ff",
   },
   {
     id: "money",
     label: "Money Dawg",
-    desc: "Invest, trade, and grow capital",
-    icon: "📈",
+    icon: "💰",
+    desc: "Invest, trade & grow financial wealth",
+    color: "#10b981",
+    bg: "#d1fae5",
   },
 ];
 
 export default function Home() {
-  const { user, loading, isAuthenticated } = useAuth();
-  const [showOnboarding, setShowOnboarding] = useState(false);
-  const [dob, setDob] = useState("");
-  const [dawgClass, setDawgClass] = useState<"builder" | "creator" | "tech" | "money" | "">("");
-
-  const { data: profile, refetch: refetchProfile } = trpc.fdf.getProfile.useQuery(undefined, {
+  const { user, isAuthenticated } = useAuth();
+  const { data: profile, isLoading, refetch } = trpc.fdf.getProfile.useQuery(undefined, {
     enabled: isAuthenticated,
   });
 
+  const [onboardStep, setOnboardStep] = useState<"dob" | "class" | null>(null);
+  const [dob, setDob] = useState("");
+  const [selectedClass, setSelectedClass] = useState<string>("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
   const completeOnboarding = trpc.fdf.completeOnboarding.useMutation({
     onSuccess: () => {
-      toast.success("Access granted. Welcome to FDF.");
-      setShowOnboarding(false);
-      refetchProfile();
+      toast.success("Welcome to FDF! Your training begins now.");
+      setOnboardStep(null);
+      refetch();
     },
-    onError: (error) => {
-      toast.error(error.message);
+    onError: (err) => {
+      toast.error(err.message);
+      setIsSubmitting(false);
     },
   });
 
-  const handleOnboardingSubmit = () => {
-    if (!dob || !dawgClass) {
-      toast.error("Complete all fields to continue");
-      return;
-    }
-    completeOnboarding.mutate({ dob, dawgClass });
+  const checkIn = trpc.fdf.checkIn.useMutation({
+    onSuccess: (data) => {
+      toast.success(`Day ${data.streak} streak! +${data.gemsEarned} 💎`);
+      refetch();
+    },
+    onError: (err) => {
+      toast.error(err.message);
+    },
+  });
+
+  const handleOnboardSubmit = () => {
+    if (!dob || !selectedClass) return;
+    setIsSubmitting(true);
+    completeOnboarding.mutate({
+      dob,
+      dawgClass: selectedClass as "builder" | "creator" | "tech" | "money",
+    });
   };
 
-  const needsOnboarding = isAuthenticated && profile && !profile.fdfUser;
-  const isEnrolled = isAuthenticated && profile?.fdfUser;
-  const progress = profile?.progress;
+  const today = new Date().toISOString().split("T")[0];
+  const checkedInToday = profile?.progress?.lastCheckin === today;
 
-  // ── Loading State ──
-  if (loading) {
+  // ── Not authenticated ──────────────────────────────────────────
+  if (!isAuthenticated) {
     return (
-      <div className="container py-8 space-y-6 animate-fade-in">
-        <div className="skeleton h-48 w-full rounded-xl" />
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="skeleton h-32 rounded-xl" />
-          <div className="skeleton h-32 rounded-xl" />
-          <div className="skeleton h-32 rounded-xl" />
+      <div className="page-container animate-fade-in">
+        {/* Hero */}
+        <div style={{ paddingTop: 32, paddingBottom: 24 }}>
+          <div
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 6,
+              background: "var(--primary-light)",
+              color: "var(--primary-dark)",
+              fontSize: "0.7rem",
+              fontWeight: 700,
+              padding: "4px 12px",
+              borderRadius: 99,
+              letterSpacing: "0.06em",
+              textTransform: "uppercase",
+              marginBottom: 16,
+            }}
+          >
+            <Star size={10} />
+            Free · Ages 13–17 · Sponsor-Funded
+          </div>
+
+          <h1
+            style={{
+              fontFamily: "'Space Grotesk', sans-serif",
+              fontSize: "clamp(1.75rem, 6vw, 2.25rem)",
+              fontWeight: 800,
+              color: "var(--text-main)",
+              letterSpacing: "-0.03em",
+              lineHeight: 1.15,
+              marginBottom: 12,
+            }}
+          >
+            Future Dawgs<br />
+            <span className="text-gradient">Foundation</span>
+          </h1>
+
+          <p
+            style={{
+              fontSize: "0.9375rem",
+              color: "var(--text-sub)",
+              lineHeight: 1.6,
+              marginBottom: 28,
+              maxWidth: 340,
+            }}
+          >
+            Start learning real money skills at{" "}
+            <strong style={{ color: "var(--text-main)" }}>13</strong>.
+            Graduate into the Vault at{" "}
+            <strong style={{ color: "var(--text-main)" }}>18</strong>.
+          </p>
+
+          <div style={{ display: "flex", flexDirection: "column", gap: 10, maxWidth: 320 }}>
+            <a href={getLoginUrl()} className="btn-primary" style={{ justifyContent: "center" }}>
+              Join FDF — It's Free
+              <ArrowRight size={16} />
+            </a>
+            <Link href="/parents" className="btn-secondary" style={{ justifyContent: "center" }}>
+              Parents Info
+            </Link>
+          </div>
+
+          <p
+            style={{
+              marginTop: 16,
+              fontSize: "0.75rem",
+              color: "var(--text-muted)",
+              display: "flex",
+              alignItems: "center",
+              gap: 6,
+            }}
+          >
+            <Shield size={12} />
+            100% Free · No Purchases · No Ads · admin@crypdawgs.com
+          </p>
         </div>
-        <div className="skeleton h-20 w-full rounded-xl" />
+
+        {/* Feature Cards */}
+        <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 32 }}>
+          <p className="section-title">What you'll build</p>
+          {[
+            {
+              icon: "💡",
+              title: "Real Money Skills",
+              desc: "Saving, investing, building income — not theory.",
+              color: "#f59e0b",
+              bg: "#fef3c7",
+            },
+            {
+              icon: "🏆",
+              title: "XP & Rank System",
+              desc: "Complete missions, earn XP, climb the ranks.",
+              color: "#5b8cff",
+              bg: "#e8efff",
+            },
+            {
+              icon: "🔓",
+              title: "Vault Access at 18",
+              desc: "Graduate into the full CrypDawgs Vault.",
+              color: "#7b5cff",
+              bg: "#ede8ff",
+            },
+          ].map((f) => (
+            <div key={f.title} className="academy-card" style={{ display: "flex", alignItems: "center", gap: 14 }}>
+              <div
+                style={{
+                  width: 44,
+                  height: 44,
+                  borderRadius: 12,
+                  background: f.bg,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  fontSize: "1.25rem",
+                  flexShrink: 0,
+                }}
+              >
+                {f.icon}
+              </div>
+              <div>
+                <p style={{ fontWeight: 700, fontSize: "0.9rem", color: "var(--text-main)", marginBottom: 2 }}>
+                  {f.title}
+                </p>
+                <p style={{ fontSize: "0.8125rem", color: "var(--text-sub)" }}>{f.desc}</p>
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
     );
   }
 
-  return (
-    <div className="animate-fade-in">
+  // ── Loading ────────────────────────────────────────────────────
+  if (isLoading) {
+    return (
+      <div className="page-container">
+        <div style={{ display: "flex", flexDirection: "column", gap: 12, paddingTop: 24 }}>
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="skeleton" style={{ height: 80, borderRadius: 18 }} />
+          ))}
+        </div>
+      </div>
+    );
+  }
 
-      {/* ══════════════════════════════════════════════
-          SECTION 1 — HERO
-          ══════════════════════════════════════════════ */}
-      <section className="container pt-8 pb-6">
-        <div className="panel relative overflow-hidden">
-          {/* Background gradient accent */}
-          <div className="absolute inset-0 bg-gradient-to-br from-[oklch(0.65_0.18_270/0.08)] via-transparent to-[oklch(0.70_0.15_200/0.05)] pointer-events-none" />
+  // ── Onboarding — Step 1: DOB ───────────────────────────────────
+  if (!profile?.fdfUser || onboardStep === "dob") {
+    return (
+      <div className="page-container animate-fade-in">
+        <div style={{ paddingTop: 32, paddingBottom: 16 }}>
+          <h2 style={{ fontSize: "1.375rem", fontWeight: 800, color: "var(--text-main)", letterSpacing: "-0.02em", marginBottom: 6 }}>
+            Set Up Your Profile
+          </h2>
+          <p style={{ fontSize: "0.875rem", color: "var(--text-sub)", marginBottom: 28 }}>
+            FDF is for ages 13–17. Enter your date of birth to continue.
+          </p>
 
-          <div className="relative flex items-start justify-between gap-6">
-            {/* Left: Content */}
-            <div className="flex-1 min-w-0 space-y-4">
-              {/* System badge */}
-              <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-md bg-[oklch(0.20_0.04_280/0.8)] border border-[oklch(0.35_0.05_280/0.5)]">
-                <span className="status-dot status-online" />
-                <span className="text-[10px] font-mono font-500 text-[oklch(0.55_0.08_280)] uppercase tracking-widest">
-                  Training Academy · Active
-                </span>
-              </div>
-
-              <div>
-                <h1 className="text-white mb-2">
-                  Future Dawgs<br />
-                  <span className="text-gradient">Foundation</span>
-                </h1>
-                <p className="text-[oklch(0.65_0.05_280)] text-sm leading-relaxed max-w-sm">
-                  Start early. Build real financial intelligence.<br />
-                  Enter the Vault prepared.
-                </p>
-              </div>
-
-              {/* Trust line */}
-              <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-                {["100% Free · Ages 13–17", "Sponsor-Funded", "No Purchases"].map((item) => (
-                  <span key={item} className="text-[11px] font-mono text-[oklch(0.50_0.06_280)] flex items-center gap-1">
-                    <CheckCircle2 size={10} className="text-[oklch(0.68_0.16_150)]" />
-                    {item}
-                  </span>
-                ))}
-              </div>
-
-              {/* CTAs */}
-              <div className="flex flex-wrap gap-2 pt-1">
-                {!isAuthenticated ? (
-                  <>
-                    <a href={getLoginUrl()}>
-                      <button className="btn-primary">
-                        Apply for Access
-                        <ArrowRight size={14} />
-                      </button>
-                    </a>
-                    <Link href="/parents">
-                      <button className="btn-secondary">
-                        Parent Information
-                      </button>
-                    </Link>
-                  </>
-                ) : needsOnboarding ? (
-                  <button className="btn-primary" onClick={() => setShowOnboarding(true)}>
-                    Complete Setup
-                    <ArrowRight size={14} />
-                  </button>
-                ) : (
-                  <Link href="/missions">
-                    <button className="btn-primary">
-                      View Missions
-                      <ArrowRight size={14} />
-                    </button>
-                  </Link>
-                )}
-              </div>
-            </div>
-
-            {/* Right: Small mascot support visual */}
-            <div className="hidden md:block w-20 h-20 shrink-0 mascot-support">
-              <img
-                src="https://files.manuscdn.com/user_upload_by_module/session_file/310519663182301791/rpQcvtVEZHGkTvGE.png"
-                alt="FDF Guide"
-                className="w-full h-full object-contain"
-              />
-            </div>
+          <div className="academy-card" style={{ marginBottom: 16 }}>
+            <label
+              style={{
+                display: "block",
+                fontSize: "0.75rem",
+                fontWeight: 700,
+                color: "var(--text-muted)",
+                letterSpacing: "0.06em",
+                textTransform: "uppercase",
+                marginBottom: 8,
+              }}
+            >
+              Date of Birth
+            </label>
+            <input
+              type="date"
+              value={dob}
+              onChange={(e) => setDob(e.target.value)}
+              style={{
+                width: "100%",
+                padding: "12px 14px",
+                borderRadius: 12,
+                border: "1.5px solid rgba(91,140,255,0.2)",
+                background: "rgba(91,140,255,0.04)",
+                fontSize: "1rem",
+                color: "var(--text-main)",
+                outline: "none",
+                fontFamily: "inherit",
+              }}
+            />
           </div>
 
-          {/* Enrolled user stats bar */}
-          {isEnrolled && progress && (
-            <div className="mt-5 pt-4 border-t border-[oklch(0.28_0.04_280/0.5)] flex flex-wrap gap-4">
-              <div className="flex items-center gap-2">
-                <Gem size={13} className="text-[oklch(0.72_0.16_270)]" />
-                <span className="text-xs font-mono text-[oklch(0.70_0.08_280)]">
-                  {progress.gemsTotal.toLocaleString()} <span className="text-[oklch(0.45_0.04_280)]">gems</span>
-                </span>
-              </div>
-              <div className="flex items-center gap-2">
-                <Zap size={13} className="text-[oklch(0.75_0.14_60)]" />
-                <span className="text-xs font-mono text-[oklch(0.70_0.08_280)]">
-                  {progress.xpTotal.toLocaleString()} <span className="text-[oklch(0.45_0.04_280)]">xp</span>
-                </span>
-              </div>
-              <div className="flex items-center gap-2">
-                <TrendingUp size={13} className="text-[oklch(0.68_0.16_150)]" />
-                <span className="text-xs font-mono text-[oklch(0.70_0.08_280)]">
-                  {progress.rankName}
-                </span>
-              </div>
-              {progress.streakDays > 0 && (
-                <div className="flex items-center gap-2">
-                  <Activity size={13} className="text-[oklch(0.70_0.15_200)]" />
-                  <span className="text-xs font-mono text-[oklch(0.70_0.08_280)]">
-                    {progress.streakDays}d <span className="text-[oklch(0.45_0.04_280)]">streak</span>
-                  </span>
+          <button
+            className="btn-primary"
+            style={{ width: "100%", justifyContent: "center" }}
+            disabled={!dob}
+            onClick={() => setOnboardStep("class")}
+          >
+            Continue
+            <ArrowRight size={16} />
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // ── Onboarding — Step 2: Dawg Class ───────────────────────────
+  if (onboardStep === "class") {
+    return (
+      <div className="page-container animate-fade-in">
+        <div style={{ paddingTop: 24, paddingBottom: 16 }}>
+          <h2 style={{ fontSize: "1.375rem", fontWeight: 800, color: "var(--text-main)", letterSpacing: "-0.02em", marginBottom: 6 }}>
+            Choose Your Dawg Class
+          </h2>
+          <p style={{ fontSize: "0.875rem", color: "var(--text-sub)", marginBottom: 24 }}>
+            Your class shapes your mission track. You can change it later.
+          </p>
+
+          <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 20 }}>
+            {DAWG_CLASSES.map((dc) => (
+              <button
+                key={dc.id}
+                onClick={() => setSelectedClass(dc.id)}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 14,
+                  padding: "14px 16px",
+                  borderRadius: 16,
+                  border: `2px solid ${selectedClass === dc.id ? dc.color : "rgba(91,140,255,0.12)"}`,
+                  background: selectedClass === dc.id ? dc.bg : "rgba(255,255,255,0.8)",
+                  cursor: "pointer",
+                  textAlign: "left",
+                  transition: "all 0.15s ease",
+                  backdropFilter: "blur(12px)",
+                }}
+              >
+                <div
+                  style={{
+                    width: 44,
+                    height: 44,
+                    borderRadius: 12,
+                    background: dc.bg,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    fontSize: "1.3rem",
+                    flexShrink: 0,
+                    border: `1.5px solid ${dc.color}30`,
+                  }}
+                >
+                  {dc.icon}
                 </div>
-              )}
+                <div style={{ flex: 1 }}>
+                  <p style={{ fontWeight: 700, fontSize: "0.9rem", color: "var(--text-main)", marginBottom: 2 }}>
+                    {dc.label}
+                  </p>
+                  <p style={{ fontSize: "0.775rem", color: "var(--text-sub)" }}>{dc.desc}</p>
+                </div>
+                {selectedClass === dc.id && (
+                  <CheckCircle2 size={18} style={{ color: dc.color, flexShrink: 0 }} />
+                )}
+              </button>
+            ))}
+          </div>
+
+          <button
+            className="btn-primary"
+            style={{ width: "100%", justifyContent: "center" }}
+            disabled={!selectedClass || isSubmitting}
+            onClick={handleOnboardSubmit}
+          >
+            {isSubmitting ? "Setting up…" : "Start Training"}
+            {!isSubmitting && <ArrowRight size={16} />}
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // ── Dashboard ──────────────────────────────────────────────────
+  const progress = profile.progress;
+  const fdfUser = profile.fdfUser;
+  const xp = progress?.xpTotal ?? 0;
+  const gems = progress?.gemsTotal ?? 0;
+  const rankName = progress?.rankName ?? "Pup";
+  const streak = progress?.streakDays ?? 0;
+  const yearTrack = fdfUser?.yearTrack ?? 1;
+
+  const RANK_XP_MAP: Record<string, number> = {
+    Pup: 0, Hunter: 200, Builder: 500, Founder: 1000, Vault: 2000,
+  };
+  const RANK_ORDER = ["Pup", "Hunter", "Builder", "Founder", "Vault"];
+  const currentIdx = RANK_ORDER.indexOf(rankName);
+  const nextRank = RANK_ORDER[currentIdx + 1] ?? "Vault";
+  const nextRankXp = RANK_XP_MAP[nextRank] ?? 2000;
+  const currentRankXp = RANK_XP_MAP[rankName] ?? 0;
+  const progressPct = Math.min(
+    100,
+    ((xp - currentRankXp) / (nextRankXp - currentRankXp)) * 100
+  );
+
+  const dawgClassInfo = DAWG_CLASSES.find((d) => d.id === fdfUser?.dawgClass) ?? DAWG_CLASSES[0];
+
+  return (
+    <div className="page-container animate-fade-in">
+
+      {/* ── Welcome Row ── */}
+      <div style={{ paddingTop: 20, paddingBottom: 20, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+        <div>
+          <p style={{ fontSize: "0.75rem", color: "var(--text-muted)", fontWeight: 600, letterSpacing: "0.04em", textTransform: "uppercase", marginBottom: 4 }}>
+            Welcome back
+          </p>
+          <h2 style={{ fontSize: "1.25rem", fontWeight: 800, color: "var(--text-main)", letterSpacing: "-0.02em" }}>
+            {user?.name?.split(" ")[0] ?? "Trainee"}
+          </h2>
+        </div>
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 6,
+            background: dawgClassInfo.bg,
+            color: dawgClassInfo.color,
+            padding: "6px 12px",
+            borderRadius: 10,
+            fontSize: "0.75rem",
+            fontWeight: 700,
+            border: `1px solid ${dawgClassInfo.color}30`,
+          }}
+        >
+          <span>{dawgClassInfo.icon}</span>
+          <span>{dawgClassInfo.label}</span>
+        </div>
+      </div>
+
+      {/* ── Rank Progress Card ── */}
+      <div className="academy-card" style={{ marginBottom: 12 }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+          <div>
+            <p className="section-title" style={{ marginBottom: 2 }}>Current Rank</p>
+            <p style={{ fontSize: "1.125rem", fontWeight: 800, color: "var(--text-main)", letterSpacing: "-0.02em" }}>
+              {rankName}
+            </p>
+          </div>
+          <div style={{ textAlign: "right" }}>
+            <p className="section-title" style={{ marginBottom: 2 }}>Year Track</p>
+            <p style={{ fontSize: "1.125rem", fontWeight: 800, color: "var(--primary)", letterSpacing: "-0.02em" }}>
+              Year {yearTrack}
+            </p>
+          </div>
+        </div>
+
+        <div className="progress-track" style={{ marginBottom: 6 }}>
+          <div className="progress-fill" style={{ width: `${progressPct}%` }} />
+        </div>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <span style={{ fontSize: "0.75rem", color: "var(--text-muted)" }}>
+            {xp.toLocaleString()} XP
+          </span>
+          <span style={{ fontSize: "0.75rem", color: "var(--text-muted)" }}>
+            {nextRankXp.toLocaleString()} XP → {nextRank}
+          </span>
+        </div>
+      </div>
+
+      {/* ── Stats Row ── */}
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8, marginBottom: 20 }}>
+        {[
+          { label: "XP Total", value: xp.toLocaleString(), icon: "⚡", color: "#5b8cff", bg: "#e8efff" },
+          { label: "Gems", value: gems.toString(), icon: "💎", color: "#7b5cff", bg: "#ede8ff" },
+          { label: "Streak", value: `${streak}d`, icon: "🔥", color: "#f59e0b", bg: "#fef3c7" },
+        ].map((s) => (
+          <div
+            key={s.label}
+            className="academy-card"
+            style={{ padding: "12px 10px", textAlign: "center" }}
+          >
+            <div style={{ fontSize: "1.1rem", marginBottom: 4 }}>{s.icon}</div>
+            <p style={{ fontSize: "1rem", fontWeight: 800, color: "var(--text-main)", letterSpacing: "-0.02em", lineHeight: 1 }}>
+              {s.value}
+            </p>
+            <p style={{ fontSize: "0.65rem", color: "var(--text-muted)", fontWeight: 600, letterSpacing: "0.04em", textTransform: "uppercase", marginTop: 2 }}>
+              {s.label}
+            </p>
+          </div>
+        ))}
+      </div>
+
+      {/* ── Daily Check-In ── */}
+      <p className="section-title">Today's Actions</p>
+      <div className="academy-card" style={{ marginBottom: 12 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+          <div
+            style={{
+              width: 48,
+              height: 48,
+              borderRadius: 14,
+              background: checkedInToday ? "#dcfce7" : "#e8efff",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              fontSize: "1.4rem",
+              flexShrink: 0,
+            }}
+          >
+            {checkedInToday ? "✅" : "📅"}
+          </div>
+          <div style={{ flex: 1 }}>
+            <p style={{ fontWeight: 700, fontSize: "0.9rem", color: "var(--text-main)", marginBottom: 2 }}>
+              Daily Check-In
+            </p>
+            <p style={{ fontSize: "0.775rem", color: "var(--text-sub)" }}>
+              {checkedInToday
+                ? `Streak: ${streak} day${streak !== 1 ? "s" : ""} 🔥`
+                : `+5 💎 · Current streak: ${streak} day${streak !== 1 ? "s" : ""}`}
+            </p>
+          </div>
+          {!checkedInToday ? (
+            <button
+              className="btn-primary"
+              style={{ padding: "8px 16px", fontSize: "0.8125rem" }}
+              onClick={() => checkIn.mutate()}
+              disabled={checkIn.isPending}
+            >
+              {checkIn.isPending ? "…" : "Check In"}
+            </button>
+          ) : (
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 4,
+                color: "#16a34a",
+                fontSize: "0.8rem",
+                fontWeight: 700,
+              }}
+            >
+              <CheckCircle2 size={16} />
+              Done
             </div>
           )}
         </div>
-      </section>
+      </div>
 
-      {/* ══════════════════════════════════════════════
-          SECTION 2 — SYSTEM OVERVIEW CARDS
-          ══════════════════════════════════════════════ */}
-      <section className="container pb-6">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-
-          {/* Card 1: Daily Check-In */}
-          <Link href={isEnrolled ? "/missions" : "#"}>
-            <div className={`panel-sm group cursor-pointer transition-all duration-200 hover:border-[oklch(0.50_0.10_270/0.5)] hover:bg-[oklch(0.18_0.04_280/0.9)] ${!isEnrolled ? "module-locked" : ""}`}>
-              <div className="flex items-start justify-between mb-3">
-                <div className="w-8 h-8 rounded-lg bg-[oklch(0.68_0.16_150/0.15)] border border-[oklch(0.68_0.16_150/0.25)] flex items-center justify-center">
-                  <CheckCircle2 size={16} className="text-[oklch(0.68_0.16_150)]" />
-                </div>
-                {isEnrolled ? (
-                  <ChevronRight size={14} className="text-[oklch(0.40_0.04_280)] group-hover:text-[oklch(0.65_0.15_270)] transition-colors" />
-                ) : (
-                  <Lock size={12} className="text-[oklch(0.40_0.04_280)]" />
-                )}
-              </div>
-              <h3 className="text-sm font-600 text-white mb-1">Daily Check-In</h3>
-              <p className="text-[11px] text-[oklch(0.50_0.04_280)] leading-relaxed">
-                Check in each day to maintain your streak and earn gems.
-              </p>
-              {isEnrolled && progress && (
-                <div className="mt-3 flex items-center gap-2">
-                  <span className="status-dot status-online" />
-                  <span className="text-[10px] font-mono text-[oklch(0.55_0.08_280)]">
-                    {progress.streakDays}d streak
-                  </span>
-                </div>
-              )}
-            </div>
-          </Link>
-
-          {/* Card 2: Missions */}
-          <Link href="/missions">
-            <div className="panel-sm group cursor-pointer transition-all duration-200 hover:border-[oklch(0.50_0.10_270/0.5)] hover:bg-[oklch(0.18_0.04_280/0.9)]">
-              <div className="flex items-start justify-between mb-3">
-                <div className="w-8 h-8 rounded-lg bg-[oklch(0.65_0.18_270/0.15)] border border-[oklch(0.65_0.18_270/0.25)] flex items-center justify-center">
-                  <Target size={16} className="text-[oklch(0.72_0.16_270)]" />
-                </div>
-                <ChevronRight size={14} className="text-[oklch(0.40_0.04_280)] group-hover:text-[oklch(0.65_0.15_270)] transition-colors" />
-              </div>
-              <h3 className="text-sm font-600 text-white mb-1">Missions</h3>
-              <p className="text-[11px] text-[oklch(0.50_0.04_280)] leading-relaxed">
-                Complete weekly training modules to build real skills and earn XP.
-              </p>
-              {isEnrolled && (
-                <div className="mt-3">
-                  <div className="progress-track">
-                    <div className="progress-fill" style={{ width: "40%" }} />
-                  </div>
-                  <span className="text-[10px] font-mono text-[oklch(0.45_0.04_280)] mt-1 block">2 / 5 this week</span>
-                </div>
-              )}
-            </div>
-          </Link>
-
-          {/* Card 3: Progress Rank */}
-          <Link href="/ranks">
-            <div className="panel-sm group cursor-pointer transition-all duration-200 hover:border-[oklch(0.50_0.10_270/0.5)] hover:bg-[oklch(0.18_0.04_280/0.9)]">
-              <div className="flex items-start justify-between mb-3">
-                <div className="w-8 h-8 rounded-lg bg-[oklch(0.78_0.14_85/0.15)] border border-[oklch(0.78_0.14_85/0.25)] flex items-center justify-center">
-                  <TrendingUp size={16} className="text-[oklch(0.78_0.14_85)]" />
-                </div>
-                <ChevronRight size={14} className="text-[oklch(0.40_0.04_280)] group-hover:text-[oklch(0.65_0.15_270)] transition-colors" />
-              </div>
-              <h3 className="text-sm font-600 text-white mb-1">Progress Rank</h3>
-              <p className="text-[11px] text-[oklch(0.50_0.04_280)] leading-relaxed">
-                Track your advancement through the FDF training tiers.
-              </p>
-              {isEnrolled && progress && (
-                <div className="mt-3 flex items-center gap-2">
-                  <span className="text-[10px] font-mono font-600 text-[oklch(0.78_0.14_85)]">{progress.rankName}</span>
-                  <span className="text-[oklch(0.35_0.04_280)] text-[10px]">·</span>
-                  <span className="text-[10px] font-mono text-[oklch(0.45_0.04_280)]">{progress.xpTotal} XP</span>
-                </div>
-              )}
-            </div>
-          </Link>
-        </div>
-      </section>
-
-      {/* ══════════════════════════════════════════════
-          SECTION 3 — TRAINING PATH TIMELINE
-          ══════════════════════════════════════════════ */}
-      <section className="container pb-6">
-        <div className="panel">
-          <div className="mb-4">
-            <h2 className="text-sm font-display font-700 text-white uppercase tracking-widest mb-1">Training Path</h2>
-            <p className="text-[11px] text-[oklch(0.45_0.04_280)]">Your progression through the FDF system</p>
-          </div>
-
-          {/* Desktop: horizontal timeline */}
-          <div className="hidden md:block relative">
-            <div className="flex items-center justify-between relative py-6">
-              {/* Connecting line */}
-              <div className="timeline-line" />
-
-              {[
-                { label: "Entry",       sub: "Age 13–14",  color: "oklch(0.68_0.16_150)", active: true },
-                { label: "Training",    sub: "Year 1–2",   color: "oklch(0.65_0.18_270)", active: isEnrolled },
-                { label: "Development", sub: "Year 3–4",   color: "oklch(0.70_0.15_200)", active: false },
-                { label: "Vault Access",sub: "Age 18",     color: "oklch(0.78_0.14_85)",  active: false },
-              ].map((step, i) => (
-                <div key={i} className="flex flex-col items-center gap-2 relative z-10">
-                  <div
-                    className="w-3 h-3 rounded-full border-2 border-[oklch(0.12_0.04_280)]"
-                    style={{
-                      background: step.active ? step.color : "oklch(0.25 0.04 280)",
-                      boxShadow: step.active ? `0 0 10px ${step.color}` : "none",
-                    }}
-                  />
-                  <span className="text-[11px] font-600 text-white whitespace-nowrap">{step.label}</span>
-                  <span className="text-[10px] font-mono text-[oklch(0.45_0.04_280)] whitespace-nowrap">{step.sub}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Mobile: vertical steps */}
-          <div className="md:hidden space-y-3">
-            {[
-              { label: "Entry",       sub: "Age 13–14",  color: "oklch(0.68_0.16_150)", active: true },
-              { label: "Training",    sub: "Year 1–2",   color: "oklch(0.65_0.18_270)", active: isEnrolled },
-              { label: "Development", sub: "Year 3–4",   color: "oklch(0.70_0.15_200)", active: false },
-              { label: "Vault Access",sub: "Age 18",     color: "oklch(0.78_0.14_85)",  active: false },
-            ].map((step, i) => (
-              <div key={i} className="flex items-center gap-3">
-                <div
-                  className="w-2.5 h-2.5 rounded-full shrink-0"
-                  style={{
-                    background: step.active ? step.color : "oklch(0.25 0.04 280)",
-                    boxShadow: step.active ? `0 0 8px ${step.color}` : "none",
-                  }}
-                />
-                <span className="text-sm font-500 text-white">{step.label}</span>
-                <span className="text-[11px] font-mono text-[oklch(0.45_0.04_280)] ml-auto">{step.sub}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ══════════════════════════════════════════════
-          SECTION 4 — SYSTEM STATUS PANEL
-          ══════════════════════════════════════════════ */}
-      <section className="container pb-8">
-        <div className="panel-sm">
-          <div className="flex items-center justify-between mb-3">
-            <h3 className="text-[11px] font-mono font-500 text-[oklch(0.45_0.04_280)] uppercase tracking-widest">
-              System Status
-            </h3>
-            <Shield size={12} className="text-[oklch(0.50_0.08_280)]" />
-          </div>
-
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            {[
-              { label: "Network",  value: "Online",  dot: "status-online" },
-              { label: "Status",   value: "Active",  dot: "status-online" },
-              { label: "Tier",     value: "FDF",     dot: "status-pending" },
-              { label: "Vault",    value: "Locked",  dot: "status-locked" },
-            ].map((item) => (
-              <div key={item.label} className="flex flex-col gap-1.5 p-2.5 rounded-lg bg-[oklch(0.14_0.03_280/0.6)] border border-[oklch(0.25_0.03_280/0.4)]">
-                <span className="text-[10px] font-mono text-[oklch(0.40_0.04_280)] uppercase tracking-wider">{item.label}</span>
-                <div className="flex items-center gap-1.5">
-                  <span className={`status-dot ${item.dot}`} />
-                  <span className="text-xs font-mono font-600 text-[oklch(0.80_0.06_280)]">{item.value}</span>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ══════════════════════════════════════════════
-          ONBOARDING DIALOG
-          ══════════════════════════════════════════════ */}
-      <Dialog open={showOnboarding || (needsOnboarding ?? false)} onOpenChange={(open) => {
-        if (!open && !needsOnboarding) setShowOnboarding(false);
-      }}>
-        <DialogContent className="bg-[oklch(0.16_0.04_280)] border-[oklch(0.30_0.04_280/0.6)] text-white max-w-md">
-          <DialogHeader>
-            <DialogTitle className="font-display font-700 text-white">
-              System Setup
-            </DialogTitle>
-            <p className="text-[oklch(0.55_0.04_280)] text-sm">
-              Complete your profile to access the FDF training system.
-            </p>
-          </DialogHeader>
-
-          <div className="space-y-5 pt-2">
-            {/* Date of Birth */}
-            <div className="space-y-1.5">
-              <Label>Date of Birth</Label>
-              <Input
-                type="date"
-                value={dob}
-                onChange={(e) => setDob(e.target.value)}
-                max={new Date().toISOString().split("T")[0]}
-              />
-              <p className="text-[11px] text-[oklch(0.45_0.04_280)]">Must be between 13 and 17 years old.</p>
-            </div>
-
-            {/* Dawg Class */}
-            <div className="space-y-2">
-              <Label>Select Your Class</Label>
-              <div className="grid grid-cols-2 gap-2">
-                {DAWG_CLASSES.map((cls) => (
-                  <button
-                    key={cls.id}
-                    onClick={() => setDawgClass(cls.id as any)}
-                    className={`p-3 rounded-lg border text-left transition-all duration-150 ${
-                      dawgClass === cls.id
-                        ? "border-[oklch(0.65_0.18_270/0.7)] bg-[oklch(0.65_0.18_270/0.12)]"
-                        : "border-[oklch(0.28_0.04_280/0.5)] bg-[oklch(0.14_0.03_280/0.5)] hover:border-[oklch(0.40_0.06_280/0.6)]"
-                    }`}
-                  >
-                    <div className="text-lg mb-1">{cls.icon}</div>
-                    <div className="text-xs font-600 text-white">{cls.label}</div>
-                    <div className="text-[10px] text-[oklch(0.45_0.04_280)] mt-0.5 leading-tight">{cls.desc}</div>
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <button
-              className="btn-primary w-full justify-center"
-              onClick={handleOnboardingSubmit}
-              disabled={completeOnboarding.isPending}
+      {/* ── Quick Links ── */}
+      <p className="section-title" style={{ marginTop: 20 }}>Training Modules</p>
+      <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 24 }}>
+        {[
+          { path: "/missions", icon: <Target size={18} />, label: "Weekly Missions", desc: "Complete tasks to earn XP", color: "#5b8cff", bg: "#e8efff" },
+          { path: "/rewards", icon: <Trophy size={18} />, label: "Rewards Locker", desc: "Unlock badges & stickers", color: "#7b5cff", bg: "#ede8ff" },
+          { path: "/ranks", icon: <Zap size={18} />, label: "Rank Progression", desc: "Track your training path", color: "#f59e0b", bg: "#fef3c7" },
+        ].map((item) => (
+          <Link key={item.path} href={item.path} style={{ textDecoration: "none" }}>
+            <div
+              className="academy-card"
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 14,
+                cursor: "pointer",
+              }}
             >
-              {completeOnboarding.isPending ? "Processing..." : "Activate Access"}
-            </button>
+              <div
+                style={{
+                  width: 40,
+                  height: 40,
+                  borderRadius: 11,
+                  background: item.bg,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  color: item.color,
+                  flexShrink: 0,
+                }}
+              >
+                {item.icon}
+              </div>
+              <div style={{ flex: 1 }}>
+                <p style={{ fontWeight: 700, fontSize: "0.875rem", color: "var(--text-main)", marginBottom: 1 }}>
+                  {item.label}
+                </p>
+                <p style={{ fontSize: "0.775rem", color: "var(--text-sub)" }}>{item.desc}</p>
+              </div>
+              <ChevronRight size={16} style={{ color: "var(--text-muted)" }} />
+            </div>
+          </Link>
+        ))}
+      </div>
+
+      {/* ── Graduation Teaser ── */}
+      {yearTrack >= 3 && (
+        <Link href="/graduation" style={{ textDecoration: "none" }}>
+          <div
+            className="academy-card"
+            style={{
+              background: "linear-gradient(135deg, rgba(91,140,255,0.08) 0%, rgba(123,92,255,0.08) 100%)",
+              border: "1.5px solid rgba(91,140,255,0.2)",
+              display: "flex",
+              alignItems: "center",
+              gap: 14,
+              marginBottom: 24,
+              cursor: "pointer",
+            }}
+          >
+            <div
+              style={{
+                width: 44,
+                height: 44,
+                borderRadius: 12,
+                background: "linear-gradient(135deg, #5b8cff, #7b5cff)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                fontSize: "1.25rem",
+                flexShrink: 0,
+              }}
+            >
+              🎓
+            </div>
+            <div style={{ flex: 1 }}>
+              <p style={{ fontWeight: 700, fontSize: "0.875rem", color: "var(--text-main)", marginBottom: 2 }}>
+                Vault Activation Approaching
+              </p>
+              <p style={{ fontSize: "0.775rem", color: "var(--text-sub)" }}>
+                Year {yearTrack} · Graduate at 18 → Full Vault Access
+              </p>
+            </div>
+            <Lock size={16} style={{ color: "var(--primary)" }} />
           </div>
-        </DialogContent>
-      </Dialog>
+        </Link>
+      )}
+
+      {/* ── Footer ── */}
+      <div
+        style={{
+          borderTop: "1px solid rgba(91,140,255,0.1)",
+          paddingTop: 16,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          gap: 16,
+          flexWrap: "wrap",
+        }}
+      >
+        {["Privacy Policy", "Terms", "Safety", "Parents"].map((label) => (
+          <Link
+            key={label}
+            href={label === "Parents" ? "/parents" : "#"}
+            style={{
+              fontSize: "0.7rem",
+              color: "var(--text-muted)",
+              textDecoration: "none",
+              fontWeight: 600,
+              letterSpacing: "0.02em",
+            }}
+          >
+            {label}
+          </Link>
+        ))}
+      </div>
     </div>
   );
 }

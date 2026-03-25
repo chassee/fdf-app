@@ -1,14 +1,7 @@
 import { trpc } from "@/lib/trpc";
-import { cn } from "@/lib/utils";
-import {
-  ArrowRight,
-  ChevronRight,
-  GraduationCap,
-  Lock,
-  Shield,
-  TrendingUp,
-  Zap,
-} from "lucide-react";
+import { useAuth } from "@/_core/hooks/useAuth";
+import { getLoginUrl } from "@/const";
+import { ArrowRight, Lock, Shield, TrendingUp, Zap, CheckCircle2 } from "lucide-react";
 
 function getDaysUntil18(dobStr: string): number {
   const dob = new Date(dobStr);
@@ -28,7 +21,10 @@ function getAge(dobStr: string): number {
 }
 
 export default function Graduation() {
-  const { data: profile } = trpc.fdf.getProfile.useQuery();
+  const { isAuthenticated } = useAuth();
+  const { data: profile, isLoading } = trpc.fdf.getProfile.useQuery(undefined, {
+    enabled: isAuthenticated,
+  });
 
   const dob = profile?.fdfUser?.dob;
   const age = dob ? getAge(dob) : null;
@@ -39,66 +35,102 @@ export default function Graduation() {
   const xp = profile?.progress?.xpTotal ?? 0;
   const rank = profile?.progress?.rankName ?? "Pup";
 
-  // ── Loading State ──
-  if (!profile) {
+  if (!isAuthenticated) {
     return (
-      <div className="container py-8 space-y-4 animate-fade-in">
-        <div className="skeleton h-6 w-48 rounded-md" />
-        <div className="skeleton h-40 w-full rounded-xl" />
-        <div className="skeleton h-24 w-full rounded-xl" />
+      <div className="page-container animate-fade-in">
+        <div style={{ paddingTop: 40, textAlign: "center" }}>
+          <div style={{ fontSize: "2.5rem", marginBottom: 16 }}>🎓</div>
+          <h2 style={{ fontSize: "1.25rem", fontWeight: 800, color: "var(--text-main)", marginBottom: 8 }}>
+            Graduation Locked
+          </h2>
+          <p style={{ fontSize: "0.875rem", color: "var(--text-sub)", marginBottom: 24 }}>
+            Sign in to view your path to Vault access.
+          </p>
+          <a href={getLoginUrl()} className="btn-primary">
+            Sign In to Continue
+            <ArrowRight size={16} />
+          </a>
+        </div>
+      </div>
+    );
+  }
+
+  if (isLoading || !profile) {
+    return (
+      <div className="page-container">
+        <div style={{ paddingTop: 24, display: "flex", flexDirection: "column", gap: 12 }}>
+          <div className="skeleton" style={{ height: 120, borderRadius: 18 }} />
+          <div className="skeleton" style={{ height: 100, borderRadius: 18 }} />
+          <div className="skeleton" style={{ height: 80, borderRadius: 18 }} />
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="container py-8 space-y-6 animate-fade-in">
+    <div className="page-container animate-fade-in">
 
-      {/* ── Page Header ── */}
-      <div className="space-y-1">
-        <div className="flex items-center gap-2 text-[oklch(0.50_0.04_280)] text-[11px] font-mono uppercase tracking-widest mb-2">
-          <GraduationCap size={11} />
-          <span>Training System</span>
-          <ChevronRight size={10} />
-          <span className="text-[oklch(0.70_0.08_280)]">Graduation</span>
-        </div>
-        <h1 className="text-white">Vault Graduation</h1>
-        <p className="text-[oklch(0.55_0.04_280)] text-sm">
+      {/* ── Header ── */}
+      <div style={{ paddingTop: 20, paddingBottom: 20 }}>
+        <h1
+          style={{
+            fontFamily: "'Space Grotesk', sans-serif",
+            fontSize: "1.5rem",
+            fontWeight: 800,
+            color: "var(--text-main)",
+            letterSpacing: "-0.02em",
+            marginBottom: 4,
+          }}
+        >
+          Vault Graduation
+        </h1>
+        <p style={{ fontSize: "0.875rem", color: "var(--text-sub)" }}>
           Your path to Vault access. All progress carries forward at 18.
         </p>
       </div>
 
-      {/* ── Vault Status Panel ── */}
+      {/* ── Vault Status ── */}
       <div
-        className={cn(
-          "panel relative overflow-hidden",
-          isVaultReady && "border-[oklch(0.78_0.14_85/0.5)]"
-        )}
+        className="academy-card"
+        style={{
+          marginBottom: 16,
+          background: isVaultReady
+            ? "linear-gradient(135deg, rgba(245,158,11,0.08) 0%, rgba(251,191,36,0.08) 100%)"
+            : "linear-gradient(135deg, rgba(91,140,255,0.06) 0%, rgba(123,92,255,0.06) 100%)",
+          border: isVaultReady
+            ? "1.5px solid rgba(245,158,11,0.3)"
+            : "1.5px solid rgba(91,140,255,0.15)",
+        }}
       >
-        {isVaultReady && (
-          <div className="absolute inset-0 bg-gradient-to-br from-[oklch(0.78_0.14_85/0.06)] to-transparent pointer-events-none" />
-        )}
-
-        <div className="relative flex items-start gap-4">
+        <div style={{ display: "flex", alignItems: "flex-start", gap: 14 }}>
           <div
-            className={cn(
-              "w-12 h-12 rounded-xl flex items-center justify-center shrink-0",
-              isVaultReady
-                ? "bg-[oklch(0.78_0.14_85/0.15)] border border-[oklch(0.78_0.14_85/0.3)]"
-                : "bg-[oklch(0.20_0.04_280/0.6)] border border-[oklch(0.30_0.04_280/0.5)]"
-            )}
+            style={{
+              width: 52,
+              height: 52,
+              borderRadius: 14,
+              background: isVaultReady ? "#fef3c7" : "rgba(91,140,255,0.1)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              fontSize: "1.6rem",
+              flexShrink: 0,
+            }}
           >
-            {isVaultReady ? (
-              <Shield size={24} className="text-[oklch(0.78_0.14_85)]" />
-            ) : (
-              <Lock size={24} className="text-[oklch(0.45_0.04_280)]" />
-            )}
+            {isVaultReady ? "🔓" : "🔒"}
           </div>
-
-          <div className="flex-1">
-            <h2 className="text-base font-display font-700 text-white mb-1">
+          <div style={{ flex: 1 }}>
+            <p
+              style={{
+                fontWeight: 800,
+                fontSize: "1rem",
+                color: "var(--text-main)",
+                marginBottom: 6,
+                letterSpacing: "-0.01em",
+              }}
+            >
               {isVaultReady ? "Vault Access Unlocked" : "Vault Locked"}
-            </h2>
-            <p className="text-[11px] text-[oklch(0.50_0.04_280)] leading-relaxed">
+            </p>
+            <p style={{ fontSize: "0.8125rem", color: "var(--text-sub)", lineHeight: 1.6, marginBottom: 12 }}>
               {isVaultReady
                 ? "You have reached age 18. Your Crypdawgs Vault is now accessible. All FDF progress has been transferred."
                 : isEnrolled
@@ -111,39 +143,60 @@ export default function Graduation() {
                 href="https://crypdawgs.com"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="btn-gold inline-flex mt-3 text-xs items-center gap-1.5"
+                className="btn-primary"
+                style={{ display: "inline-flex", fontSize: "0.875rem" }}
               >
                 Enter the Vault
-                <ArrowRight size={13} />
+                <ArrowRight size={15} />
               </a>
             )}
           </div>
         </div>
       </div>
 
-      {/* ── Countdown (if enrolled and not yet 18) ── */}
+      {/* ── Countdown ── */}
       {isEnrolled && !isVaultReady && daysUntil18 !== null && (
-        <div className="panel">
-          <h2 className="text-[11px] font-mono font-500 text-[oklch(0.40_0.04_280)] uppercase tracking-widest mb-4">
-            Vault Countdown
-          </h2>
-
-          <div className="grid grid-cols-3 gap-3">
+        <div className="academy-card" style={{ marginBottom: 16 }}>
+          <p className="section-title" style={{ marginBottom: 14 }}>Vault Countdown</p>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10 }}>
             {[
-              { label: "Days",   value: daysUntil18 },
-              { label: "Months", value: Math.floor(daysUntil18 / 30) },
-              { label: "Years",  value: (daysUntil18 / 365).toFixed(1) },
+              { label: "Days",   value: daysUntil18.toString(), color: "var(--primary)", bg: "var(--primary-light)" },
+              { label: "Months", value: Math.floor(daysUntil18 / 30).toString(), color: "var(--accent)", bg: "var(--accent-light)" },
+              { label: "Years",  value: (daysUntil18 / 365).toFixed(1), color: "#f59e0b", bg: "#fef3c7" },
             ].map((item) => (
               <div
                 key={item.label}
-                className="p-4 rounded-lg bg-[oklch(0.14_0.03_280/0.6)] border border-[oklch(0.25_0.03_280/0.4)] text-center"
+                style={{
+                  background: item.bg,
+                  borderRadius: 12,
+                  padding: "14px 10px",
+                  textAlign: "center",
+                }}
               >
-                <div className="text-2xl font-display font-800 text-white mb-1">
+                <p
+                  style={{
+                    fontSize: "1.75rem",
+                    fontWeight: 800,
+                    color: item.color,
+                    letterSpacing: "-0.03em",
+                    lineHeight: 1,
+                    marginBottom: 4,
+                    fontFamily: "'Space Grotesk', sans-serif",
+                  }}
+                >
                   {item.value}
-                </div>
-                <div className="text-[10px] font-mono text-[oklch(0.40_0.04_280)] uppercase tracking-wider">
+                </p>
+                <p
+                  style={{
+                    fontSize: "0.65rem",
+                    color: "var(--text-muted)",
+                    fontWeight: 700,
+                    textTransform: "uppercase",
+                    letterSpacing: "0.06em",
+                  }}
+                >
                   {item.label}
-                </div>
+                </p>
               </div>
             ))}
           </div>
@@ -152,68 +205,64 @@ export default function Graduation() {
 
       {/* ── Progress Summary ── */}
       {isEnrolled && (
-        <div className="panel">
-          <h2 className="text-[11px] font-mono font-500 text-[oklch(0.40_0.04_280)] uppercase tracking-widest mb-4">
-            Progress Summary
-          </h2>
-
-          <div className="space-y-3">
-            {[
-              {
-                label: "Current Rank",
-                value: rank,
-                icon: TrendingUp,
-                color: "oklch(0.65_0.18_270)",
-              },
-              {
-                label: "Total XP",
-                value: xp.toLocaleString(),
-                icon: Zap,
-                color: "oklch(0.75_0.14_60)",
-              },
-              {
-                label: "Vault Status",
-                value: isVaultReady ? "Unlocked" : "Locked",
-                icon: Shield,
-                color: isVaultReady ? "oklch(0.78_0.14_85)" : "oklch(0.45_0.04_280)",
-              },
-            ].map((item) => (
-              <div
-                key={item.label}
-                className="flex items-center justify-between py-2.5 border-b border-[oklch(0.25_0.03_280/0.4)] last:border-0"
-              >
-                <div className="flex items-center gap-2.5">
-                  <item.icon size={13} style={{ color: item.color }} />
-                  <span className="text-xs text-[oklch(0.55_0.04_280)]">{item.label}</span>
-                </div>
-                <span className="text-xs font-mono font-600" style={{ color: item.color }}>
-                  {item.value}
-                </span>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* ── What Transfers to Vault ── */}
-      <div className="panel-sm">
-        <h3 className="text-[11px] font-mono font-500 text-[oklch(0.40_0.04_280)] uppercase tracking-widest mb-3">
-          What Transfers to the Vault
-        </h3>
-        <div className="space-y-2">
+        <div className="academy-card" style={{ marginBottom: 16 }}>
+          <p className="section-title" style={{ marginBottom: 14 }}>Progress Summary</p>
           {[
-            "All accumulated XP and rank status",
-            "Unlocked badges and stickers",
-            "Mission completion history",
-            "Dawg Class designation",
-            "Streak and activity records",
-          ].map((item) => (
-            <div key={item} className="flex items-center gap-2.5">
-              <div className="w-1.5 h-1.5 rounded-full bg-[oklch(0.68_0.16_150)] shrink-0" />
-              <span className="text-[11px] text-[oklch(0.55_0.04_280)]">{item}</span>
+            { label: "Current Rank", value: rank, icon: "🏆", color: "var(--primary)" },
+            { label: "Total XP", value: xp.toLocaleString(), icon: "⚡", color: "#f59e0b" },
+            { label: "Vault Status", value: isVaultReady ? "Unlocked" : "Locked", icon: isVaultReady ? "🔓" : "🔒", color: isVaultReady ? "#16a34a" : "var(--text-muted)" },
+          ].map((item, i) => (
+            <div
+              key={item.label}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                padding: "10px 0",
+                borderBottom: i < 2 ? "1px solid rgba(91,140,255,0.08)" : "none",
+              }}
+            >
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <span style={{ fontSize: "0.9rem" }}>{item.icon}</span>
+                <span style={{ fontSize: "0.8125rem", color: "var(--text-sub)" }}>{item.label}</span>
+              </div>
+              <span style={{ fontSize: "0.875rem", fontWeight: 700, color: item.color }}>
+                {item.value}
+              </span>
             </div>
           ))}
         </div>
+      )}
+
+      {/* ── What Transfers ── */}
+      <div
+        className="academy-card"
+        style={{
+          background: "linear-gradient(135deg, rgba(16,185,129,0.05) 0%, rgba(5,150,105,0.05) 100%)",
+          border: "1px solid rgba(16,185,129,0.15)",
+        }}
+      >
+        <p className="section-title" style={{ marginBottom: 12 }}>What Transfers to the Vault</p>
+        {[
+          "All accumulated XP and rank status",
+          "Unlocked badges and stickers",
+          "Mission completion history",
+          "Dawg Class designation",
+          "Streak and activity records",
+        ].map((item) => (
+          <div
+            key={item}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 8,
+              padding: "6px 0",
+            }}
+          >
+            <CheckCircle2 size={14} style={{ color: "#16a34a", flexShrink: 0 }} />
+            <span style={{ fontSize: "0.8125rem", color: "var(--text-sub)" }}>{item}</span>
+          </div>
+        ))}
       </div>
     </div>
   );

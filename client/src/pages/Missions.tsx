@@ -1,218 +1,317 @@
 import { trpc } from "@/lib/trpc";
-import { cn } from "@/lib/utils";
-import {
-  CheckCircle2,
-  ChevronRight,
-  Circle,
-  Gem,
-  Lock,
-  Target,
-  Zap,
-} from "lucide-react";
+import { useAuth } from "@/_core/hooks/useAuth";
+import { getLoginUrl } from "@/const";
 import { toast } from "sonner";
+import { CheckCircle2, Target, ArrowRight, Zap } from "lucide-react";
+
+const CATEGORY_META: Record<string, { icon: string; color: string; bg: string }> = {
+  savings:   { icon: "💰", color: "#10b981", bg: "#d1fae5" },
+  business:  { icon: "🏗️", color: "#f59e0b", bg: "#fef3c7" },
+  design:    { icon: "🎨", color: "#8b5cf6", bg: "#ede9fe" },
+  tech:      { icon: "⚙️", color: "#3b82f6", bg: "#eff6ff" },
+  investing: { icon: "📈", color: "#06b6d4", bg: "#cffafe" },
+  general:   { icon: "⚡", color: "#5b8cff", bg: "#e8efff" },
+};
 
 export default function Missions() {
-  const { data: missionsData, refetch } = trpc.fdf.getMissions.useQuery();
-  const { data: profile, refetch: refetchProfile } = trpc.fdf.getProfile.useQuery();
+  const { isAuthenticated } = useAuth();
+
+  const { data: missionsData, isLoading, refetch } = trpc.fdf.getMissions.useQuery(undefined, {
+    enabled: isAuthenticated,
+  });
+
+  const { data: profile, refetch: refetchProfile } = trpc.fdf.getProfile.useQuery(undefined, {
+    enabled: isAuthenticated,
+  });
 
   const claimMission = trpc.fdf.claimMission.useMutation({
     onSuccess: () => {
-      toast.success("Mission complete. XP & Gems added to your account.");
+      toast.success("Mission complete! XP + Gems added.");
       refetch();
       refetchProfile();
     },
-    onError: (error) => {
-      toast.error(error.message);
-    },
+    onError: (err) => toast.error(err.message),
   });
 
-  // ── Loading State ──
-  if (!missionsData || !profile) {
+  if (!isAuthenticated) {
     return (
-      <div className="container py-8 space-y-4 animate-fade-in">
-        <div className="skeleton h-6 w-48 rounded-md" />
-        <div className="skeleton h-24 w-full rounded-xl" />
-        {[1, 2, 3].map((i) => (
-          <div key={i} className="skeleton h-28 w-full rounded-xl" />
-        ))}
+      <div className="page-container animate-fade-in">
+        <div style={{ paddingTop: 40, textAlign: "center" }}>
+          <div style={{ fontSize: "2.5rem", marginBottom: 16 }}>🎯</div>
+          <h2 style={{ fontSize: "1.25rem", fontWeight: 800, color: "var(--text-main)", marginBottom: 8 }}>
+            Missions Locked
+          </h2>
+          <p style={{ fontSize: "0.875rem", color: "var(--text-sub)", marginBottom: 24 }}>
+            Sign in to access your weekly training missions.
+          </p>
+          <a href={getLoginUrl()} className="btn-primary">
+            Sign In to Continue
+            <ArrowRight size={16} />
+          </a>
+        </div>
       </div>
     );
   }
 
+  if (!profile?.fdfUser) {
+    return (
+      <div className="page-container animate-fade-in">
+        <div style={{ paddingTop: 40, textAlign: "center" }}>
+          <div style={{ fontSize: "2.5rem", marginBottom: 16 }}>🔒</div>
+          <h2 style={{ fontSize: "1.25rem", fontWeight: 800, color: "var(--text-main)", marginBottom: 8 }}>
+            Complete Onboarding First
+          </h2>
+          <p style={{ fontSize: "0.875rem", color: "var(--text-sub)", marginBottom: 24 }}>
+            Set up your FDF profile on the Home page to unlock missions.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  if (isLoading || !missionsData) {
+    return (
+      <div className="page-container">
+        <div style={{ paddingTop: 24, display: "flex", flexDirection: "column", gap: 10 }}>
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="skeleton" style={{ height: 88, borderRadius: 18 }} />
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  const missions = missionsData.missions ?? [];
   const completions = missionsData.completions ?? [];
-  const completedCount = completions.filter((c) => c.status === "claimed").length;
-  const totalCount = missionsData.missions.length;
-  const progressPercent = totalCount > 0 ? (completedCount / totalCount) * 100 : 0;
-  const isEnrolled = !!profile.fdfUser;
+  const claimedIds = new Set(completions.filter((c) => c.status === "claimed").map((c) => c.missionId));
+
+  const activeMissions = missions.filter((m) => !claimedIds.has(m.id));
+  const completedMissions = missions.filter((m) => claimedIds.has(m.id));
+
+  const totalXpAvailable = activeMissions.reduce((sum, m) => sum + m.xpReward, 0);
+  const totalGemsAvailable = activeMissions.reduce((sum, m) => sum + m.gemsReward, 0);
+  const progressPct = missions.length > 0 ? (completedMissions.length / missions.length) * 100 : 0;
 
   return (
-    <div className="container py-8 space-y-6 animate-fade-in">
+    <div className="page-container animate-fade-in">
 
-      {/* ── Page Header ── */}
-      <div className="space-y-1">
-        <div className="flex items-center gap-2 text-[oklch(0.50_0.04_280)] text-[11px] font-mono uppercase tracking-widest mb-2">
-          <Target size={11} />
-          <span>Training System</span>
-          <ChevronRight size={10} />
-          <span className="text-[oklch(0.70_0.08_280)]">Missions</span>
-        </div>
-        <h1 className="text-white">Weekly Missions</h1>
-        <p className="text-[oklch(0.55_0.04_280)] text-sm">
-          Complete training modules each week to build real skills and earn XP.
+      {/* ── Header ── */}
+      <div style={{ paddingTop: 20, paddingBottom: 20 }}>
+        <h1
+          style={{
+            fontFamily: "'Space Grotesk', sans-serif",
+            fontSize: "1.5rem",
+            fontWeight: 800,
+            color: "var(--text-main)",
+            letterSpacing: "-0.02em",
+            marginBottom: 4,
+          }}
+        >
+          Missions
+        </h1>
+        <p style={{ fontSize: "0.875rem", color: "var(--text-sub)" }}>
+          Complete weekly missions to build real skills and earn XP.
         </p>
       </div>
 
-      {/* ── Progress Panel ── */}
-      <div className="panel">
-        <div className="flex items-start justify-between mb-4">
-          <div>
-            <h2 className="text-sm font-display font-700 text-white uppercase tracking-widest">
-              Weekly Progress
-            </h2>
-            <p className="text-[11px] font-mono text-[oklch(0.45_0.04_280)] mt-0.5">
-              {completedCount} of {totalCount} modules completed
-            </p>
-          </div>
-          <span className="text-xs font-mono font-600 text-[oklch(0.72_0.16_270)]">
-            {Math.round(progressPercent)}%
+      {/* ── Weekly Progress Card ── */}
+      <div className="academy-card" style={{ marginBottom: 20 }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
+          <p style={{ fontWeight: 700, fontSize: "0.875rem", color: "var(--text-main)" }}>
+            Weekly Progress
+          </p>
+          <span style={{ fontSize: "0.8rem", fontWeight: 700, color: "var(--primary)" }}>
+            {completedMissions.length}/{missions.length}
           </span>
         </div>
-
-        {/* Progress bar */}
-        <div className="progress-track mb-5">
-          <div className="progress-fill" style={{ width: `${progressPercent}%` }} />
+        <div className="progress-track" style={{ marginBottom: 8 }}>
+          <div className="progress-fill" style={{ width: `${progressPct}%` }} />
         </div>
-
-        {/* Stats row */}
-        <div className="grid grid-cols-3 gap-3">
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8 }}>
           {[
-            { label: "Total XP",  value: (profile.progress?.xpTotal ?? 0).toLocaleString(), color: "oklch(0.72_0.16_270)", icon: Zap },
-            { label: "Gems",      value: (profile.progress?.gemsTotal ?? 0).toLocaleString(), color: "oklch(0.70_0.15_200)", icon: Gem },
-            { label: "Rank",      value: profile.progress?.rankName ?? "Pup", color: "oklch(0.78_0.14_85)", icon: Target },
-          ].map((stat) => (
+            { label: "Active", value: activeMissions.length.toString(), color: "var(--primary)", bg: "var(--primary-light)" },
+            { label: "XP Available", value: `+${totalXpAvailable}`, color: "#10b981", bg: "#d1fae5" },
+            { label: "Gems", value: `+${totalGemsAvailable}`, color: "var(--accent)", bg: "var(--accent-light)" },
+          ].map((s) => (
             <div
-              key={stat.label}
-              className="p-3 rounded-lg bg-[oklch(0.14_0.03_280/0.6)] border border-[oklch(0.25_0.03_280/0.4)]"
+              key={s.label}
+              style={{
+                background: s.bg,
+                borderRadius: 10,
+                padding: "8px 10px",
+                textAlign: "center",
+              }}
             >
-              <div className="flex items-center gap-1.5 mb-1">
-                <stat.icon size={11} style={{ color: stat.color }} />
-                <span className="text-[10px] font-mono text-[oklch(0.40_0.04_280)] uppercase tracking-wider">
-                  {stat.label}
-                </span>
-              </div>
-              <span className="text-sm font-display font-700" style={{ color: stat.color }}>
-                {stat.value}
-              </span>
+              <p style={{ fontSize: "0.9rem", fontWeight: 800, color: s.color, letterSpacing: "-0.02em" }}>
+                {s.value}
+              </p>
+              <p style={{ fontSize: "0.6rem", color: "var(--text-muted)", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.04em" }}>
+                {s.label}
+              </p>
             </div>
           ))}
         </div>
       </div>
 
-      {/* ── Not Enrolled Gate ── */}
-      {!isEnrolled && (
-        <div className="panel flex items-center gap-4">
-          <div className="w-10 h-10 rounded-lg bg-[oklch(0.62_0.18_20/0.15)] border border-[oklch(0.62_0.18_20/0.25)] flex items-center justify-center shrink-0">
-            <Lock size={18} className="text-[oklch(0.62_0.18_20)]" />
-          </div>
-          <div>
-            <h3 className="text-sm font-600 text-white">Access Restricted</h3>
-            <p className="text-[11px] text-[oklch(0.50_0.04_280)] mt-0.5">
-              Complete your profile setup on the Home page to unlock missions.
-            </p>
-          </div>
-        </div>
-      )}
-
-      {/* ── Mission List ── */}
-      {isEnrolled && (
-        <div className="space-y-3">
-          {missionsData.missions.length === 0 ? (
-            <div className="panel text-center py-12">
-              <Target size={32} className="text-[oklch(0.35_0.04_280)] mx-auto mb-3" />
-              <h3 className="text-sm font-600 text-white mb-1">No Active Missions</h3>
-              <p className="text-[11px] text-[oklch(0.45_0.04_280)]">
-                New training modules will appear here weekly.
-              </p>
-            </div>
-          ) : (
-            missionsData.missions.map((mission, index) => {
-              const isClaimed = completions.some(
-                (c) => c.missionId === mission.id && c.status === "claimed"
-              );
+      {/* ── Active Missions ── */}
+      {activeMissions.length > 0 && (
+        <>
+          <p className="section-title">Active This Week</p>
+          <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 24 }}>
+            {activeMissions.map((mission) => {
+              const meta = CATEGORY_META.general;
+              const isPending = claimMission.isPending && claimMission.variables?.missionId === mission.id;
 
               return (
-                <div
-                  key={mission.id}
-                  className={cn(
-                    "panel-sm transition-all duration-200",
-                    isClaimed
-                      ? "module-complete opacity-70"
-                      : "hover:border-[oklch(0.45_0.08_270/0.5)] hover:bg-[oklch(0.18_0.04_280/0.9)]"
-                  )}
-                  style={{ animationDelay: `${index * 60}ms` }}
-                >
-                  <div className="flex items-start gap-4">
-                    {/* Status indicator */}
-                    <div
-                      className={cn(
-                        "w-8 h-8 rounded-lg flex items-center justify-center shrink-0 mt-0.5",
-                        isClaimed
-                          ? "bg-[oklch(0.68_0.16_150/0.15)] border border-[oklch(0.68_0.16_150/0.3)]"
-                          : "bg-[oklch(0.20_0.04_280/0.6)] border border-[oklch(0.30_0.04_280/0.5)]"
-                      )}
+                <div key={mission.id} className="mission-card">
+                  <div
+                    className="mission-icon"
+                    style={{ background: meta.bg }}
+                  >
+                    {meta.icon}
+                  </div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <p
+                      style={{
+                        fontWeight: 700,
+                        fontSize: "0.9rem",
+                        color: "var(--text-main)",
+                        marginBottom: 4,
+                        lineHeight: 1.3,
+                      }}
                     >
-                      {isClaimed ? (
-                        <CheckCircle2 size={16} className="text-[oklch(0.68_0.16_150)]" />
-                      ) : (
-                        <Circle size={16} className="text-[oklch(0.40_0.04_280)]" />
-                      )}
-                    </div>
-
-                    {/* Content */}
-                    <div className="flex-1 min-w-0 space-y-2">
-                      <div>
-                        <h3 className="text-sm font-600 text-white leading-tight">{mission.title}</h3>
-                        <p className="text-[11px] text-[oklch(0.50_0.04_280)] mt-0.5 leading-relaxed">
-                          {mission.description}
-                        </p>
-                      </div>
-
-                      {/* Reward tags */}
-                      <div className="flex items-center gap-2">
-                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-[oklch(0.65_0.18_270/0.12)] border border-[oklch(0.65_0.18_270/0.25)] text-[10px] font-mono text-[oklch(0.72_0.16_270)]">
-                          <Zap size={9} />
-                          +{mission.xpReward} XP
-                        </span>
-                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-[oklch(0.70_0.15_200/0.12)] border border-[oklch(0.70_0.15_200/0.25)] text-[10px] font-mono text-[oklch(0.70_0.15_200)]">
-                          <Gem size={9} />
-                          +{mission.gemsReward} Gems
-                        </span>
-                      </div>
-                    </div>
-
-                    {/* Action */}
-                    <div className="shrink-0">
-                      {isClaimed ? (
-                        <span className="text-[10px] font-mono text-[oklch(0.68_0.16_150)] uppercase tracking-wider">
-                          Complete
-                        </span>
-                      ) : (
-                        <button
-                          className="btn-primary text-xs px-3 py-1.5"
-                          onClick={() => claimMission.mutate({ missionId: mission.id })}
-                          disabled={claimMission.isPending}
-                        >
-                          {claimMission.isPending ? "..." : "Collect"}
-                        </button>
-                      )}
+                      {mission.title}
+                    </p>
+                    {mission.description && (
+                      <p style={{ fontSize: "0.775rem", color: "var(--text-sub)", marginBottom: 6, lineHeight: 1.4 }}>
+                        {mission.description}
+                      </p>
+                    )}
+                    <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                      <span className="badge-pill blue" style={{ fontSize: "0.68rem" }}>
+                        ⚡ +{mission.xpReward} XP
+                      </span>
+                      <span className="badge-pill purple" style={{ fontSize: "0.68rem" }}>
+                        💎 +{mission.gemsReward}
+                      </span>
                     </div>
                   </div>
+                  <button
+                    className="btn-primary"
+                    style={{ padding: "8px 14px", fontSize: "0.8rem", flexShrink: 0 }}
+                    disabled={isPending}
+                    onClick={() => claimMission.mutate({ missionId: mission.id })}
+                  >
+                    {isPending ? "…" : "Collect"}
+                  </button>
                 </div>
               );
-            })
-          )}
+            })}
+          </div>
+        </>
+      )}
+
+      {/* ── Completed Missions ── */}
+      {completedMissions.length > 0 && (
+        <>
+          <p className="section-title">Completed</p>
+          <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 24 }}>
+            {completedMissions.map((mission) => (
+              <div
+                key={mission.id}
+                className="mission-card"
+                style={{ opacity: 0.55 }}
+              >
+                <div
+                  className="mission-icon"
+                  style={{ background: "#dcfce7" }}
+                >
+                  <CheckCircle2 size={22} style={{ color: "#16a34a" }} />
+                </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <p
+                    style={{
+                      fontWeight: 600,
+                      fontSize: "0.875rem",
+                      color: "var(--text-sub)",
+                      textDecoration: "line-through",
+                      marginBottom: 3,
+                    }}
+                  >
+                    {mission.title}
+                  </p>
+                  <span className="badge-pill green" style={{ fontSize: "0.68rem" }}>
+                    ✓ Collected
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
+
+      {/* ── Empty State ── */}
+      {missions.length === 0 && (
+        <div className="academy-card" style={{ textAlign: "center", padding: 40 }}>
+          <div style={{ fontSize: "2rem", marginBottom: 12 }}>📋</div>
+          <p style={{ fontWeight: 700, color: "var(--text-main)", marginBottom: 6 }}>
+            No missions yet
+          </p>
+          <p style={{ fontSize: "0.875rem", color: "var(--text-sub)" }}>
+            New missions drop every Monday. Check back soon.
+          </p>
         </div>
       )}
+
+      {/* ── How It Works ── */}
+      <div
+        className="academy-card"
+        style={{
+          background: "linear-gradient(135deg, rgba(91,140,255,0.05) 0%, rgba(123,92,255,0.05) 100%)",
+          border: "1px solid rgba(91,140,255,0.12)",
+          marginBottom: 8,
+        }}
+      >
+        <p className="section-title" style={{ marginBottom: 12 }}>How Missions Work</p>
+        {[
+          "Complete the real-world task described in the mission.",
+          "Tap Collect to claim your XP and Gems.",
+          "XP builds your rank. Gems unlock rewards.",
+          "New missions drop every Monday.",
+        ].map((step, i) => (
+          <div
+            key={i}
+            style={{
+              display: "flex",
+              alignItems: "flex-start",
+              gap: 10,
+              marginBottom: i < 3 ? 10 : 0,
+            }}
+          >
+            <div
+              style={{
+                width: 22,
+                height: 22,
+                borderRadius: "50%",
+                background: "var(--primary-light)",
+                color: "var(--primary-dark)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                fontSize: "0.7rem",
+                fontWeight: 800,
+                flexShrink: 0,
+                marginTop: 1,
+              }}
+            >
+              {i + 1}
+            </div>
+            <p style={{ fontSize: "0.8125rem", color: "var(--text-sub)", lineHeight: 1.5 }}>
+              {step}
+            </p>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }

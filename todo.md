@@ -82,3 +82,57 @@
 - [x] vitest: fdf.getProfile tests (no profile, with profile)
 - [x] vitest: fdf.getMissions test
 - [x] vitest: fdf.getRewards test
+
+## Full System Reset — Premium Youth Academy (Pasted_content_91)
+
+### Navigation Fix (Critical)
+- [x] Fix bottom nav — use Link from wouter, NOT div clicks
+- [x] useLocation() for active tab highlighting
+- [x] All 6 routes working: /, /ranks, /missions, /rewards, /graduation, /parents
+
+### Theme Redesign (Light)
+- [x] Replace dark background with soft white/blue gradient (#F7F9FF → #EEF3FF)
+- [x] Glass cards: rgba(255,255,255,0.75) + backdrop-blur
+- [x] Subtle grid texture in background
+- [x] Soft shadows on all cards
+- [x] Primary: #5B8CFF, Accent: #7B5CFF, Text: #0F172A
+
+### Depth + 3D Feel
+- [x] Floating soft shadows on cards
+- [x] Gradient highlights on buttons
+- [x] Subtle glow on active elements
+- [x] Buttons: gradient + lift on hover
+
+### Typography Hierarchy
+- [x] Titles: bold, large, left-aligned
+- [x] Subtext: smaller, #475569
+- [x] 24px between sections, 16px inside cards
+
+### Home Page Restructure
+- [x] Hero card: Title + subtext + trust row (✔ Free ✔ Ages 13-17 ✔ Sponsor-Funded)
+- [x] Apply for Access + Parent Information buttons
+- [x] Card 1: Daily Check-In
+- [x] Card 2: Missions
+- [x] Card 3: Progress Rank
+- [x] Card 4: Training Path
+
+### Training Path
+- [x] Entry → Training → Development → Vault Access
+- [x] Circle indicators + age labels
+
+### System Status Panel
+- [x] Network: Online (green dot)
+- [x] Status: Active (green dot)
+- [x] Tier: FDF
+- [x] Vault: Locked
+
+### Parents Page
+- [x] Increase contrast + spacing
+- [x] Clear section breaks
+- [x] Professional, safe, transparent feel
+
+### Polish
+- [x] Reduce mascot presence by 50%
+- [x] No floating random elements
+- [x] Everything inside structured cards
+- [x] Mobile-first: no overflow, clean scroll on iPhone
