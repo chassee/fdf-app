@@ -1,4 +1,4 @@
-import { int, mysqlEnum, mysqlTable, text, timestamp, varchar } from "drizzle-orm/mysql-core";
+import { boolean, int, mysqlEnum, mysqlTable, text, timestamp, varchar } from "drizzle-orm/mysql-core";
 
 /**
  * Core user table backing auth flow.
@@ -73,6 +73,9 @@ export const missions = mysqlTable("missions", {
   weekStart: varchar("week_start", { length: 10 }).notNull(), // YYYY-MM-DD
   weekEnd: varchar("week_end", { length: 10 }).notNull(), // YYYY-MM-DD
   isActive: int("is_active").notNull().default(1), // 1 = true, 0 = false
+  category: mysqlEnum("category", ["money", "mindset", "build", "growth"]).notNull().default("money"),
+  sortOrder: int("sort_order").notNull().default(0), // lower = unlocked first
+  iconEmoji: varchar("icon_emoji", { length: 10 }).default("📋"), // display icon
 });
 
 export type Mission = typeof missions.$inferSelect;

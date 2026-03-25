@@ -128,8 +128,8 @@ export const appRouter = router({
         }
 
         // Get mission
-        const missions = await db.getActiveMissions(fdfUser.yearTrack);
-        const mission = missions.find(m => m.id === input.missionId);
+        const allMissions = await db.getActiveMissions(fdfUser.yearTrack);
+        const mission = allMissions.find(m => m.id === input.missionId);
         if (!mission) {
           throw new TRPCError({
             code: "NOT_FOUND",
@@ -147,6 +147,20 @@ export const appRouter = router({
           });
         }
 
+        // Check progression locking — missions must be completed in sortOrder
+        const sortedMissions = [...allMissions].sort((a, b) => a.sortOrder - b.sortOrder);
+        const missionIndex = sortedMissions.findIndex(m => m.id === input.missionId);
+        if (missionIndex > 0) {
+          const prevMission = sortedMissions[missionIndex - 1];
+          const prevCompletion = completions.find(c => c.missionId === prevMission.id);
+          if (!prevCompletion || prevCompletion.status !== "claimed") {
+            throw new TRPCError({
+              code: "BAD_REQUEST",
+              message: "Complete previous mission first",
+            });
+          }
+        }
+
         // Update or create completion
         if (existing) {
           await db.updateMissionCompletion(ctx.user.id, input.missionId, "claimed");
@@ -158,21 +172,46 @@ export const appRouter = router({
           });
         }
 
-        // Update progress
+        // Update progress + streak
         const progress = await db.getFdfProgress(ctx.user.id);
         if (progress) {
           const newXp = progress.xpTotal + mission.xpReward;
           const newGems = progress.gemsTotal + mission.gemsReward;
           const newRank = db.calculateRank(newXp);
 
+          // Update streak if this is the first mission claimed today
+          const today = new Date().toISOString().split('T')[0];
+          let newStreak = progress.streakDays;
+          let lastCheckin = progress.lastCheckin;
+
+          if (progress.lastCheckin !== today) {
+            // Check if yesterday was the last checkin (consecutive)
+            if (progress.lastCheckin) {
+              const lastDate = new Date(progress.lastCheckin);
+              const todayDate = new Date(today);
+              const diffDays = Math.floor((todayDate.getTime() - lastDate.getTime()) / (1000 * 60 * 60 * 24));
+              newStreak = diffDays === 1 ? progress.streakDays + 1 : 1;
+            } else {
+              newStreak = 1;
+            }
+            lastCheckin = today;
+          }
+
           await db.updateFdfProgress(ctx.user.id, {
             xpTotal: newXp,
             gemsTotal: newGems,
             rankName: newRank,
+            streakDays: newStreak,
+            lastCheckin,
           });
         }
 
-        return { success: true };
+        return {
+          success: true,
+          xpEarned: mission.xpReward,
+          gemsEarned: mission.gemsReward,
+          missionTitle: mission.title,
+        };
       }),
 
     // Get rewards

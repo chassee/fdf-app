@@ -136,3 +136,55 @@
 - [x] No floating random elements
 - [x] Everything inside structured cards
 - [x] Mobile-first: no overflow, clean scroll on iPhone
+
+## Missions Addiction Layer (Retention System)
+
+### Daily Streak System
+- [x] Streak tracker at top of Missions page (🔥 N Day Streak)
+- [x] Horizontal 7-circle streak indicator (filled = completed days)
+- [x] Soft glow on active/current day circle
+- [x] Completing 1 mission/day maintains streak; missing resets it
+- [x] Streak stored in fdf_progress table
+
+### Mission Cards (Premium Card Design)
+- [x] Each mission as glass card with icon, title, description
+- [x] XP Reward (+50 XP) and Gem Reward (+10 💎) displayed
+- [x] "Start Mission →" CTA button
+- [x] Hover lift effect on cards
+- [x] Gradient border glow when active/in-progress
+
+### Progression Locking
+- [x] Mission 1 unlocked by default
+- [x] Mission 2+ locked until previous completed
+- [x] Locked UI: slight blur + lock icon + "Complete previous mission" text
+- [x] Unlock animation when previous mission completed
+
+### XP Progression Bar (Top)
+- [x] Level indicator (LEVEL 2)
+- [x] XP: 120 / 300 with animated progress bar
+- [x] Level-up animation when bar fills
+
+### Completion Feedback Overlay
+- [x] Full-screen overlay on mission complete: ✔ Mission Complete + XP + Gems
+- [x] Scale + glow animation on overlay
+- [x] "Continue" button to dismiss
+- [x] Optimistic update to XP/Gems counters
+
+### Category Structure
+- [x] 💰 Money Basics section
+- [x] 🧠 Mindset section
+- [x] 🏗 Build & Create section
+- [x] 🚀 Growth section
+- [x] Each section collapsible
+
+### Daily Activation Upgrade
+- [x] Rename "Check In" to "Daily Activation"
+- [x] Button: "Check In →"
+- [x] Reward: +5 XP
+- [x] Fast, satisfying micro-animation on activation
+
+### Micro-animations (No Sound)
+- [x] Glow pulse on active elements
+- [x] Smooth card transitions
+- [x] Progress bar fill animation
+- [x] Completion overlay scale animation
