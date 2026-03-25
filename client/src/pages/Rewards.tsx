@@ -1,17 +1,21 @@
-import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
 import { trpc } from "@/lib/trpc";
-import { ArrowLeft, Award, Lock, Sparkles } from "lucide-react";
+import { cn } from "@/lib/utils";
+import {
+  ChevronRight,
+  Gem,
+  Gift,
+  Lock,
+  ShieldCheck,
+} from "lucide-react";
 import { toast } from "sonner";
-import { Link } from "wouter";
 
 export default function Rewards() {
   const { data: rewardsData, refetch } = trpc.fdf.getRewards.useQuery();
   const { data: profile, refetch: refetchProfile } = trpc.fdf.getProfile.useQuery();
-  
+
   const unlockReward = trpc.fdf.unlockReward.useMutation({
     onSuccess: () => {
-      toast.success("Reward unlocked!");
+      toast.success("Reward unlocked and added to your profile.");
       refetch();
       refetchProfile();
     },
@@ -20,141 +24,189 @@ export default function Rewards() {
     },
   });
 
-  const handleUnlock = (rewardId: number) => {
-    unlockReward.mutate({ rewardId });
-  };
-
+  // ── Loading State ──
   if (!rewardsData || !profile) {
     return (
-      <div className="min-h-screen flex items-center justify-center p-6">
-        <div className="w-full max-w-2xl space-y-4">
-          <div className="skeleton h-40 w-full"></div>
-          <div className="skeleton h-32 w-full"></div>
-          <div className="skeleton h-32 w-full"></div>
+      <div className="container py-8 space-y-4 animate-fade-in">
+        <div className="skeleton h-6 w-48 rounded-md" />
+        <div className="skeleton h-20 w-full rounded-xl" />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {[1, 2, 3, 4].map((i) => (
+            <div key={i} className="skeleton h-32 rounded-xl" />
+          ))}
         </div>
       </div>
     );
   }
 
-  const unlockedCount = rewardsData.userRewards?.length || 0;
-  const totalCount = rewardsData.allRewards.length;
+  const userRewards = rewardsData.userRewards ?? [];
+  const allRewards = rewardsData.allRewards ?? [];
+  const gems = profile.progress?.gemsTotal ?? 0;
+  const isEnrolled = !!profile.fdfUser;
 
   return (
-    <div className="min-h-screen pb-24">
-      {/* Header */}
-      <div className="sticky top-0 z-10 glass-panel border-b border-white/10">
-        <div className="container max-w-4xl mx-auto flex items-center justify-between py-4">
-          <Link href="/">
-            <Button variant="ghost" size="icon" className="text-secondary hover:text-primary">
-              <ArrowLeft className="h-5 w-5" />
-            </Button>
-          </Link>
-          <h1 className="text-xl font-bold text-primary">Achievement Rewards</h1>
-          <div className="w-10" />
+    <div className="container py-8 space-y-6 animate-fade-in">
+
+      {/* ── Page Header ── */}
+      <div className="space-y-1">
+        <div className="flex items-center gap-2 text-[oklch(0.50_0.04_280)] text-[11px] font-mono uppercase tracking-widest mb-2">
+          <Gift size={11} />
+          <span>Training System</span>
+          <ChevronRight size={10} />
+          <span className="text-[oklch(0.70_0.08_280)]">Rewards</span>
+        </div>
+        <h1 className="text-white">Rewards</h1>
+        <p className="text-[oklch(0.55_0.04_280)] text-sm">
+          Earn rewards by completing missions and building XP.
+        </p>
+      </div>
+
+      {/* ── Gems Balance Panel ── */}
+      <div className="panel-sm flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 rounded-lg bg-[oklch(0.70_0.15_200/0.15)] border border-[oklch(0.70_0.15_200/0.25)] flex items-center justify-center">
+            <Gem size={16} className="text-[oklch(0.70_0.15_200)]" />
+          </div>
+          <div>
+            <span className="text-[10px] font-mono text-[oklch(0.40_0.04_280)] uppercase tracking-wider block">
+              Available Balance
+            </span>
+            <span className="text-lg font-display font-700 text-[oklch(0.70_0.15_200)]">
+              {gems.toLocaleString()}{" "}
+              <span className="text-xs text-[oklch(0.45_0.04_280)] font-400">gems</span>
+            </span>
+          </div>
+        </div>
+        <div className="text-[11px] font-mono text-[oklch(0.45_0.04_280)]">
+          {userRewards.length} / {allRewards.length} unlocked
         </div>
       </div>
 
-      <div className="container max-w-4xl mx-auto space-y-6 pt-6 relative z-10">
-        
-        {/* Progress Overview */}
-        <Card className="glass-panel p-6 space-y-4">
-          <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-lg bg-amber/20 flex items-center justify-center">
-              <Award className="h-6 w-6 text-amber" />
-            </div>
-            <div className="flex-1">
-              <h2 className="text-lg font-semibold text-primary">Reward Progress</h2>
-              <p className="text-sm text-secondary">Earn rewards by completing missions and building XP.</p>
-            </div>
+      {/* ── Not Enrolled Gate ── */}
+      {!isEnrolled && (
+        <div className="panel flex items-center gap-4">
+          <div className="w-10 h-10 rounded-lg bg-[oklch(0.62_0.18_20/0.15)] border border-[oklch(0.62_0.18_20/0.25)] flex items-center justify-center shrink-0">
+            <Lock size={18} className="text-[oklch(0.62_0.18_20)]" />
           </div>
-
-          {/* Stats Grid */}
-          <div className="grid grid-cols-3 gap-4">
-            <div className="text-center">
-              <div className="text-2xl font-bold text-primary">{unlockedCount}</div>
-              <div className="text-xs text-tertiary">Unlocked</div>
-            </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-cyan">{profile.progress?.gemsTotal || 0}</div>
-              <div className="text-xs text-tertiary">Gems</div>
-            </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-tertiary">{totalCount - unlockedCount}</div>
-              <div className="text-xs text-tertiary">Locked</div>
-            </div>
+          <div>
+            <h3 className="text-sm font-600 text-white">Access Restricted</h3>
+            <p className="text-[11px] text-[oklch(0.50_0.04_280)] mt-0.5">
+              Complete your profile setup on the Home page to access rewards.
+            </p>
           </div>
-        </Card>
+        </div>
+      )}
 
-        {/* Rewards Grid */}
-        <div className="grid md:grid-cols-2 gap-4">
-          {rewardsData.allRewards.map((reward) => {
-            const isUnlocked = rewardsData.userRewards?.some(ur => ur.rewardId === reward.id) || false;
-            const canAfford = (profile.progress?.gemsTotal || 0) >= reward.costGems;
-            
-            return (
-              <Card key={reward.id} className={`glass-panel p-6 ${!isUnlocked && !canAfford ? 'opacity-60' : ''}`}>
-                <div className="space-y-4">
-                  {/* Reward Header */}
+      {/* ── Rewards Grid ── */}
+      {isEnrolled && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {allRewards.length === 0 ? (
+            <div className="col-span-2 panel text-center py-12">
+              <Gift size={32} className="text-[oklch(0.35_0.04_280)] mx-auto mb-3" />
+              <h3 className="text-sm font-600 text-white mb-1">No Rewards Available</h3>
+              <p className="text-[11px] text-[oklch(0.45_0.04_280)]">
+                Rewards will be added as you progress through the system.
+              </p>
+            </div>
+          ) : (
+            allRewards.map((reward) => {
+              const isUnlocked = userRewards.some((ur) => ur.rewardId === reward.id);
+              const canAfford = gems >= reward.costGems;
+
+              return (
+                <div
+                  key={reward.id}
+                  className={cn(
+                    "panel-sm transition-all duration-200",
+                    isUnlocked
+                      ? "module-complete opacity-80"
+                      : canAfford
+                        ? "hover:border-[oklch(0.45_0.08_270/0.5)] hover:bg-[oklch(0.18_0.04_280/0.9)]"
+                        : "opacity-55"
+                  )}
+                >
                   <div className="flex items-start gap-4">
-                    <div className={`w-16 h-16 rounded-lg flex items-center justify-center text-3xl ${
-                      isUnlocked ? 'bg-emerald/20' : 'bg-white/5'
-                    }`}>
-                      {isUnlocked ? '✓' : '🏆'}
+                    {/* Reward icon */}
+                    <div
+                      className={cn(
+                        "w-12 h-12 rounded-lg flex items-center justify-center shrink-0 text-xl overflow-hidden",
+                        isUnlocked
+                          ? "bg-[oklch(0.68_0.16_150/0.15)] border border-[oklch(0.68_0.16_150/0.3)]"
+                          : "bg-[oklch(0.20_0.04_280/0.6)] border border-[oklch(0.30_0.04_280/0.5)]"
+                      )}
+                    >
+                      {isUnlocked ? (
+                        <ShieldCheck size={22} className="text-[oklch(0.68_0.16_150)]" />
+                      ) : (
+                        <span>
+                          {reward.type === "badge"
+                            ? "🏅"
+                            : reward.type === "sticker"
+                              ? "⭐"
+                              : "🎖️"}
+                        </span>
+                      )}
                     </div>
-                    <div className="flex-1">
-                      <h3 className="text-lg font-semibold text-primary mb-1">{reward.name}</h3>
-                      <p className="text-sm text-secondary">{reward.type} • {reward.rarity}</p>
-                    </div>
-                  </div>
 
-                  {/* Cost & Action */}
-                  <div className="flex items-center justify-between pt-2 border-t border-white/10">
-                    <div className="flex items-center gap-2">
-                      <Sparkles className="h-4 w-4 text-cyan" />
-                      <span className="text-sm font-semibold text-primary">{reward.costGems} Gems</span>
-                    </div>
-                    
-                    {isUnlocked ? (
-                      <div className="flex items-center gap-2 text-sm text-emerald">
-                        <Award className="h-4 w-4" />
-                        <span className="font-semibold">Unlocked</span>
+                    {/* Content */}
+                    <div className="flex-1 min-w-0 space-y-2">
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <h3 className="text-sm font-600 text-white leading-tight">
+                            {reward.name}
+                          </h3>
+                          {reward.type && (
+                            <span className="text-[9px] font-mono uppercase tracking-wider px-1.5 py-0.5 rounded bg-[oklch(0.20_0.04_280)] text-[oklch(0.45_0.04_280)] border border-[oklch(0.28_0.04_280/0.5)]">
+                              {reward.type}
+                            </span>
+                          )}
+                        </div>
                       </div>
-                    ) : (
-                      <Button
-                        onClick={() => handleUnlock(reward.id)}
-                        disabled={!canAfford || unlockReward.isPending}
-                        className={`${
-                          canAfford
-                            ? 'bg-violet hover:bg-violet/90 text-white'
-                            : 'bg-white/5 text-tertiary cursor-not-allowed'
-                        } font-semibold h-9 px-4 rounded-lg transition-all`}
-                      >
-                        {canAfford ? (
-                          <>
-                            <Lock className="h-4 w-4 mr-1.5" />
-                            Unlock
-                          </>
-                        ) : (
-                          'Insufficient Gems'
+
+                      {/* Cost */}
+                      <div className="flex items-center gap-2">
+                        <span className="inline-flex items-center gap-1 text-[10px] font-mono text-[oklch(0.70_0.15_200)]">
+                          <Gem size={9} />
+                          {reward.costGems} gems
+                        </span>
+                        {!canAfford && !isUnlocked && (
+                          <span className="text-[10px] font-mono text-[oklch(0.62_0.18_20/0.8)]">
+                            · Need {(reward.costGems - gems).toLocaleString()} more
+                          </span>
                         )}
-                      </Button>
-                    )}
+                      </div>
+                    </div>
+
+                    {/* Action */}
+                    <div className="shrink-0">
+                      {isUnlocked ? (
+                        <span className="text-[10px] font-mono text-[oklch(0.68_0.16_150)] uppercase tracking-wider">
+                          Owned
+                        </span>
+                      ) : (
+                        <button
+                          className={cn(
+                            "text-xs px-3 py-1.5 rounded-md font-600 transition-all duration-150",
+                            canAfford
+                              ? "btn-primary"
+                              : "bg-[oklch(0.20_0.04_280)] text-[oklch(0.40_0.04_280)] border border-[oklch(0.28_0.04_280/0.5)] cursor-not-allowed"
+                          )}
+                          onClick={() =>
+                            canAfford && unlockReward.mutate({ rewardId: reward.id })
+                          }
+                          disabled={!canAfford || unlockReward.isPending}
+                        >
+                          {unlockReward.isPending ? "..." : "Unlock"}
+                        </button>
+                      )}
+                    </div>
                   </div>
                 </div>
-              </Card>
-            );
-          })}
+              );
+            })
+          )}
         </div>
-
-        {/* Empty State */}
-        {rewardsData.allRewards.length === 0 && (
-          <Card className="glass-panel p-12 text-center">
-            <Award className="h-12 w-12 text-tertiary mx-auto mb-4" />
-            <h3 className="text-lg font-semibold text-primary mb-2">No Rewards Available</h3>
-            <p className="text-sm text-secondary">Complete missions to unlock rewards.</p>
-          </Card>
-        )}
-      </div>
+      )}
     </div>
   );
 }

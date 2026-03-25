@@ -1,17 +1,23 @@
-import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
 import { trpc } from "@/lib/trpc";
-import { ArrowLeft, CheckCircle2, Circle, Target } from "lucide-react";
+import { cn } from "@/lib/utils";
+import {
+  CheckCircle2,
+  ChevronRight,
+  Circle,
+  Gem,
+  Lock,
+  Target,
+  Zap,
+} from "lucide-react";
 import { toast } from "sonner";
-import { Link } from "wouter";
 
 export default function Missions() {
   const { data: missionsData, refetch } = trpc.fdf.getMissions.useQuery();
   const { data: profile, refetch: refetchProfile } = trpc.fdf.getProfile.useQuery();
-  
+
   const claimMission = trpc.fdf.claimMission.useMutation({
     onSuccess: () => {
-      toast.success("Mission collected! XP & Gems added.");
+      toast.success("Mission complete. XP & Gems added to your account.");
       refetch();
       refetchProfile();
     },
@@ -20,152 +26,193 @@ export default function Missions() {
     },
   });
 
-  const handleClaim = (missionId: number) => {
-    claimMission.mutate({ missionId });
-  };
-
+  // ── Loading State ──
   if (!missionsData || !profile) {
     return (
-      <div className="min-h-screen flex items-center justify-center p-6">
-        <div className="w-full max-w-2xl space-y-4">
-          <div className="skeleton h-40 w-full"></div>
-          <div className="skeleton h-32 w-full"></div>
-          <div className="skeleton h-32 w-full"></div>
-        </div>
+      <div className="container py-8 space-y-4 animate-fade-in">
+        <div className="skeleton h-6 w-48 rounded-md" />
+        <div className="skeleton h-24 w-full rounded-xl" />
+        {[1, 2, 3].map((i) => (
+          <div key={i} className="skeleton h-28 w-full rounded-xl" />
+        ))}
       </div>
     );
   }
 
-  const completedCount = missionsData.completions?.filter(c => c.status === 'claimed').length || 0;
+  const completions = missionsData.completions ?? [];
+  const completedCount = completions.filter((c) => c.status === "claimed").length;
   const totalCount = missionsData.missions.length;
   const progressPercent = totalCount > 0 ? (completedCount / totalCount) * 100 : 0;
+  const isEnrolled = !!profile.fdfUser;
 
   return (
-    <div className="min-h-screen pb-24">
-      {/* Header */}
-      <div className="sticky top-0 z-10 glass-panel border-b border-white/10">
-        <div className="container max-w-4xl mx-auto flex items-center justify-between py-4">
-          <Link href="/">
-            <Button variant="ghost" size="icon" className="text-secondary hover:text-primary">
-              <ArrowLeft className="h-5 w-5" />
-            </Button>
-          </Link>
-          <h1 className="text-xl font-bold text-primary">Weekly Missions</h1>
-          <div className="w-10" />
+    <div className="container py-8 space-y-6 animate-fade-in">
+
+      {/* ── Page Header ── */}
+      <div className="space-y-1">
+        <div className="flex items-center gap-2 text-[oklch(0.50_0.04_280)] text-[11px] font-mono uppercase tracking-widest mb-2">
+          <Target size={11} />
+          <span>Training System</span>
+          <ChevronRight size={10} />
+          <span className="text-[oklch(0.70_0.08_280)]">Missions</span>
+        </div>
+        <h1 className="text-white">Weekly Missions</h1>
+        <p className="text-[oklch(0.55_0.04_280)] text-sm">
+          Complete training modules each week to build real skills and earn XP.
+        </p>
+      </div>
+
+      {/* ── Progress Panel ── */}
+      <div className="panel">
+        <div className="flex items-start justify-between mb-4">
+          <div>
+            <h2 className="text-sm font-display font-700 text-white uppercase tracking-widest">
+              Weekly Progress
+            </h2>
+            <p className="text-[11px] font-mono text-[oklch(0.45_0.04_280)] mt-0.5">
+              {completedCount} of {totalCount} modules completed
+            </p>
+          </div>
+          <span className="text-xs font-mono font-600 text-[oklch(0.72_0.16_270)]">
+            {Math.round(progressPercent)}%
+          </span>
+        </div>
+
+        {/* Progress bar */}
+        <div className="progress-track mb-5">
+          <div className="progress-fill" style={{ width: `${progressPercent}%` }} />
+        </div>
+
+        {/* Stats row */}
+        <div className="grid grid-cols-3 gap-3">
+          {[
+            { label: "Total XP",  value: (profile.progress?.xpTotal ?? 0).toLocaleString(), color: "oklch(0.72_0.16_270)", icon: Zap },
+            { label: "Gems",      value: (profile.progress?.gemsTotal ?? 0).toLocaleString(), color: "oklch(0.70_0.15_200)", icon: Gem },
+            { label: "Rank",      value: profile.progress?.rankName ?? "Pup", color: "oklch(0.78_0.14_85)", icon: Target },
+          ].map((stat) => (
+            <div
+              key={stat.label}
+              className="p-3 rounded-lg bg-[oklch(0.14_0.03_280/0.6)] border border-[oklch(0.25_0.03_280/0.4)]"
+            >
+              <div className="flex items-center gap-1.5 mb-1">
+                <stat.icon size={11} style={{ color: stat.color }} />
+                <span className="text-[10px] font-mono text-[oklch(0.40_0.04_280)] uppercase tracking-wider">
+                  {stat.label}
+                </span>
+              </div>
+              <span className="text-sm font-display font-700" style={{ color: stat.color }}>
+                {stat.value}
+              </span>
+            </div>
+          ))}
         </div>
       </div>
 
-      <div className="container max-w-4xl mx-auto space-y-6 pt-6 relative z-10">
-        
-        {/* Progress Overview */}
-        <Card className="glass-panel p-6 space-y-4">
-          <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-lg bg-cyan/20 flex items-center justify-center">
-              <Target className="h-6 w-6 text-cyan" />
-            </div>
-            <div className="flex-1">
-              <h2 className="text-lg font-semibold text-primary">Mission Progress</h2>
-              <p className="text-sm text-secondary">Complete weekly missions to build real skills and earn XP.</p>
-            </div>
+      {/* ── Not Enrolled Gate ── */}
+      {!isEnrolled && (
+        <div className="panel flex items-center gap-4">
+          <div className="w-10 h-10 rounded-lg bg-[oklch(0.62_0.18_20/0.15)] border border-[oklch(0.62_0.18_20/0.25)] flex items-center justify-center shrink-0">
+            <Lock size={18} className="text-[oklch(0.62_0.18_20)]" />
           </div>
-
-          {/* Progress Bar */}
-          <div className="space-y-2">
-            <div className="flex justify-between text-sm">
-              <span className="text-secondary">{completedCount} of {totalCount} completed</span>
-              <span className="text-primary font-semibold">{Math.round(progressPercent)}%</span>
-            </div>
-            <div className="h-2 bg-white/5 rounded-full overflow-hidden">
-              <div 
-                className="h-full bg-gradient-to-r from-cyan to-violet transition-all duration-500"
-                style={{ width: `${progressPercent}%` }}
-              />
-            </div>
+          <div>
+            <h3 className="text-sm font-600 text-white">Access Restricted</h3>
+            <p className="text-[11px] text-[oklch(0.50_0.04_280)] mt-0.5">
+              Complete your profile setup on the Home page to unlock missions.
+            </p>
           </div>
+        </div>
+      )}
 
-          {/* Current Stats */}
-          <div className="grid grid-cols-3 gap-4 pt-2">
-            <div className="text-center">
-              <div className="text-2xl font-bold text-primary">{profile.progress?.xpTotal || 0}</div>
-              <div className="text-xs text-tertiary">Total XP</div>
+      {/* ── Mission List ── */}
+      {isEnrolled && (
+        <div className="space-y-3">
+          {missionsData.missions.length === 0 ? (
+            <div className="panel text-center py-12">
+              <Target size={32} className="text-[oklch(0.35_0.04_280)] mx-auto mb-3" />
+              <h3 className="text-sm font-600 text-white mb-1">No Active Missions</h3>
+              <p className="text-[11px] text-[oklch(0.45_0.04_280)]">
+                New training modules will appear here weekly.
+              </p>
             </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-cyan">{profile.progress?.gemsTotal || 0}</div>
-              <div className="text-xs text-tertiary">Gems</div>
-            </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-emerald">{profile.progress?.rankName || "Pup"}</div>
-              <div className="text-xs text-tertiary">Rank</div>
-            </div>
-          </div>
-        </Card>
+          ) : (
+            missionsData.missions.map((mission, index) => {
+              const isClaimed = completions.some(
+                (c) => c.missionId === mission.id && c.status === "claimed"
+              );
 
-        {/* Mission List */}
-        <div className="space-y-4">
-          {missionsData.missions.map((mission) => {
-            const isClaimed = missionsData.completions?.some(c => c.missionId === mission.id && c.status === 'claimed') || false;
-            
-            return (
-              <Card key={mission.id} className="glass-panel p-6">
-                <div className="flex items-start gap-4">
-                  {/* Status Icon */}
-                  <div className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 ${
-                    isClaimed ? 'bg-emerald/20' : 'bg-white/5'
-                  }`}>
-                    {isClaimed ? (
-                      <CheckCircle2 className="h-5 w-5 text-emerald" />
-                    ) : (
-                      <Circle className="h-5 w-5 text-tertiary" />
-                    )}
-                  </div>
-
-                  {/* Mission Content */}
-                  <div className="flex-1 space-y-3">
-                    <div>
-                      <h3 className="text-lg font-semibold text-primary mb-1">{mission.title}</h3>
-                      <p className="text-sm text-secondary leading-relaxed">{mission.description}</p>
-                    </div>
-
-                    {/* Rewards */}
-                    <div className="flex items-center gap-4 text-sm">
-                      <div className="flex items-center gap-1.5">
-                        <span className="text-violet font-semibold">+{mission.xpReward}</span>
-                        <span className="text-tertiary">XP</span>
-                      </div>
-                      <div className="flex items-center gap-1.5">
-                        <span className="text-cyan font-semibold">+{mission.gemsReward}</span>
-                        <span className="text-tertiary">Gems</span>
-                      </div>
-                    </div>
-
-                    {/* Action Button */}
-                    <Button
-                      onClick={() => handleClaim(mission.id)}
-                      disabled={isClaimed || claimMission.isPending}
-                      className={`w-full sm:w-auto ${
+              return (
+                <div
+                  key={mission.id}
+                  className={cn(
+                    "panel-sm transition-all duration-200",
+                    isClaimed
+                      ? "module-complete opacity-70"
+                      : "hover:border-[oklch(0.45_0.08_270/0.5)] hover:bg-[oklch(0.18_0.04_280/0.9)]"
+                  )}
+                  style={{ animationDelay: `${index * 60}ms` }}
+                >
+                  <div className="flex items-start gap-4">
+                    {/* Status indicator */}
+                    <div
+                      className={cn(
+                        "w-8 h-8 rounded-lg flex items-center justify-center shrink-0 mt-0.5",
                         isClaimed
-                          ? 'bg-white/5 text-tertiary cursor-not-allowed'
-                          : 'bg-violet hover:bg-violet/90 text-white'
-                      } font-semibold h-10 px-6 rounded-lg transition-all`}
+                          ? "bg-[oklch(0.68_0.16_150/0.15)] border border-[oklch(0.68_0.16_150/0.3)]"
+                          : "bg-[oklch(0.20_0.04_280/0.6)] border border-[oklch(0.30_0.04_280/0.5)]"
+                      )}
                     >
-                      {isClaimed ? "Collected" : "Collect Reward"}
-                    </Button>
+                      {isClaimed ? (
+                        <CheckCircle2 size={16} className="text-[oklch(0.68_0.16_150)]" />
+                      ) : (
+                        <Circle size={16} className="text-[oklch(0.40_0.04_280)]" />
+                      )}
+                    </div>
+
+                    {/* Content */}
+                    <div className="flex-1 min-w-0 space-y-2">
+                      <div>
+                        <h3 className="text-sm font-600 text-white leading-tight">{mission.title}</h3>
+                        <p className="text-[11px] text-[oklch(0.50_0.04_280)] mt-0.5 leading-relaxed">
+                          {mission.description}
+                        </p>
+                      </div>
+
+                      {/* Reward tags */}
+                      <div className="flex items-center gap-2">
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-[oklch(0.65_0.18_270/0.12)] border border-[oklch(0.65_0.18_270/0.25)] text-[10px] font-mono text-[oklch(0.72_0.16_270)]">
+                          <Zap size={9} />
+                          +{mission.xpReward} XP
+                        </span>
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-[oklch(0.70_0.15_200/0.12)] border border-[oklch(0.70_0.15_200/0.25)] text-[10px] font-mono text-[oklch(0.70_0.15_200)]">
+                          <Gem size={9} />
+                          +{mission.gemsReward} Gems
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Action */}
+                    <div className="shrink-0">
+                      {isClaimed ? (
+                        <span className="text-[10px] font-mono text-[oklch(0.68_0.16_150)] uppercase tracking-wider">
+                          Complete
+                        </span>
+                      ) : (
+                        <button
+                          className="btn-primary text-xs px-3 py-1.5"
+                          onClick={() => claimMission.mutate({ missionId: mission.id })}
+                          disabled={claimMission.isPending}
+                        >
+                          {claimMission.isPending ? "..." : "Collect"}
+                        </button>
+                      )}
+                    </div>
                   </div>
                 </div>
-              </Card>
-            );
-          })}
+              );
+            })
+          )}
         </div>
-
-        {/* Empty State */}
-        {missionsData.missions.length === 0 && (
-          <Card className="glass-panel p-12 text-center">
-            <Target className="h-12 w-12 text-tertiary mx-auto mb-4" />
-            <h3 className="text-lg font-semibold text-primary mb-2">No Active Missions</h3>
-            <p className="text-sm text-secondary">New missions will appear here weekly.</p>
-          </Card>
-        )}
-      </div>
+      )}
     </div>
   );
 }

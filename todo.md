@@ -1,129 +1,84 @@
-# Future Dawgs Foundation (FDF) - TODO
+# Future Dawgs Foundation (FDF) — Full UI Redesign
 
-## VISUAL RESET - Premium Academy Redesign (PRIORITY)
+## Design Philosophy
+- Elite youth training system connected to Crypdawgs
+- Apple internal tools + NASA dashboard + private academy system
+- NOT a kids app, NOT playful, NOT gamified
 
-### Design Intent
-- [ ] Transform from "cute kids app" to "premium youth training academy"
-- [ ] Target aesthetic: Apple Education + NASA training interface
-- [ ] Safe for parents but high-status and futuristic
-- [ ] Kid-friendly does NOT mean childish
+## Core Visual Rules
+- [x] No cartoon UI
+- [x] No oversized mascots
+- [x] No bright playful colors
+- [x] No game-store or reward-shop feeling
+- [x] No floating random elements
 
-### Global Layout Fixes
-- [x] Add grounded glass panels/cards behind all content
-- [x] Reduce floating elements
-- [x] Reduce mascot size by 40-60%
-- [x] Mascots as supporting elements only (never center focus)
-- [x] Increase spacing consistency (24-32px vertical rhythm)
-- [x] Left-align titles with strong hierarchy
-- [x] Remove excessive empty lavender space
+## Layout System
+- [x] Structured grid layout
+- [x] All sections inside grounded panels/cards
+- [x] 24px minimum padding
+- [x] 32px vertical rhythm between sections
+- [x] Everything aligned, nothing floating
 
-### Color & Background
-- [x] Keep purple theme with soft glass panels over gradient
-- [x] Add subtle grid or academy-style backdrop texture
-- [x] Reduce saturation in backgrounds
-- [x] Use structured panels instead of floating cards
+## Color System
+- [x] Deep purple gradient background (dark → mid tone)
+- [x] Glass panels (blur + low opacity dark overlay)
+- [x] Subtle grid texture in background (very faint)
+- [x] Remove flat lavender backgrounds
 
-### Typography
-- [x] Make headlines bold + premium (stronger weight)
-- [x] Darken body text for authority
-- [x] Reduce rounded "toy" feel in text blocks
-- [x] Implement clear hierarchy (H1 > H2 > Body)
+## Typography
+- [x] Bold, tight, premium headlines (NOT rounded/bubbly)
+- [x] Darker body text for authority
+- [x] Clean, readable body
+- [x] Minimal buttons with slight radius (NOT pill-shaped)
 
-### Home Page Restructure
-- [x] Top section: Headline + Trust line + Join FDF + Parents Info buttons
-- [x] Below: 3 structured cards (Daily Check-In, Missions, Progress Rank)
-- [x] Mascot as side illustration only (not main hero)
-- [x] Remove bouncing animations
-- [x] Add academy-style progress indicators
+## Home Page
+- [x] Hero: Left-aligned headline "Future Dawgs Foundation"
+- [x] Hero subtext: "Start early. Build real financial intelligence. Enter the Vault prepared."
+- [x] Buttons: [Apply for Access] and [Parent Information]
+- [x] Very small mascot/abstract visual on right (not dominant)
+- [x] Section 2: 3 glass panel cards (Daily Check-In, Missions, Progress Rank)
+- [x] Section 3: Horizontal training path timeline (Entry → Training → Development → Vault Access)
+- [x] Section 4: System status panel (Network: Online, Status: Active, Tier: FDF)
 
-### Mascot Style Adjustment
-- [ ] Keep friendly expressions
-- [ ] Reduce saturation slightly
-- [ ] Add subtle outline/glow (guide aesthetic, not plush toys)
-- [ ] Position as supporting visual elements
+## Mascot Rules
+- [x] Reduce size by 60%
+- [x] Desaturate colors slightly
+- [x] Add soft glow/outline
+- [x] Only used as side support visual, never center focus
+- [x] Max 1 mascot per section
 
-### Parents Page Redesign
-- [x] Make it feel institutional
-- [x] Card grid layout with icons (not mascots)
-- [x] Strong headers with clear hierarchy
-- [x] Prominent admin@crypdawgs.com contact
-- [x] Remove playful elements
+## Missions / Progress UI
+- [x] Replace game reward design with progress bars
+- [x] Clean module cards
+- [x] Locked/unlocked states (subtle)
+- [x] No coins, no loot visuals, no playful icons
 
-### Rewards / Missions Pages
-- [x] Remove game-store feel
-- [x] Add academy-style progress bars
-- [x] Make XP feel like progress tracking (not loot collection)
-- [x] Use structured data tables where appropriate
-- [x] Add subtle grid backgrounds
+## Parents Page (/parents)
+- [x] Institutional feel
+- [x] Grid of cards with clean icons (NOT mascots)
+- [x] Strong headers
+- [x] Sections: What is FDF, Safety + Structure, Outcomes, Contact
+- [x] Contact: admin@crypdawgs.com
 
-### Loading States
-- [x] Skeleton cards with soft glass shimmer
+## Application Flow
+- [x] /apply page: minimal, serious form
+- [x] After submit → redirect to /request-received
+- [x] /request-received copy: "Application Received. All submissions are reviewed in batches. Selected applicants will be granted access into the system."
+
+## Loading States
+- [x] Skeleton loaders with soft shimmer
+- [x] Glass cards
 - [x] No playful animations
-- [x] Professional loading indicators
 
-### Final Goal Verification
-- [ ] FDF feels like "Elite youth training layer before Vault activation"
-- [ ] NOT "Cute cartoon kids game"
-- [ ] Passes parent trust test (institutional, safe, premium)
-- [ ] Passes teen appeal test (high-status, futuristic, not babyish)
+## Global Requirements
+- [x] Remove ALL Manus branding
+- [x] Mobile optimized
+- [x] Smooth transitions (subtle)
+- [x] Premium spacing + alignment
+- [x] No clutter anywhere
 
----
-
-## Previously Completed Features
-
-### Core Features
-- [x] Database schema with users, missions, rewards, progress tracking
-- [x] Seed script for test data
-- [x] Authentication with Manus OAuth
-- [x] Age gating (13-17 only)
-- [x] Smart entry system based on age (Year 1-4 tracks)
-- [x] Dawg Class selection during onboarding
-- [x] Mission claiming functionality with XP/Gems rewards
-- [x] Rewards unlock system using gems
-
-### Pages Implemented
-- [x] Home page with onboarding flow
-- [x] Missions page with claim functionality
-- [x] Rewards page with unlock system
-- [x] Parents page (needs redesign per visual reset)
-- [ ] Ranks page
-- [ ] Graduation page
-
-### Previous UI Refinements (TO BE REPLACED)
-- [x] Lighten background gradients
-- [x] Reduce neon glow and shadows
-- [x] Replace loading spinners with skeleton UI
-- [x] Update copy to education-focused language
-- [x] Replace "Claim" with "Collect"
-- [x] Generate friendly mascot images
-
----
-
-## Remaining Features (Post-Redesign)
-
-### Daily Check-In System
-- [ ] Add "Check In" button on home page
-- [ ] Award 5 gems per day
-- [ ] Track consecutive day streaks
-- [ ] Visual feedback for streak milestones
-
-### Ranks Page
-- [ ] Show progression ladder (Pup → Hunter → Builder, etc.)
-- [ ] Display current rank and next rank requirements
-- [ ] Show rank benefits/unlocks
-
-### Graduation Page
-- [ ] Countdown to user's 18th birthday
-- [ ] "Vault Unlocks at 18" messaging
-- [ ] Explain transition from FDF to Vault
-
-### Sponsors Page
-- [ ] Lead form at /sponsors
-- [ ] Partnership opportunities info
-- [ ] Contact form for potential sponsors
-
-### Testing & Deployment
-- [ ] Write vitest tests for core features
-- [ ] Verify all pages work correctly
-- [ ] Test on mobile and desktop
-- [ ] Deploy to production
+## Tests
+- [x] vitest: auth.logout test
+- [x] vitest: fdf.getProfile tests (no profile, with profile)
+- [x] vitest: fdf.getMissions test
+- [x] vitest: fdf.getRewards test
