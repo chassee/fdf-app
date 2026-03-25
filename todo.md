@@ -188,3 +188,52 @@
 - [x] Smooth card transitions
 - [x] Progress bar fill animation
 - [x] Completion overlay scale animation
+
+## Rank System Upgrade (Premium Academy Status Layer)
+
+### Rank Structure (4 Tiers)
+- [x] Entry — "Welcome to the academy." — unlocked immediately
+- [x] Training — "Build consistency and complete core missions." — 100 XP + 3 missions
+- [x] Development — "Apply skills and show real progress." — 300 XP + 8 missions + 5-day streak
+- [x] Vault Access — "Final readiness tier unlocked at 18." — age-gated, aspirational
+
+### Current Rank Hero Card (Top of Page)
+- [x] Large featured card: Current Rank Name + Status: Active
+- [x] XP total + animated progress bar (gradient fill)
+- [x] Missions completed count
+- [x] Streak count
+- [x] Next Rank target label
+
+### Rank Timeline / Ladder
+- [x] Vertical progression timeline with connecting rail
+- [x] Each rank as premium card row: insignia + title + description + status chip
+- [x] Completed ranks: softened with check icon
+- [x] Active rank: highlighted with glow / stronger border
+- [x] Locked ranks: muted, reduced opacity
+
+### Visual Insignia System
+- [x] Entry = clean circular badge (soft gradient)
+- [x] Training = double-ring badge
+- [x] Development = shield/star-mark badge
+- [x] Vault Access = premium crest / elite insignia
+
+### Rank Benefits / Unlocks
+- [x] Entry: access to first missions
+- [x] Training: advanced missions + streak tracking
+- [x] Development: elite badge styling + milestone recognition + advanced curriculum
+- [x] Vault Access: transition path to Crypdawgs Vault at 18
+
+### XP + Requirements Logic
+- [x] Real progression logic: read XP, missions, streak from backend
+- [x] Show requirements on each rank card
+- [x] Show "Next requirement to unlock" clearly
+
+### Micro-animations
+- [x] Progress bar fills smoothly
+- [x] Active rank has soft glow pulse
+- [x] Completed rank check fades in
+- [x] Locked ranks remain still
+
+### Deploy
+- [x] Save checkpoint
+- [ ] Publish site
