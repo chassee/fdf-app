@@ -1,7 +1,7 @@
-import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
-import { ArrowRight, Lock, Shield, TrendingUp, Zap, CheckCircle2 } from "lucide-react";
+import { ArrowRight, CheckCircle2 } from "lucide-react";
+import { useFDF, RANK_META } from "@/contexts/FDFContext";
 
 function getDaysUntil18(dobStr: string): number {
   const dob = new Date(dobStr);
@@ -22,18 +22,12 @@ function getAge(dobStr: string): number {
 
 export default function Graduation() {
   const { isAuthenticated } = useAuth();
-  const { data: profile, isLoading } = trpc.fdf.getProfile.useQuery(undefined, {
-    enabled: isAuthenticated,
-  });
+  const { xp, streak, missionsCompleted, rankId, dob, isEnrolled, isLoading } = useFDF();
 
-  const dob = profile?.fdfUser?.dob;
   const age = dob ? getAge(dob) : null;
   const daysUntil18 = dob ? getDaysUntil18(dob) : null;
   const isVaultReady = age !== null && age >= 18;
-  const isEnrolled = !!profile?.fdfUser;
-
-  const xp = profile?.progress?.xpTotal ?? 0;
-  const rank = profile?.progress?.rankName ?? "Pup";
+  const rankMeta = RANK_META[rankId];
 
   if (!isAuthenticated) {
     return (
@@ -55,7 +49,7 @@ export default function Graduation() {
     );
   }
 
-  if (isLoading || !profile) {
+  if (isLoading) {
     return (
       <div className="page-container">
         <div style={{ paddingTop: 24, display: "flex", flexDirection: "column", gap: 12 }}>
@@ -105,15 +99,10 @@ export default function Graduation() {
         <div style={{ display: "flex", alignItems: "flex-start", gap: 14 }}>
           <div
             style={{
-              width: 52,
-              height: 52,
-              borderRadius: 14,
+              width: 52, height: 52, borderRadius: 14,
               background: isVaultReady ? "#fef3c7" : "rgba(91,140,255,0.1)",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              fontSize: "1.6rem",
-              flexShrink: 0,
+              display: "flex", alignItems: "center", justifyContent: "center",
+              fontSize: "1.6rem", flexShrink: 0,
             }}
           >
             {isVaultReady ? "🔓" : "🔒"}
@@ -121,11 +110,8 @@ export default function Graduation() {
           <div style={{ flex: 1 }}>
             <p
               style={{
-                fontWeight: 800,
-                fontSize: "1rem",
-                color: "var(--text-main)",
-                marginBottom: 6,
-                letterSpacing: "-0.01em",
+                fontWeight: 800, fontSize: "1rem",
+                color: "var(--text-main)", marginBottom: 6, letterSpacing: "-0.01em",
               }}
             >
               {isVaultReady ? "Vault Access Unlocked" : "Vault Locked"}
@@ -160,27 +146,21 @@ export default function Graduation() {
           <p className="section-title" style={{ marginBottom: 14 }}>Vault Countdown</p>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10 }}>
             {[
-              { label: "Days",   value: daysUntil18.toString(), color: "var(--primary)", bg: "var(--primary-light)" },
-              { label: "Months", value: Math.floor(daysUntil18 / 30).toString(), color: "var(--accent)", bg: "var(--accent-light)" },
-              { label: "Years",  value: (daysUntil18 / 365).toFixed(1), color: "#f59e0b", bg: "#fef3c7" },
+              { label: "Days",   value: daysUntil18.toString(),                color: "var(--primary)", bg: "var(--primary-light)" },
+              { label: "Months", value: Math.floor(daysUntil18 / 30).toString(), color: "var(--accent)",  bg: "var(--accent-light)"  },
+              { label: "Years",  value: (daysUntil18 / 365).toFixed(1),         color: "#f59e0b",         bg: "#fef3c7"              },
             ].map((item) => (
               <div
                 key={item.label}
                 style={{
-                  background: item.bg,
-                  borderRadius: 12,
-                  padding: "14px 10px",
-                  textAlign: "center",
+                  background: item.bg, borderRadius: 12,
+                  padding: "14px 10px", textAlign: "center",
                 }}
               >
                 <p
                   style={{
-                    fontSize: "1.75rem",
-                    fontWeight: 800,
-                    color: item.color,
-                    letterSpacing: "-0.03em",
-                    lineHeight: 1,
-                    marginBottom: 4,
+                    fontSize: "1.75rem", fontWeight: 800, color: item.color,
+                    letterSpacing: "-0.03em", lineHeight: 1, marginBottom: 4,
                     fontFamily: "'Space Grotesk', sans-serif",
                   }}
                 >
@@ -188,11 +168,8 @@ export default function Graduation() {
                 </p>
                 <p
                   style={{
-                    fontSize: "0.65rem",
-                    color: "var(--text-muted)",
-                    fontWeight: 700,
-                    textTransform: "uppercase",
-                    letterSpacing: "0.06em",
+                    fontSize: "0.65rem", color: "var(--text-muted)",
+                    fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em",
                   }}
                 >
                   {item.label}
@@ -208,18 +185,18 @@ export default function Graduation() {
         <div className="academy-card" style={{ marginBottom: 16 }}>
           <p className="section-title" style={{ marginBottom: 14 }}>Progress Summary</p>
           {[
-            { label: "Current Rank", value: rank, icon: "🏆", color: "var(--primary)" },
-            { label: "Total XP", value: xp.toLocaleString(), icon: "⚡", color: "#f59e0b" },
-            { label: "Vault Status", value: isVaultReady ? "Unlocked" : "Locked", icon: isVaultReady ? "🔓" : "🔒", color: isVaultReady ? "#16a34a" : "var(--text-muted)" },
+            { label: "Current Rank",    value: rankMeta.label,                   icon: "🏆", color: rankMeta.color },
+            { label: "Total XP",        value: xp.toLocaleString(),              icon: "⚡", color: "#f59e0b"     },
+            { label: "Missions Done",   value: missionsCompleted.toString(),     icon: "🎯", color: "var(--primary)" },
+            { label: "Streak",          value: `${streak} days`,                 icon: "🔥", color: "#f97316"     },
+            { label: "Vault Status",    value: isVaultReady ? "Unlocked" : "Locked", icon: isVaultReady ? "🔓" : "🔒", color: isVaultReady ? "#16a34a" : "var(--text-muted)" },
           ].map((item, i) => (
             <div
               key={item.label}
               style={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "space-between",
+                display: "flex", alignItems: "center", justifyContent: "space-between",
                 padding: "10px 0",
-                borderBottom: i < 2 ? "1px solid rgba(91,140,255,0.08)" : "none",
+                borderBottom: i < 4 ? "1px solid rgba(91,140,255,0.08)" : "none",
               }}
             >
               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
@@ -240,6 +217,7 @@ export default function Graduation() {
         style={{
           background: "linear-gradient(135deg, rgba(16,185,129,0.05) 0%, rgba(5,150,105,0.05) 100%)",
           border: "1px solid rgba(16,185,129,0.15)",
+          marginBottom: 16,
         }}
       >
         <p className="section-title" style={{ marginBottom: 12 }}>What Transfers to the Vault</p>
@@ -252,18 +230,24 @@ export default function Graduation() {
         ].map((item) => (
           <div
             key={item}
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 8,
-              padding: "6px 0",
-            }}
+            style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 0" }}
           >
             <CheckCircle2 size={14} style={{ color: "#16a34a", flexShrink: 0 }} />
             <span style={{ fontSize: "0.8125rem", color: "var(--text-sub)" }}>{item}</span>
           </div>
         ))}
       </div>
+
+      {/* ── Not enrolled state ── */}
+      {!isEnrolled && (
+        <div className="academy-card" style={{ textAlign: "center", padding: 32, marginBottom: 16 }}>
+          <div style={{ fontSize: "2rem", marginBottom: 12 }}>🔒</div>
+          <p style={{ fontWeight: 700, color: "var(--text-main)", marginBottom: 6 }}>Complete Onboarding First</p>
+          <p style={{ fontSize: "0.875rem", color: "var(--text-sub)" }}>
+            Set up your FDF profile on the Home page to begin tracking your Vault graduation path.
+          </p>
+        </div>
+      )}
     </div>
   );
 }

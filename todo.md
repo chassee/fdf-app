@@ -237,3 +237,76 @@
 ### Deploy
 - [x] Save checkpoint
 - [ ] Publish site
+
+## FDF Final System Lock
+
+### Global Requirements
+- [x] All 6 routes working: /, /ranks, /missions, /rewards, /graduation, /parents
+- [x] Bottom navigation works on every screen with correct active tab highlighting
+- [x] No dead buttons anywhere
+- [x] Mobile-first layout (iPhone optimized, no overflow)
+- [x] Consistent design system across all pages
+
+### Global Design System Lock
+- [x] Background: soft light gradient (white → light blue) + subtle grid texture
+- [x] Cards: glass style, 16-20px radius, soft shadow, 20-24px padding
+- [x] Text: strong dark headers, clean gray subtext, high contrast
+- [x] Buttons: slight gradient, lift on tap, no flat buttons
+- [x] 24px between sections, clean vertical rhythm
+- [x] Remove all dark theme remnants, clutter, floating elements, oversized mascots
+
+### Global State Context
+- [x] Create FDFContext with XP, completed missions, streak, current rank
+- [x] All pages read from and update this shared state
+- [x] No hardcoded fake UI — everything updates based on real state
+
+### Home Page Final State
+- [x] Hero card: "Future Dawgs Foundation" + "Start early. Build real financial intelligence."
+- [x] Trust line: ✔ 100% Free ✔ Ages 13–17 ✔ Sponsor-Funded
+- [x] Apply for Access + Parent Information buttons
+- [x] Daily Activation card (functional)
+- [x] Missions preview card
+- [x] Rank progress card
+- [x] Training Path card
+
+### Missions Page Final State
+- [x] Daily Streak tracker at top (functional)
+- [x] XP system (reads from global state)
+- [x] Mission cards with title, description, XP reward, Start button
+- [x] Locked/unlocked progression
+- [x] Completion overlay with reward feedback
+- [x] Updates XP + streak on completion
+
+### Ranks Page Final State
+- [x] Current Rank hero card with XP bar, missions, streak, next rank target
+- [x] Rank progression ladder (Entry → Training → Development → Vault Access)
+- [x] Dynamically updates based on user progress
+
+### Rewards Page Final State
+- [x] Clean structure: earned rewards + locked rewards (blurred)
+- [x] Consistency Badge, 5 Day Streak Unlock, Mission Completion Milestone
+- [x] No clutter, no fake complexity
+
+### Graduation Page Final State
+- [x] Aspirational feel: "Completion of FDF training"
+- [x] Transition into next phase messaging
+- [x] Vault access at 18 mention
+- [x] Clean, minimal, premium
+
+### Parents Page Final State
+- [x] What FDF is, Why it exists, How it works, Safety + structure
+- [x] Readable spacing, high contrast, no fluff
+- [x] Trusted and clear institutional feel
+
+### Final Polish
+- [x] Remove all unused components
+- [x] Remove console errors
+- [x] Smooth scroll everywhere
+- [x] Consistent spacing on all pages
+- [x] No visual bugs
+
+### Deploy
+- [x] All 6 tests pass
+- [x] TypeScript clean
+- [ ] Save checkpoint
+- [ ] Publish site

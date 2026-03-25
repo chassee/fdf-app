@@ -1,13 +1,13 @@
-import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
 import { useState, useEffect } from "react";
 import { CheckCircle2, Lock, ArrowRight, Flame, Zap, Shield } from "lucide-react";
+import { useFDF, RANK_META, getLevelInfo, type RankId } from "@/contexts/FDFContext";
 
 // ── Rank definitions ──────────────────────────────────────────────────────────
 const RANKS = [
   {
-    id: "entry",
+    id: "entry" as RankId,
     title: "Entry",
     subtitle: "Welcome to the academy.",
     description: "You've joined the Future Dawgs Foundation. Your training begins here.",
@@ -16,10 +16,6 @@ const RANKS = [
     missionsRequired: 0,
     streakRequired: 0,
     ageRequired: null as number | null,
-    color: "#64748b",
-    gradientFrom: "#94a3b8",
-    gradientTo: "#64748b",
-    glowColor: "rgba(100,116,139,0.2)",
     unlocks: [
       "Access to core missions",
       "Daily Activation check-in",
@@ -27,7 +23,7 @@ const RANKS = [
     ],
   },
   {
-    id: "training",
+    id: "training" as RankId,
     title: "Training",
     subtitle: "Build consistency and complete core missions.",
     description: "You're developing real habits. Keep completing missions and maintaining your streak.",
@@ -36,10 +32,6 @@ const RANKS = [
     missionsRequired: 3,
     streakRequired: 0,
     ageRequired: null,
-    color: "#3b82f6",
-    gradientFrom: "#60a5fa",
-    gradientTo: "#2563eb",
-    glowColor: "rgba(59,130,246,0.2)",
     unlocks: [
       "Advanced mission modules",
       "Streak tracking unlocked",
@@ -47,7 +39,7 @@ const RANKS = [
     ],
   },
   {
-    id: "development",
+    id: "development" as RankId,
     title: "Development",
     subtitle: "Apply skills and show real progress.",
     description: "You're demonstrating consistency and applying real-world skills. Elite status is within reach.",
@@ -56,10 +48,6 @@ const RANKS = [
     missionsRequired: 8,
     streakRequired: 5,
     ageRequired: null,
-    color: "#7c3aed",
-    gradientFrom: "#a78bfa",
-    gradientTo: "#6d28d9",
-    glowColor: "rgba(124,58,237,0.2)",
     unlocks: [
       "Elite badge styling",
       "Milestone recognition",
@@ -68,7 +56,7 @@ const RANKS = [
     ],
   },
   {
-    id: "vault",
+    id: "vault" as RankId,
     title: "Vault Access",
     subtitle: "Final readiness tier. Unlocked at 18.",
     description: "The highest tier in the FDF system. Your transition path to the Crypdawgs Vault begins here.",
@@ -77,69 +65,33 @@ const RANKS = [
     missionsRequired: 0,
     streakRequired: 0,
     ageRequired: 18,
-    color: "#d97706",
-    gradientFrom: "#fbbf24",
-    gradientTo: "#b45309",
-    glowColor: "rgba(217,119,6,0.25)",
     unlocks: [
       "Transition path to Crypdawgs Vault",
       "Full financial intelligence access",
       "Vault-tier network membership",
     ],
   },
-] as const;
+];
 
-type RankId = typeof RANKS[number]["id"];
+const RANK_ORDER: RankId[] = ["entry", "training", "development", "vault"];
 
-function getCurrentRank(xp: number, missions: number, streak: number): RankId {
-  if (xp >= 300 && missions >= 8 && streak >= 5) return "development";
-  if (xp >= 100 && missions >= 3) return "training";
-  return "entry";
-}
-
-function getRankStatus(
-  rankId: RankId,
-  currentRankId: RankId
-): "completed" | "active" | "locked" {
-  const order: RankId[] = ["entry", "training", "development", "vault"];
-  const currentIdx = order.indexOf(currentRankId);
-  const rankIdx = order.indexOf(rankId);
+function getRankStatus(rankId: RankId, currentRankId: RankId): "completed" | "active" | "locked" {
+  const currentIdx = RANK_ORDER.indexOf(currentRankId);
+  const rankIdx = RANK_ORDER.indexOf(rankId);
   if (rankIdx < currentIdx) return "completed";
   if (rankIdx === currentIdx) return "active";
   return "locked";
 }
 
 // ── Animated progress bar ─────────────────────────────────────────────────────
-function GradientProgressBar({
-  value,
-  from,
-  to,
-  height = 8,
-}: {
-  value: number;
-  from: string;
-  to: string;
-  height?: number;
-}) {
+function GradientProgressBar({ value, from, to, height = 8 }: { value: number; from: string; to: string; height?: number }) {
   const [anim, setAnim] = useState(0);
-  useEffect(() => {
-    const t = setTimeout(() => setAnim(Math.min(100, value)), 200);
-    return () => clearTimeout(t);
-  }, [value]);
-
+  useEffect(() => { const t = setTimeout(() => setAnim(Math.min(100, value)), 200); return () => clearTimeout(t); }, [value]);
   return (
-    <div
-      style={{
-        height,
-        borderRadius: height,
-        background: "rgba(226,232,240,0.6)",
-        overflow: "hidden",
-      }}
-    >
+    <div style={{ height, borderRadius: height, background: "rgba(226,232,240,0.6)", overflow: "hidden" }}>
       <div
         style={{
-          height: "100%",
-          borderRadius: height,
+          height: "100%", borderRadius: height,
           background: `linear-gradient(90deg, ${from}, ${to})`,
           width: `${anim}%`,
           transition: "width 1s cubic-bezier(0.4,0,0.2,1)",
@@ -160,7 +112,6 @@ function EntryInsignia({ color, size = 36 }: { color: string; size?: number }) {
     </svg>
   );
 }
-
 function TrainingInsignia({ color, size = 36 }: { color: string; size?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 40 40" fill="none">
@@ -171,7 +122,6 @@ function TrainingInsignia({ color, size = 36 }: { color: string; size?: number }
     </svg>
   );
 }
-
 function DevelopmentInsignia({ color, size = 36 }: { color: string; size?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 40 40" fill="none">
@@ -181,7 +131,6 @@ function DevelopmentInsignia({ color, size = 36 }: { color: string; size?: numbe
     </svg>
   );
 }
-
 function VaultInsignia({ color, size = 36 }: { color: string; size?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 40 40" fill="none">
@@ -192,7 +141,6 @@ function VaultInsignia({ color, size = 36 }: { color: string; size?: number }) {
     </svg>
   );
 }
-
 function RankInsignia({ rankId, color, size }: { rankId: RankId; color: string; size?: number }) {
   if (rankId === "entry") return <EntryInsignia color={color} size={size} />;
   if (rankId === "training") return <TrainingInsignia color={color} size={size} />;
@@ -209,14 +157,7 @@ function StatusChip({ status }: { status: "completed" | "active" | "locked" }) {
   };
   const c = configs[status];
   return (
-    <span
-      style={{
-        display: "inline-flex", alignItems: "center", gap: 4,
-        background: c.bg, color: c.color,
-        padding: "2px 8px", borderRadius: 20,
-        fontSize: "0.65rem", fontWeight: 700, letterSpacing: "0.05em",
-      }}
-    >
+    <span style={{ display: "inline-flex", alignItems: "center", gap: 4, background: c.bg, color: c.color, padding: "2px 8px", borderRadius: 20, fontSize: "0.65rem", fontWeight: 700, letterSpacing: "0.05em" }}>
       <span style={{ width: 5, height: 5, borderRadius: "50%", background: c.dot, display: "inline-block" }} />
       {c.label}
     </span>
@@ -224,15 +165,14 @@ function StatusChip({ status }: { status: "completed" | "active" | "locked" }) {
 }
 
 // ── Hero card ─────────────────────────────────────────────────────────────────
-function HeroRankCard({
-  rank, xp, missions, streak, nextRank,
-}: {
-  rank: typeof RANKS[number];
-  xp: number; missions: number; streak: number;
-  nextRank: typeof RANKS[number] | null;
-}) {
-  const xpPct = nextRank && nextRank.xpRequired > rank.xpRequired
-    ? Math.min(100, Math.round(((xp - rank.xpRequired) / (nextRank.xpRequired - rank.xpRequired)) * 100))
+function HeroRankCard({ rankId, xp, missions, streak }: { rankId: RankId; xp: number; missions: number; streak: number }) {
+  const rank = RANKS.find(r => r.id === rankId)!;
+  const meta = RANK_META[rankId];
+  const nextRankDef = RANKS.find(r => r.id === RANK_ORDER[RANK_ORDER.indexOf(rankId) + 1]);
+  const { current: lvl, pct: levelPct } = getLevelInfo(xp);
+
+  const xpPct = nextRankDef && nextRankDef.xpRequired > rank.xpRequired
+    ? Math.min(100, Math.round(((xp - rank.xpRequired) / (nextRankDef.xpRequired - rank.xpRequired)) * 100))
     : 100;
 
   return (
@@ -240,362 +180,197 @@ function HeroRankCard({
       style={{
         borderRadius: 18, padding: "20px 18px", marginBottom: 20,
         background: "rgba(255,255,255,0.95)",
-        border: `2px solid ${rank.color}28`,
-        boxShadow: `0 8px 32px ${rank.glowColor}, 0 2px 8px rgba(91,140,255,0.06)`,
+        border: `2px solid ${meta.color}28`,
+        boxShadow: `0 8px 32px ${meta.glowColor}, 0 2px 8px rgba(91,140,255,0.06)`,
         position: "relative", overflow: "hidden",
       }}
     >
       {/* Background radial accent */}
-      <div style={{
-        position: "absolute", top: -40, right: -40, width: 130, height: 130,
-        borderRadius: "50%",
-        background: `radial-gradient(circle, ${rank.color}14, transparent 70%)`,
-        pointerEvents: "none",
-      }} />
+      <div style={{ position: "absolute", top: -40, right: -40, width: 130, height: 130, borderRadius: "50%", background: `radial-gradient(circle, ${meta.color}14, transparent 70%)`, pointerEvents: "none" }} />
 
       {/* Top row */}
       <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 14 }}>
         <div>
-          <p style={{ fontSize: "0.65rem", fontWeight: 700, color: "#94a3b8", letterSpacing: "0.08em", marginBottom: 3 }}>
-            CURRENT RANK
-          </p>
-          <h2 style={{
-            fontFamily: "'Space Grotesk', sans-serif",
-            fontSize: "1.55rem", fontWeight: 800, color: "var(--text-main)",
-            letterSpacing: "-0.02em", marginBottom: 2,
-          }}>
+          <p style={{ fontSize: "0.65rem", fontWeight: 700, color: "#94a3b8", letterSpacing: "0.08em", marginBottom: 3 }}>CURRENT RANK</p>
+          <h2 style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: "1.55rem", fontWeight: 800, color: "var(--text-main)", letterSpacing: "-0.02em", marginBottom: 2 }}>
             {rank.title}
           </h2>
-          <p style={{ fontSize: "0.77rem", color: "var(--text-sub)", fontStyle: "italic" }}>
-            {rank.subtitle}
-          </p>
+          <p style={{ fontSize: "0.77rem", color: "var(--text-sub)", fontStyle: "italic" }}>{rank.subtitle}</p>
         </div>
         <div style={{ flexShrink: 0, marginTop: 2 }}>
-          <RankInsignia rankId={rank.id} color={rank.color} size={52} />
+          <RankInsignia rankId={rankId} color={meta.color} size={52} />
         </div>
       </div>
 
       {/* Stats row */}
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8, marginBottom: 14 }}>
         {[
-          { label: "TOTAL XP", value: xp.toLocaleString(), Icon: Zap },
-          { label: "MISSIONS", value: missions.toString(), Icon: CheckCircle2 },
-          { label: "STREAK", value: `${streak}d`, Icon: Flame },
+          { label: "TOTAL XP",  value: xp.toLocaleString(), Icon: Zap },
+          { label: "MISSIONS",  value: missions.toString(), Icon: CheckCircle2 },
+          { label: "STREAK",    value: `${streak}d`,        Icon: Flame },
         ].map(s => (
-          <div key={s.label} style={{
-            background: "rgba(241,245,249,0.7)", borderRadius: 10,
-            padding: "9px 6px", textAlign: "center",
-          }}>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 3, color: rank.color, marginBottom: 2 }}>
-              <s.Icon size={12} />
-              <span style={{ fontFamily: "'Space Grotesk', sans-serif", fontWeight: 800, fontSize: "0.95rem" }}>
-                {s.value}
-              </span>
-            </div>
-            <p style={{ fontSize: "0.6rem", color: "#94a3b8", fontWeight: 700, letterSpacing: "0.04em" }}>
-              {s.label}
+          <div key={s.label} style={{ background: "rgba(241,245,249,0.8)", borderRadius: 10, padding: "10px 8px", textAlign: "center" }}>
+            <s.Icon size={14} style={{ color: meta.color, margin: "0 auto 4px" }} />
+            <p style={{ fontFamily: "'Space Grotesk', sans-serif", fontWeight: 800, fontSize: "1rem", color: "var(--text-main)", letterSpacing: "-0.02em" }}>
+              {s.value}
             </p>
+            <p style={{ fontSize: "0.6rem", fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.05em" }}>{s.label}</p>
           </div>
         ))}
       </div>
 
-      {/* Progress to next rank */}
-      {nextRank ? (
-        <div>
-          <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 5 }}>
-            <span style={{ fontSize: "0.7rem", fontWeight: 700, color: "var(--text-sub)" }}>
-              Progress to {nextRank.title}
-            </span>
-            <span style={{ fontSize: "0.7rem", color: "#94a3b8" }}>
-              {xp} / {nextRank.xpRequired} XP
-            </span>
+      {/* XP Progress */}
+      {nextRankDef && (
+        <>
+          <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
+            <span style={{ fontSize: "0.72rem", fontWeight: 600, color: "var(--text-sub)" }}>Progress to {nextRankDef.title}</span>
+            <span style={{ fontSize: "0.72rem", fontWeight: 700, color: meta.color }}>{xpPct}%</span>
           </div>
-          <GradientProgressBar value={xpPct} from={rank.gradientFrom} to={rank.gradientTo} height={7} />
-          <p style={{ fontSize: "0.65rem", color: "#94a3b8", marginTop: 4 }}>
-            {nextRank.requirement}
+          <GradientProgressBar value={xpPct} from={meta.gradientFrom} to={meta.gradientTo} height={8} />
+          <p style={{ fontSize: "0.68rem", color: "var(--text-muted)", marginTop: 5 }}>
+            {nextRankDef.requirement}
           </p>
-        </div>
-      ) : (
-        <div style={{
-          background: `${rank.color}10`, borderRadius: 10, padding: "9px 12px",
-          border: `1px solid ${rank.color}20`,
-        }}>
-          <p style={{ fontSize: "0.78rem", fontWeight: 700, color: rank.color }}>
-            Maximum rank achieved
-          </p>
-        </div>
+        </>
       )}
     </div>
   );
 }
 
-// ── Next requirement callout ──────────────────────────────────────────────────
-function NextRequirementCard({
-  nextRank, xp, missions, streak,
-}: {
-  nextRank: typeof RANKS[number];
+// ── Rank card ─────────────────────────────────────────────────────────────────
+function RankCard({ rank, status, xp, missions, streak }: {
+  rank: typeof RANKS[number];
+  status: "completed" | "active" | "locked";
   xp: number; missions: number; streak: number;
 }) {
-  if (nextRank.id === "vault") return null;
+  const [expanded, setExpanded] = useState(status === "active");
+  const meta = RANK_META[rank.id];
 
-  const reqs = [
-    nextRank.xpRequired > 0
-      ? { label: "XP", current: xp, target: nextRank.xpRequired, unit: "XP", met: xp >= nextRank.xpRequired }
-      : null,
-    nextRank.missionsRequired > 0
-      ? { label: "Missions", current: missions, target: nextRank.missionsRequired, unit: "", met: missions >= nextRank.missionsRequired }
-      : null,
-    nextRank.streakRequired > 0
-      ? { label: "Streak", current: streak, target: nextRank.streakRequired, unit: "days", met: streak >= nextRank.streakRequired }
-      : null,
-  ].filter(Boolean) as { label: string; current: number; target: number; unit: string; met: boolean }[];
-
-  if (reqs.length === 0) return null;
+  const xpMet = xp >= rank.xpRequired;
+  const missionsMet = missions >= rank.missionsRequired;
+  const streakMet = rank.streakRequired === 0 || streak >= rank.streakRequired;
 
   return (
     <div
       style={{
-        borderRadius: 16, padding: "16px 18px", marginBottom: 20,
-        background: "rgba(255,255,255,0.9)",
-        border: `1.5px solid ${nextRank.color}20`,
-        boxShadow: "0 2px 8px rgba(91,140,255,0.06)",
+        borderRadius: 14, overflow: "hidden",
+        border: status === "active" ? `2px solid ${meta.color}40` : "1.5px solid rgba(91,140,255,0.1)",
+        background: status === "locked" ? "rgba(248,250,255,0.6)" : "rgba(255,255,255,0.95)",
+        boxShadow: status === "active" ? `0 4px 20px ${meta.glowColor}` : "var(--card-shadow)",
+        opacity: status === "locked" ? 0.7 : 1,
+        transition: "all 0.2s ease",
       }}
     >
-      <div style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 12 }}>
-        <ArrowRight size={15} color={nextRank.color} />
-        <p style={{ fontFamily: "'Space Grotesk', sans-serif", fontWeight: 700, fontSize: "0.88rem", color: "var(--text-main)" }}>
-          Next tier: <span style={{ color: nextRank.color }}>{nextRank.title}</span>
-        </p>
-      </div>
-      <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-        {reqs.map(r => (
-          <div key={r.label}>
-            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
-              <span style={{ fontSize: "0.72rem", fontWeight: 600, color: r.met ? "#10b981" : "var(--text-sub)" }}>
-                {r.met ? "✓ " : ""}{r.label}
-              </span>
-              <span style={{ fontSize: "0.72rem", color: "#94a3b8" }}>
-                {r.current} / {r.target} {r.unit}
-              </span>
-            </div>
-            <GradientProgressBar
-              value={Math.min(100, Math.round((r.current / r.target) * 100))}
-              from={r.met ? "#10b981" : nextRank.gradientFrom}
-              to={r.met ? "#059669" : nextRank.gradientTo}
-              height={6}
-            />
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-// ── Rank ladder card ──────────────────────────────────────────────────────────
-function RankLadderCard({
-  rank, status, isLast,
-}: {
-  rank: typeof RANKS[number];
-  status: "completed" | "active" | "locked";
-  isLast: boolean;
-}) {
-  const [expanded, setExpanded] = useState(status === "active");
-
-  return (
-    <div style={{ position: "relative" }}>
-      {/* Connecting rail */}
-      {!isLast && (
-        <div style={{
-          position: "absolute", left: 27, top: 68, bottom: -12,
-          width: 2,
-          background: status === "completed"
-            ? `linear-gradient(to bottom, ${rank.color}50, ${rank.color}15)`
-            : "rgba(226,232,240,0.5)",
-          zIndex: 0,
-        }} />
-      )}
-
-      <div
+      {/* Header */}
+      <button
         onClick={() => setExpanded(e => !e)}
         style={{
-          background: status === "locked"
-            ? "rgba(248,250,252,0.55)"
-            : status === "active"
-            ? "rgba(255,255,255,0.97)"
-            : "rgba(255,255,255,0.82)",
-          borderRadius: 16,
-          border: status === "active"
-            ? `2px solid ${rank.color}35`
-            : status === "completed"
-            ? `1.5px solid ${rank.color}20`
-            : "1.5px solid rgba(226,232,240,0.45)",
-          boxShadow: status === "active"
-            ? `0 4px 20px ${rank.glowColor}, 0 1px 4px rgba(0,0,0,0.03)`
-            : "0 1px 4px rgba(0,0,0,0.03)",
-          marginBottom: 12, padding: "14px 16px",
-          opacity: status === "locked" ? 0.6 : 1,
-          transition: "all 0.2s ease",
-          position: "relative", zIndex: 1,
-          cursor: "pointer",
+          width: "100%", display: "flex", alignItems: "center", gap: 12,
+          padding: "14px 16px", background: "none", border: "none", cursor: "pointer",
+          textAlign: "left",
         }}
       >
-        {/* Active glow ring */}
-        {status === "active" && (
-          <div style={{
-            position: "absolute", inset: -2, borderRadius: 18,
-            border: `2px solid ${rank.color}18`,
-            animation: "pulse-glow 2.5s ease-in-out infinite",
-            pointerEvents: "none",
-          }} />
-        )}
-
-        {/* Header row */}
-        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-          {/* Insignia */}
-          <div style={{
-            width: 44, height: 44, borderRadius: 12, flexShrink: 0,
-            background: status === "locked" ? "#f1f5f9" : `${rank.color}10`,
-            border: `1.5px solid ${status === "locked" ? "#e2e8f0" : rank.color + "25"}`,
-            display: "flex", alignItems: "center", justifyContent: "center",
-          }}>
-            {status === "locked"
-              ? <Lock size={16} color="#94a3b8" />
-              : <RankInsignia rankId={rank.id} color={rank.color} size={28} />
-            }
-          </div>
-
-          {/* Title + status */}
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 2, flexWrap: "wrap" }}>
-              <span style={{
-                fontFamily: "'Space Grotesk', sans-serif",
-                fontWeight: 800, fontSize: "0.95rem",
-                color: status === "locked" ? "#94a3b8" : "var(--text-main)",
-              }}>
-                {rank.title}
-              </span>
-              <StatusChip status={status} />
-            </div>
-            <p style={{ fontSize: "0.73rem", color: status === "locked" ? "#94a3b8" : "var(--text-sub)", lineHeight: 1.4 }}>
-              {rank.subtitle}
-            </p>
-          </div>
-
-          {/* Chevron */}
-          <span style={{
-            color: "#94a3b8", fontSize: "0.7rem", flexShrink: 0,
-            transform: expanded ? "rotate(180deg)" : "none",
-            transition: "transform 0.2s",
-          }}>▼</span>
+        <div style={{ flexShrink: 0 }}>
+          <RankInsignia rankId={rank.id} color={status === "locked" ? "#94a3b8" : meta.color} size={38} />
         </div>
-
-        {/* Expanded content */}
-        {expanded && (
-          <div style={{ marginTop: 12, paddingTop: 12, borderTop: "1px solid rgba(226,232,240,0.5)" }}>
-            <p style={{ fontSize: "0.78rem", color: "var(--text-sub)", marginBottom: 10, lineHeight: 1.55 }}>
-              {rank.description}
+        <div style={{ flex: 1 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 3 }}>
+            <p style={{ fontWeight: 700, fontSize: "0.9rem", color: status === "locked" ? "var(--text-muted)" : "var(--text-main)" }}>
+              {rank.title}
             </p>
+            <StatusChip status={status} />
+          </div>
+          <p style={{ fontSize: "0.72rem", color: "var(--text-muted)" }}>{rank.requirement}</p>
+        </div>
+        <span style={{ color: "var(--text-muted)", fontSize: "0.75rem", transform: expanded ? "rotate(180deg)" : "none", transition: "transform 0.2s ease", flexShrink: 0 }}>
+          ▾
+        </span>
+      </button>
 
-            {/* Requirement */}
-            <div style={{
-              background: status === "locked" ? "#f8fafc" : `${rank.color}07`,
-              border: `1px solid ${status === "locked" ? "#e2e8f0" : rank.color + "18"}`,
-              borderRadius: 10, padding: "9px 12px", marginBottom: 10,
-            }}>
-              <p style={{ fontSize: "0.65rem", fontWeight: 700, color: "#94a3b8", letterSpacing: "0.06em", marginBottom: 2 }}>
-                REQUIREMENT
-              </p>
-              <p style={{ fontSize: "0.78rem", fontWeight: 600, color: status === "locked" ? "#64748b" : rank.color }}>
-                {rank.requirement}
-              </p>
-            </div>
+      {/* Expanded content */}
+      {expanded && (
+        <div style={{ padding: "0 16px 16px", borderTop: "1px solid rgba(91,140,255,0.08)" }}>
+          <p style={{ fontSize: "0.8rem", color: "var(--text-sub)", lineHeight: 1.6, marginBottom: 14, marginTop: 12 }}>
+            {rank.description}
+          </p>
 
-            {/* Unlocks */}
-            <div>
-              <p style={{ fontSize: "0.65rem", fontWeight: 700, color: "#94a3b8", letterSpacing: "0.06em", marginBottom: 7 }}>
-                UNLOCKS
+          {/* Requirements */}
+          {status !== "completed" && rank.xpRequired > 0 && (
+            <div style={{ marginBottom: 12 }}>
+              <p style={{ fontSize: "0.68rem", fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.06em", textTransform: "uppercase", marginBottom: 8 }}>
+                Requirements
               </p>
-              <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
-                {rank.unlocks.map((u, i) => (
-                  <div key={i} style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                    <div style={{
-                      width: 14, height: 14, borderRadius: "50%", flexShrink: 0,
-                      background: status === "locked" ? "#f1f5f9" : `${rank.color}15`,
-                      border: `1px solid ${status === "locked" ? "#e2e8f0" : rank.color + "28"}`,
-                      display: "flex", alignItems: "center", justifyContent: "center",
-                    }}>
-                      <span style={{ width: 4, height: 4, borderRadius: "50%", background: status === "locked" ? "#cbd5e1" : rank.color, display: "block" }} />
+              <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                {[
+                  { label: `${rank.xpRequired} XP`, met: xpMet, current: xp },
+                  ...(rank.missionsRequired > 0 ? [{ label: `${rank.missionsRequired} missions`, met: missionsMet, current: missions }] : []),
+                  ...(rank.streakRequired > 0 ? [{ label: `${rank.streakRequired}-day streak`, met: streakMet, current: streak }] : []),
+                ].map((req) => (
+                  <div key={req.label} style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <div style={{ width: 18, height: 18, borderRadius: "50%", background: req.met ? "#dcfce7" : "rgba(226,232,240,0.6)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                      {req.met ? <CheckCircle2 size={12} style={{ color: "#16a34a" }} /> : <Lock size={10} style={{ color: "#94a3b8" }} />}
                     </div>
-                    <span style={{ fontSize: "0.76rem", color: status === "locked" ? "#94a3b8" : "var(--text-sub)" }}>
-                      {u}
+                    <span style={{ fontSize: "0.78rem", color: req.met ? "#16a34a" : "var(--text-sub)", fontWeight: req.met ? 600 : 400 }}>
+                      {req.label}
+                      {!req.met && <span style={{ color: "var(--text-muted)", marginLeft: 4 }}>({req.current} / {req.label.split(" ")[0]})</span>}
                     </span>
                   </div>
                 ))}
               </div>
             </div>
+          )}
+
+          {/* Unlocks */}
+          <div>
+            <p style={{ fontSize: "0.68rem", fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.06em", textTransform: "uppercase", marginBottom: 8 }}>
+              Unlocks
+            </p>
+            <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
+              {rank.unlocks.map((u) => (
+                <div key={u} style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <div style={{ width: 5, height: 5, borderRadius: "50%", background: meta.color, flexShrink: 0 }} />
+                  <span style={{ fontSize: "0.78rem", color: "var(--text-sub)" }}>{u}</span>
+                </div>
+              ))}
+            </div>
           </div>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   );
 }
 
-// ── Main page ─────────────────────────────────────────────────────────────────
+// ── Main Component ────────────────────────────────────────────────────────────
 export default function Ranks() {
   const { isAuthenticated } = useAuth();
-  const { data: profile, isLoading } = trpc.fdf.getProfile.useQuery(undefined, {
-    enabled: isAuthenticated,
-  });
-  const { data: missionsData } = trpc.fdf.getMissions.useQuery(undefined, {
-    enabled: isAuthenticated && !!profile?.fdfUser,
-  });
+  const { xp, streak, missionsCompleted, rankId, isEnrolled, isLoading } = useFDF();
 
-  const xp = profile?.progress?.xpTotal ?? 0;
-  const streak = profile?.progress?.streakDays ?? 0;
-  const completedMissions =
-    missionsData?.completions?.filter((c) => c.status === "claimed").length ?? 0;
-
-  const currentRankId = getCurrentRank(xp, completedMissions, streak);
-  const currentRankDef = RANKS.find((r) => r.id === currentRankId)!;
-  const order: RankId[] = ["entry", "training", "development", "vault"];
-  const currentIdx = order.indexOf(currentRankId);
-  const nextRankDef = currentIdx < order.length - 1 ? RANKS[currentIdx + 1] : null;
-
-  // ── Unauthenticated ──
   if (!isAuthenticated) {
     return (
       <div className="page-container animate-fade-in">
-        <div style={{ paddingTop: 48, textAlign: "center" }}>
-          <div style={{ marginBottom: 14, display: "flex", justifyContent: "center" }}>
-            <Shield size={38} color="#5b8cff" />
-          </div>
-          <h2 style={{ fontSize: "1.2rem", fontWeight: 800, color: "var(--text-main)", marginBottom: 8 }}>
-            Rank System Locked
+        <div style={{ paddingTop: 40, textAlign: "center" }}>
+          <div style={{ fontSize: "2.5rem", marginBottom: 16 }}>🏆</div>
+          <h2 style={{ fontSize: "1.25rem", fontWeight: 800, color: "var(--text-main)", marginBottom: 8 }}>
+            Ranks Locked
           </h2>
-          <p style={{ fontSize: "0.85rem", color: "var(--text-sub)", marginBottom: 24 }}>
-            Sign in to view your academy rank and progression.
+          <p style={{ fontSize: "0.875rem", color: "var(--text-sub)", marginBottom: 24 }}>
+            Sign in to view your rank progression.
           </p>
-          <a href={getLoginUrl()} className="btn-primary" style={{ display: "inline-flex" }}>
-            Sign In to Continue <ArrowRight size={15} style={{ marginLeft: 6 }} />
+          <a href={getLoginUrl()} className="btn-primary">
+            Sign In to Continue
+            <ArrowRight size={16} />
           </a>
         </div>
       </div>
     );
   }
 
-  if (!profile?.fdfUser) {
+  if (isLoading) {
     return (
-      <div className="page-container animate-fade-in">
-        <div style={{ paddingTop: 48, textAlign: "center" }}>
-          <div style={{ marginBottom: 14, display: "flex", justifyContent: "center" }}>
-            <Lock size={38} color="#94a3b8" />
-          </div>
-          <h2 style={{ fontSize: "1.2rem", fontWeight: 800, color: "var(--text-main)", marginBottom: 8 }}>
-            Complete Onboarding First
-          </h2>
-          <p style={{ fontSize: "0.85rem", color: "var(--text-sub)" }}>
-            Set up your FDF profile on the Home page to access the rank system.
-          </p>
+      <div className="page-container">
+        <div style={{ paddingTop: 24, display: "flex", flexDirection: "column", gap: 12 }}>
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="skeleton" style={{ height: 80, borderRadius: 18 }} />
+          ))}
         </div>
       </div>
     );
@@ -603,90 +378,126 @@ export default function Ranks() {
 
   return (
     <div className="page-container animate-fade-in">
-      {/* Header */}
-      <div style={{ paddingTop: 20, paddingBottom: 16 }}>
-        <h1 style={{
-          fontFamily: "'Space Grotesk', sans-serif",
-          fontSize: "1.5rem", fontWeight: 800, color: "var(--text-main)",
-          letterSpacing: "-0.02em", marginBottom: 3,
-        }}>
-          Progress Rank
+
+      {/* ── Header ── */}
+      <div style={{ paddingTop: 20, paddingBottom: 20 }}>
+        <h1
+          style={{
+            fontFamily: "'Space Grotesk', sans-serif",
+            fontSize: "1.5rem", fontWeight: 800,
+            color: "var(--text-main)", letterSpacing: "-0.02em", marginBottom: 4,
+          }}
+        >
+          Ranks
         </h1>
-        <p style={{ fontSize: "0.82rem", color: "var(--text-sub)" }}>
-          Track your advancement through the FDF academy.
+        <p style={{ fontSize: "0.875rem", color: "var(--text-sub)" }}>
+          Your progression through the FDF training system.
         </p>
       </div>
 
-      {/* Loading skeleton */}
-      {isLoading ? (
-        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-          <div className="skeleton" style={{ height: 200, borderRadius: 18 }} />
-          <div className="skeleton" style={{ height: 90, borderRadius: 16 }} />
-          {[1, 2, 3, 4].map((i) => (
-            <div key={i} className="skeleton" style={{ height: 70, borderRadius: 16 }} />
-          ))}
-        </div>
+      {/* ── Hero Rank Card ── */}
+      {isEnrolled ? (
+        <HeroRankCard rankId={rankId} xp={xp} missions={missionsCompleted} streak={streak} />
       ) : (
-        <>
-          {/* Hero rank card */}
-          <HeroRankCard
-            rank={currentRankDef}
-            xp={xp}
-            missions={completedMissions}
-            streak={streak}
-            nextRank={nextRankDef ?? null}
-          />
-
-          {/* Next requirement callout */}
-          {nextRankDef && (
-            <NextRequirementCard
-              nextRank={nextRankDef}
-              xp={xp}
-              missions={completedMissions}
-              streak={streak}
-            />
-          )}
-
-          {/* Rank ladder */}
-          <div style={{ marginBottom: 8 }}>
-            <p style={{
-              fontSize: "0.65rem", fontWeight: 700, color: "#94a3b8",
-              letterSpacing: "0.08em", marginBottom: 12,
-            }}>
-              ACADEMY PROGRESSION LADDER
-            </p>
-            {RANKS.map((rank, i) => (
-              <RankLadderCard
-                key={rank.id}
-                rank={rank}
-                status={getRankStatus(rank.id, currentRankId)}
-                isLast={i === RANKS.length - 1}
-              />
-            ))}
-          </div>
-
-          {/* Footer */}
-          <div style={{
-            borderRadius: 16, padding: "16px 18px", textAlign: "center",
-            background: "linear-gradient(135deg, rgba(91,140,255,0.05), rgba(123,92,255,0.04))",
-            border: "1.5px solid rgba(91,140,255,0.12)",
-          }}>
-            <p style={{ fontSize: "0.83rem", fontWeight: 700, color: "var(--text-main)", marginBottom: 3 }}>
-              Maintain momentum to unlock the next level.
-            </p>
-            <p style={{ fontSize: "0.73rem", color: "var(--text-sub)" }}>
-              Complete missions daily and keep your streak alive.
-            </p>
-          </div>
-        </>
+        <div className="academy-card" style={{ marginBottom: 20, textAlign: "center", padding: 32 }}>
+          <div style={{ fontSize: "2rem", marginBottom: 12 }}>🔒</div>
+          <p style={{ fontWeight: 700, color: "var(--text-main)", marginBottom: 6 }}>Complete Onboarding First</p>
+          <p style={{ fontSize: "0.875rem", color: "var(--text-sub)" }}>Set up your profile on the Home page to start tracking ranks.</p>
+        </div>
       )}
 
-      <style>{`
-        @keyframes pulse-glow {
-          0%, 100% { opacity: 0.5; }
-          50% { opacity: 1; }
-        }
-      `}</style>
+      {/* ── Progression Ladder ── */}
+      <p className="section-title" style={{ marginBottom: 12 }}>Progression Ladder</p>
+      <div style={{ display: "flex", flexDirection: "column", gap: 0, position: "relative" }}>
+        {/* Connecting rail */}
+        <div
+          style={{
+            position: "absolute",
+            left: 35, top: 52, bottom: 52,
+            width: 2,
+            background: "linear-gradient(180deg, rgba(91,140,255,0.25), rgba(123,92,255,0.1))",
+            zIndex: 0,
+          }}
+        />
+
+        {RANKS.map((rank, i) => {
+          const status = getRankStatus(rank.id, rankId);
+          return (
+            <div key={rank.id} style={{ position: "relative", zIndex: 1, marginBottom: i < RANKS.length - 1 ? 8 : 0 }}>
+              <RankCard
+                rank={rank}
+                status={status}
+                xp={xp}
+                missions={missionsCompleted}
+                streak={streak}
+              />
+            </div>
+          );
+        })}
+      </div>
+
+      {/* ── Next Tier Callout ── */}
+      {isEnrolled && rankId !== "vault" && (
+        <div
+          className="academy-card"
+          style={{
+            marginTop: 20,
+            background: "linear-gradient(135deg, rgba(91,140,255,0.06) 0%, rgba(123,92,255,0.06) 100%)",
+            border: "1.5px solid rgba(91,140,255,0.15)",
+          }}
+        >
+          <p style={{ fontWeight: 700, fontSize: "0.875rem", color: "var(--text-main)", marginBottom: 4 }}>
+            Next Tier Requirements
+          </p>
+          {(() => {
+            const nextIdx = RANK_ORDER.indexOf(rankId) + 1;
+            const nextRank = RANKS.find(r => r.id === RANK_ORDER[nextIdx]);
+            if (!nextRank) return null;
+            const meta = RANK_META[nextRank.id];
+            return (
+              <>
+                <p style={{ fontSize: "0.8rem", color: "var(--text-sub)", marginBottom: 14 }}>
+                  To reach <strong style={{ color: meta.color }}>{nextRank.title}</strong>: {nextRank.requirement}
+                </p>
+                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                  {nextRank.xpRequired > 0 && (
+                    <div>
+                      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
+                        <span style={{ fontSize: "0.72rem", color: "var(--text-sub)" }}>XP Progress</span>
+                        <span style={{ fontSize: "0.72rem", fontWeight: 700, color: meta.color }}>
+                          {Math.min(xp, nextRank.xpRequired)} / {nextRank.xpRequired}
+                        </span>
+                      </div>
+                      <GradientProgressBar
+                        value={Math.min(100, Math.round((xp / nextRank.xpRequired) * 100))}
+                        from={meta.gradientFrom}
+                        to={meta.gradientTo}
+                        height={6}
+                      />
+                    </div>
+                  )}
+                  {nextRank.missionsRequired > 0 && (
+                    <div>
+                      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
+                        <span style={{ fontSize: "0.72rem", color: "var(--text-sub)" }}>Missions</span>
+                        <span style={{ fontSize: "0.72rem", fontWeight: 700, color: meta.color }}>
+                          {Math.min(missionsCompleted, nextRank.missionsRequired)} / {nextRank.missionsRequired}
+                        </span>
+                      </div>
+                      <GradientProgressBar
+                        value={Math.min(100, Math.round((missionsCompleted / nextRank.missionsRequired) * 100))}
+                        from={meta.gradientFrom}
+                        to={meta.gradientTo}
+                        height={6}
+                      />
+                    </div>
+                  )}
+                </div>
+              </>
+            );
+          })()}
+        </div>
+      )}
     </div>
   );
 }

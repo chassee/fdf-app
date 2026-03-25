@@ -4,6 +4,7 @@ import { getLoginUrl } from "@/const";
 import { useState } from "react";
 import { Link } from "wouter";
 import { toast } from "sonner";
+import { useFDF, RANK_META, getLevelInfo } from "@/contexts/FDFContext";
 import {
   ArrowRight,
   Target,
@@ -13,50 +14,29 @@ import {
   Lock,
   ChevronRight,
   Shield,
-  Users,
   Star,
+  Flame,
+  BookOpen,
+  TrendingUp,
 } from "lucide-react";
 
 const DAWG_CLASSES = [
-  {
-    id: "builder",
-    label: "Builder Dawg",
-    icon: "🏗️",
-    desc: "Build products, services & businesses",
-    color: "#f59e0b",
-    bg: "#fef3c7",
-  },
-  {
-    id: "creator",
-    label: "Creator Dawg",
-    icon: "🎨",
-    desc: "Create content, art & digital media",
-    color: "#8b5cf6",
-    bg: "#ede9fe",
-  },
-  {
-    id: "tech",
-    label: "Tech Dawg",
-    icon: "⚙️",
-    desc: "Code, engineer & build with technology",
-    color: "#3b82f6",
-    bg: "#eff6ff",
-  },
-  {
-    id: "money",
-    label: "Money Dawg",
-    icon: "💰",
-    desc: "Invest, trade & grow financial wealth",
-    color: "#10b981",
-    bg: "#d1fae5",
-  },
+  { id: "builder", label: "Builder Dawg",  icon: "🏗️", desc: "Build products, services & businesses", color: "#f59e0b", bg: "#fef3c7" },
+  { id: "creator", label: "Creator Dawg",  icon: "🎨", desc: "Create content, art & digital media",   color: "#8b5cf6", bg: "#ede9fe" },
+  { id: "tech",    label: "Tech Dawg",     icon: "⚙️", desc: "Code, engineer & build with technology", color: "#3b82f6", bg: "#eff6ff" },
+  { id: "money",   label: "Money Dawg",    icon: "💰", desc: "Invest, trade & grow financial wealth",  color: "#10b981", bg: "#d1fae5" },
+];
+
+const TRAINING_PATH = [
+  { step: 1, label: "Entry",       desc: "Account created",              status: "completed" },
+  { step: 2, label: "Training",    desc: "100 XP + 3 missions",          status: "active"    },
+  { step: 3, label: "Development", desc: "300 XP + 8 missions + streak", status: "locked"    },
+  { step: 4, label: "Vault Access","desc": "Age 18 — aspirational",      status: "locked"    },
 ];
 
 export default function Home() {
   const { user, isAuthenticated } = useAuth();
-  const { data: profile, isLoading, refetch } = trpc.fdf.getProfile.useQuery(undefined, {
-    enabled: isAuthenticated,
-  });
+  const { xp, gems, streak, missionsCompleted, lastCheckin, rankId, level, levelPct, isEnrolled, isLoading, refetch } = useFDF();
 
   const [onboardStep, setOnboardStep] = useState<"dob" | "class" | null>(null);
   const [dob, setDob] = useState("");
@@ -95,9 +75,10 @@ export default function Home() {
   };
 
   const today = new Date().toISOString().split("T")[0];
-  const checkedInToday = profile?.progress?.lastCheckin === today;
+  const checkedInToday = lastCheckin === today;
+  const rankMeta = RANK_META[rankId];
 
-  // ── Not authenticated ──────────────────────────────────────────
+  // ── Not authenticated ──────────────────────────────────────────────────────
   if (!isAuthenticated) {
     return (
       <div className="page-container animate-fade-in">
@@ -131,7 +112,7 @@ export default function Home() {
               color: "var(--text-main)",
               letterSpacing: "-0.03em",
               lineHeight: 1.15,
-              marginBottom: 12,
+              marginBottom: 10,
             }}
           >
             Future Dawgs<br />
@@ -143,79 +124,81 @@ export default function Home() {
               fontSize: "0.9375rem",
               color: "var(--text-sub)",
               lineHeight: 1.6,
-              marginBottom: 28,
+              marginBottom: 16,
               maxWidth: 340,
             }}
           >
-            Start learning real money skills at{" "}
-            <strong style={{ color: "var(--text-main)" }}>13</strong>.
-            Graduate into the Vault at{" "}
-            <strong style={{ color: "var(--text-main)" }}>18</strong>.
+            Start early. Build real financial intelligence.
           </p>
+
+          {/* Trust line */}
+          <div
+            style={{
+              display: "flex",
+              flexWrap: "wrap",
+              gap: 8,
+              marginBottom: 24,
+            }}
+          >
+            {["✔ 100% Free", "✔ Ages 13–17", "✔ Sponsor-Funded"].map((t) => (
+              <span
+                key={t}
+                style={{
+                  fontSize: "0.75rem",
+                  fontWeight: 700,
+                  color: "#16a34a",
+                  background: "#dcfce7",
+                  padding: "4px 10px",
+                  borderRadius: 99,
+                  letterSpacing: "0.01em",
+                }}
+              >
+                {t}
+              </span>
+            ))}
+          </div>
 
           <div style={{ display: "flex", flexDirection: "column", gap: 10, maxWidth: 320 }}>
             <a href={getLoginUrl()} className="btn-primary" style={{ justifyContent: "center" }}>
-              Join FDF — It's Free
+              Apply for Access
               <ArrowRight size={16} />
             </a>
             <Link href="/parents" className="btn-secondary" style={{ justifyContent: "center" }}>
-              Parents Info
+              Parent Information
             </Link>
           </div>
 
           <p
             style={{
-              marginTop: 16,
-              fontSize: "0.75rem",
+              marginTop: 14,
+              fontSize: "0.72rem",
               color: "var(--text-muted)",
               display: "flex",
               alignItems: "center",
               gap: 6,
             }}
           >
-            <Shield size={12} />
-            100% Free · No Purchases · No Ads · admin@crypdawgs.com
+            <Shield size={11} />
+            No purchases · No ads · admin@crypdawgs.com
           </p>
         </div>
 
         {/* Feature Cards */}
-        <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 32 }}>
-          <p className="section-title">What you'll build</p>
+        <p className="section-title">What you'll build</p>
+        <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 32 }}>
           {[
-            {
-              icon: "💡",
-              title: "Real Money Skills",
-              desc: "Saving, investing, building income — not theory.",
-              color: "#f59e0b",
-              bg: "#fef3c7",
-            },
-            {
-              icon: "🏆",
-              title: "XP & Rank System",
-              desc: "Complete missions, earn XP, climb the ranks.",
-              color: "#5b8cff",
-              bg: "#e8efff",
-            },
-            {
-              icon: "🔓",
-              title: "Vault Access at 18",
-              desc: "Graduate into the full CrypDawgs Vault.",
-              color: "#7b5cff",
-              bg: "#ede8ff",
-            },
+            { icon: "💡", title: "Real Money Skills",     desc: "Saving, investing, building income — not theory.",          color: "#f59e0b", bg: "#fef3c7" },
+            { icon: "🏆", title: "XP & Rank System",      desc: "Complete missions, earn XP, climb the ranks.",              color: "#5b8cff", bg: "#e8efff" },
+            { icon: "🔓", title: "Vault Access at 18",    desc: "Graduate into the full CrypDawgs Vault.",                   color: "#7b5cff", bg: "#ede8ff" },
+            { icon: "🧠", title: "Mindset Training",      desc: "Build the habits and thinking of successful entrepreneurs.", color: "#10b981", bg: "#d1fae5" },
           ].map((f) => (
             <div key={f.title} className="academy-card" style={{ display: "flex", alignItems: "center", gap: 14 }}>
               <div
                 style={{
-                  width: 44,
-                  height: 44,
-                  borderRadius: 12,
+                  width: 44, height: 44, borderRadius: 12,
                   background: f.bg,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  fontSize: "1.25rem",
-                  flexShrink: 0,
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  fontSize: "1.25rem", flexShrink: 0,
                 }}
               >
                 {f.icon}
@@ -233,12 +216,12 @@ export default function Home() {
     );
   }
 
-  // ── Loading ────────────────────────────────────────────────────
+  // ── Loading ────────────────────────────────────────────────────────────────
   if (isLoading) {
     return (
       <div className="page-container">
         <div style={{ display: "flex", flexDirection: "column", gap: 12, paddingTop: 24 }}>
-          {[1, 2, 3].map((i) => (
+          {[1, 2, 3, 4].map((i) => (
             <div key={i} className="skeleton" style={{ height: 80, borderRadius: 18 }} />
           ))}
         </div>
@@ -246,8 +229,8 @@ export default function Home() {
     );
   }
 
-  // ── Onboarding — Step 1: DOB ───────────────────────────────────
-  if (!profile?.fdfUser || onboardStep === "dob") {
+  // ── Onboarding — Step 1: DOB ───────────────────────────────────────────────
+  if (!isEnrolled || onboardStep === "dob") {
     return (
       <div className="page-container animate-fade-in">
         <div style={{ paddingTop: 32, paddingBottom: 16 }}>
@@ -261,13 +244,9 @@ export default function Home() {
           <div className="academy-card" style={{ marginBottom: 16 }}>
             <label
               style={{
-                display: "block",
-                fontSize: "0.75rem",
-                fontWeight: 700,
-                color: "var(--text-muted)",
-                letterSpacing: "0.06em",
-                textTransform: "uppercase",
-                marginBottom: 8,
+                display: "block", fontSize: "0.75rem", fontWeight: 700,
+                color: "var(--text-muted)", letterSpacing: "0.06em",
+                textTransform: "uppercase", marginBottom: 8,
               }}
             >
               Date of Birth
@@ -277,15 +256,11 @@ export default function Home() {
               value={dob}
               onChange={(e) => setDob(e.target.value)}
               style={{
-                width: "100%",
-                padding: "12px 14px",
-                borderRadius: 12,
+                width: "100%", padding: "12px 14px", borderRadius: 12,
                 border: "1.5px solid rgba(91,140,255,0.2)",
                 background: "rgba(91,140,255,0.04)",
-                fontSize: "1rem",
-                color: "var(--text-main)",
-                outline: "none",
-                fontFamily: "inherit",
+                fontSize: "1rem", color: "var(--text-main)",
+                outline: "none", fontFamily: "inherit",
               }}
             />
           </div>
@@ -304,7 +279,7 @@ export default function Home() {
     );
   }
 
-  // ── Onboarding — Step 2: Dawg Class ───────────────────────────
+  // ── Onboarding — Step 2: Dawg Class ───────────────────────────────────────
   if (onboardStep === "class") {
     return (
       <div className="page-container animate-fade-in">
@@ -322,31 +297,23 @@ export default function Home() {
                 key={dc.id}
                 onClick={() => setSelectedClass(dc.id)}
                 style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 14,
-                  padding: "14px 16px",
-                  borderRadius: 16,
-                  border: `2px solid ${selectedClass === dc.id ? dc.color : "rgba(91,140,255,0.12)"}`,
+                  display: "flex", alignItems: "center", gap: 14,
+                  padding: "14px 16px", borderRadius: 14,
+                  border: selectedClass === dc.id
+                    ? `2px solid ${dc.color}`
+                    : "1.5px solid rgba(91,140,255,0.12)",
                   background: selectedClass === dc.id ? dc.bg : "rgba(255,255,255,0.8)",
-                  cursor: "pointer",
-                  textAlign: "left",
+                  cursor: "pointer", textAlign: "left", width: "100%",
                   transition: "all 0.15s ease",
-                  backdropFilter: "blur(12px)",
+                  boxShadow: selectedClass === dc.id ? `0 4px 16px ${dc.color}25` : "none",
                 }}
               >
                 <div
                   style={{
-                    width: 44,
-                    height: 44,
-                    borderRadius: 12,
-                    background: dc.bg,
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    fontSize: "1.3rem",
-                    flexShrink: 0,
-                    border: `1.5px solid ${dc.color}30`,
+                    width: 42, height: 42, borderRadius: 11,
+                    background: dc.bg, display: "flex",
+                    alignItems: "center", justifyContent: "center",
+                    fontSize: "1.2rem", flexShrink: 0,
                   }}
                 >
                   {dc.icon}
@@ -371,265 +338,281 @@ export default function Home() {
             onClick={handleOnboardSubmit}
           >
             {isSubmitting ? "Setting up…" : "Start Training"}
-            {!isSubmitting && <ArrowRight size={16} />}
+            <ArrowRight size={16} />
           </button>
         </div>
       </div>
     );
   }
 
-  // ── Dashboard ──────────────────────────────────────────────────
-  const progress = profile.progress;
-  const fdfUser = profile.fdfUser;
-  const xp = progress?.xpTotal ?? 0;
-  const gems = progress?.gemsTotal ?? 0;
-  const rankName = progress?.rankName ?? "Pup";
-  const streak = progress?.streakDays ?? 0;
-  const yearTrack = fdfUser?.yearTrack ?? 1;
-
-  const RANK_XP_MAP: Record<string, number> = {
-    Pup: 0, Hunter: 200, Builder: 500, Founder: 1000, Vault: 2000,
-  };
-  const RANK_ORDER = ["Pup", "Hunter", "Builder", "Founder", "Vault"];
-  const currentIdx = RANK_ORDER.indexOf(rankName);
-  const nextRank = RANK_ORDER[currentIdx + 1] ?? "Vault";
-  const nextRankXp = RANK_XP_MAP[nextRank] ?? 2000;
-  const currentRankXp = RANK_XP_MAP[rankName] ?? 0;
-  const progressPct = Math.min(
-    100,
-    ((xp - currentRankXp) / (nextRankXp - currentRankXp)) * 100
-  );
-
-  const dawgClassInfo = DAWG_CLASSES.find((d) => d.id === fdfUser?.dawgClass) ?? DAWG_CLASSES[0];
-
+  // ── Dashboard (enrolled) ───────────────────────────────────────────────────
   return (
     <div className="page-container animate-fade-in">
 
-      {/* ── Welcome Row ── */}
-      <div style={{ paddingTop: 20, paddingBottom: 20, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-        <div>
-          <p style={{ fontSize: "0.75rem", color: "var(--text-muted)", fontWeight: 600, letterSpacing: "0.04em", textTransform: "uppercase", marginBottom: 4 }}>
-            Welcome back
-          </p>
-          <h2 style={{ fontSize: "1.25rem", fontWeight: 800, color: "var(--text-main)", letterSpacing: "-0.02em" }}>
-            {user?.name?.split(" ")[0] ?? "Trainee"}
-          </h2>
-        </div>
-        <div
+      {/* ── Welcome Header ── */}
+      <div style={{ paddingTop: 20, paddingBottom: 20 }}>
+        <p style={{ fontSize: "0.7rem", fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.06em", textTransform: "uppercase", marginBottom: 4 }}>
+          Welcome back
+        </p>
+        <h1
           style={{
-            display: "flex",
-            alignItems: "center",
-            gap: 6,
-            background: dawgClassInfo.bg,
-            color: dawgClassInfo.color,
-            padding: "6px 12px",
-            borderRadius: 10,
-            fontSize: "0.75rem",
-            fontWeight: 700,
-            border: `1px solid ${dawgClassInfo.color}30`,
+            fontFamily: "'Space Grotesk', sans-serif",
+            fontSize: "1.5rem", fontWeight: 800,
+            color: "var(--text-main)", letterSpacing: "-0.02em", marginBottom: 2,
           }}
         >
-          <span>{dawgClassInfo.icon}</span>
-          <span>{dawgClassInfo.label}</span>
-        </div>
+          {user?.name?.split(" ")[0] ?? "Dawg"}
+        </h1>
+        <p style={{ fontSize: "0.8125rem", color: "var(--text-sub)" }}>
+          {rankMeta.label} Rank · Level {level} · {xp.toLocaleString()} XP
+        </p>
       </div>
 
-      {/* ── Rank Progress Card ── */}
-      <div className="academy-card" style={{ marginBottom: 12 }}>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
-          <div>
-            <p className="section-title" style={{ marginBottom: 2 }}>Current Rank</p>
-            <p style={{ fontSize: "1.125rem", fontWeight: 800, color: "var(--text-main)", letterSpacing: "-0.02em" }}>
-              {rankName}
-            </p>
-          </div>
-          <div style={{ textAlign: "right" }}>
-            <p className="section-title" style={{ marginBottom: 2 }}>Year Track</p>
-            <p style={{ fontSize: "1.125rem", fontWeight: 800, color: "var(--primary)", letterSpacing: "-0.02em" }}>
-              Year {yearTrack}
-            </p>
-          </div>
-        </div>
-
-        <div className="progress-track" style={{ marginBottom: 6 }}>
-          <div className="progress-fill" style={{ width: `${progressPct}%` }} />
-        </div>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <span style={{ fontSize: "0.75rem", color: "var(--text-muted)" }}>
-            {xp.toLocaleString()} XP
-          </span>
-          <span style={{ fontSize: "0.75rem", color: "var(--text-muted)" }}>
-            {nextRankXp.toLocaleString()} XP → {nextRank}
-          </span>
-        </div>
-      </div>
-
-      {/* ── Stats Row ── */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8, marginBottom: 20 }}>
-        {[
-          { label: "XP Total", value: xp.toLocaleString(), icon: "⚡", color: "#5b8cff", bg: "#e8efff" },
-          { label: "Gems", value: gems.toString(), icon: "💎", color: "#7b5cff", bg: "#ede8ff" },
-          { label: "Streak", value: `${streak}d`, icon: "🔥", color: "#f59e0b", bg: "#fef3c7" },
-        ].map((s) => (
-          <div
-            key={s.label}
-            className="academy-card"
-            style={{ padding: "12px 10px", textAlign: "center" }}
-          >
-            <div style={{ fontSize: "1.1rem", marginBottom: 4 }}>{s.icon}</div>
-            <p style={{ fontSize: "1rem", fontWeight: 800, color: "var(--text-main)", letterSpacing: "-0.02em", lineHeight: 1 }}>
-              {s.value}
-            </p>
-            <p style={{ fontSize: "0.65rem", color: "var(--text-muted)", fontWeight: 600, letterSpacing: "0.04em", textTransform: "uppercase", marginTop: 2 }}>
-              {s.label}
-            </p>
-          </div>
-        ))}
-      </div>
-
-      {/* ── Daily Check-In ── */}
-      <p className="section-title">Today's Actions</p>
-      <div className="academy-card" style={{ marginBottom: 12 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+      {/* ── Daily Activation Card ── */}
+      <div
+        className="academy-card"
+        style={{
+          marginBottom: 12,
+          display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12,
+          background: checkedInToday
+            ? "linear-gradient(135deg, rgba(16,185,129,0.06), rgba(5,150,105,0.04))"
+            : "linear-gradient(135deg, rgba(91,140,255,0.06), rgba(123,92,255,0.04))",
+          border: checkedInToday ? "1.5px solid rgba(16,185,129,0.25)" : "1.5px solid rgba(91,140,255,0.15)",
+        }}
+      >
+        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
           <div
             style={{
-              width: 48,
-              height: 48,
-              borderRadius: 14,
-              background: checkedInToday ? "#dcfce7" : "#e8efff",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              fontSize: "1.4rem",
-              flexShrink: 0,
+              width: 44, height: 44, borderRadius: 12,
+              background: checkedInToday ? "#dcfce7" : "var(--primary-light)",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              fontSize: "1.3rem", flexShrink: 0,
             }}
           >
             {checkedInToday ? "✅" : "📅"}
           </div>
-          <div style={{ flex: 1 }}>
+          <div>
             <p style={{ fontWeight: 700, fontSize: "0.9rem", color: "var(--text-main)", marginBottom: 2 }}>
-              Daily Check-In
+              Daily Activation
             </p>
-            <p style={{ fontSize: "0.775rem", color: "var(--text-sub)" }}>
+            <p style={{ fontSize: "0.75rem", color: "var(--text-sub)" }}>
               {checkedInToday
                 ? `Streak: ${streak} day${streak !== 1 ? "s" : ""} 🔥`
                 : `+5 💎 · Current streak: ${streak} day${streak !== 1 ? "s" : ""}`}
             </p>
           </div>
-          {!checkedInToday ? (
-            <button
-              className="btn-primary"
-              style={{ padding: "8px 16px", fontSize: "0.8125rem" }}
-              onClick={() => checkIn.mutate()}
-              disabled={checkIn.isPending}
-            >
-              {checkIn.isPending ? "…" : "Check In"}
-            </button>
-          ) : (
+        </div>
+        {!checkedInToday ? (
+          <button
+            className="btn-primary"
+            style={{ padding: "8px 16px", fontSize: "0.8125rem", flexShrink: 0 }}
+            onClick={() => checkIn.mutate()}
+            disabled={checkIn.isPending}
+          >
+            {checkIn.isPending ? "…" : "Check In"}
+          </button>
+        ) : (
+          <div style={{ display: "flex", alignItems: "center", gap: 4, color: "#16a34a", fontSize: "0.8rem", fontWeight: 700, flexShrink: 0 }}>
+            <CheckCircle2 size={16} />
+            Done
+          </div>
+        )}
+      </div>
+
+      {/* ── Missions Preview Card ── */}
+      <Link href="/missions" style={{ textDecoration: "none" }}>
+        <div
+          className="academy-card"
+          style={{
+            marginBottom: 12, cursor: "pointer",
+            background: "linear-gradient(135deg, rgba(91,140,255,0.06), rgba(123,92,255,0.04))",
+            border: "1.5px solid rgba(91,140,255,0.15)",
+          }}
+        >
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              <div style={{ width: 36, height: 36, borderRadius: 10, background: "var(--primary-light)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <Target size={18} style={{ color: "var(--primary)" }} />
+              </div>
+              <div>
+                <p style={{ fontWeight: 700, fontSize: "0.875rem", color: "var(--text-main)" }}>Missions</p>
+                <p style={{ fontSize: "0.72rem", color: "var(--text-sub)" }}>
+                  {missionsCompleted} completed
+                </p>
+              </div>
+            </div>
+            <ChevronRight size={16} style={{ color: "var(--text-muted)" }} />
+          </div>
+          {/* Mini progress bar */}
+          <div className="progress-track" style={{ height: 5 }}>
+            <div
+              className="progress-fill"
+              style={{ width: `${Math.min(100, (missionsCompleted / 8) * 100)}%` }}
+            />
+          </div>
+          <p style={{ fontSize: "0.68rem", color: "var(--text-muted)", marginTop: 5 }}>
+            {Math.max(0, 8 - missionsCompleted)} missions to Development rank
+          </p>
+        </div>
+      </Link>
+
+      {/* ── Rank Progress Card ── */}
+      <Link href="/ranks" style={{ textDecoration: "none" }}>
+        <div
+          className="academy-card"
+          style={{
+            marginBottom: 12, cursor: "pointer",
+            border: `1.5px solid ${rankMeta.color}28`,
+            background: "rgba(255,255,255,0.95)",
+          }}
+        >
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              <div
+                style={{
+                  width: 36, height: 36, borderRadius: 10,
+                  background: `linear-gradient(135deg, ${rankMeta.gradientFrom}, ${rankMeta.gradientTo})`,
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                }}
+              >
+                <Trophy size={18} style={{ color: "white" }} />
+              </div>
+              <div>
+                <p style={{ fontWeight: 700, fontSize: "0.875rem", color: "var(--text-main)" }}>
+                  {rankMeta.label} Rank
+                </p>
+                <p style={{ fontSize: "0.72rem", color: "var(--text-sub)" }}>
+                  Level {level} · {xp.toLocaleString()} XP
+                </p>
+              </div>
+            </div>
+            <ChevronRight size={16} style={{ color: "var(--text-muted)" }} />
+          </div>
+          <div className="progress-track" style={{ height: 5 }}>
             <div
               style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 4,
-                color: "#16a34a",
-                fontSize: "0.8rem",
-                fontWeight: 700,
+                height: "100%", borderRadius: 99,
+                background: `linear-gradient(90deg, ${rankMeta.gradientFrom}, ${rankMeta.gradientTo})`,
+                width: `${levelPct}%`,
+                transition: "width 0.6s ease",
               }}
-            >
-              <CheckCircle2 size={16} />
-              Done
-            </div>
-          )}
+            />
+          </div>
+          <p style={{ fontSize: "0.68rem", color: "var(--text-muted)", marginTop: 5 }}>
+            {levelPct}% to Level {level + 1}
+          </p>
+        </div>
+      </Link>
+
+      {/* ── Training Path Card ── */}
+      <div className="academy-card" style={{ marginBottom: 24 }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
+          <p style={{ fontWeight: 700, fontSize: "0.875rem", color: "var(--text-main)" }}>Training Path</p>
+          <Link href="/ranks" style={{ fontSize: "0.72rem", color: "var(--primary)", fontWeight: 600, textDecoration: "none" }}>
+            View all →
+          </Link>
+        </div>
+
+        <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
+          {TRAINING_PATH.map((step, i) => {
+            const rankOrder = ["entry", "training", "development", "vault"];
+            const currentRankIdx = rankOrder.indexOf(rankId);
+            const stepStatus = i < currentRankIdx ? "completed" : i === currentRankIdx ? "active" : "locked";
+
+            return (
+              <div key={step.step}>
+                <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                  <div
+                    style={{
+                      width: 32, height: 32, borderRadius: "50%",
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                      fontSize: "0.7rem", fontWeight: 700, flexShrink: 0,
+                      background: stepStatus === "active"
+                        ? "linear-gradient(135deg, var(--primary), var(--accent))"
+                        : stepStatus === "completed"
+                          ? "#dcfce7"
+                          : "rgba(148,163,184,0.12)",
+                      color: stepStatus === "active"
+                        ? "white"
+                        : stepStatus === "completed"
+                          ? "#16a34a"
+                          : "var(--text-muted)",
+                      border: stepStatus === "active"
+                        ? "none"
+                        : stepStatus === "completed"
+                          ? "1.5px solid #22c55e"
+                          : "1.5px solid rgba(148,163,184,0.3)",
+                      boxShadow: stepStatus === "active" ? "0 4px 12px rgba(91,140,255,0.35)" : "none",
+                    }}
+                  >
+                    {stepStatus === "completed" ? "✓" : step.step}
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <p
+                      style={{
+                        fontWeight: stepStatus === "active" ? 700 : 600,
+                        fontSize: "0.8125rem",
+                        color: stepStatus === "locked" ? "var(--text-muted)" : "var(--text-main)",
+                        marginBottom: 1,
+                      }}
+                    >
+                      {step.label}
+                      {stepStatus === "active" && (
+                        <span
+                          style={{
+                            marginLeft: 6, fontSize: "0.6rem", fontWeight: 700,
+                            background: "var(--primary-light)", color: "var(--primary-dark)",
+                            padding: "2px 6px", borderRadius: 99, letterSpacing: "0.04em",
+                          }}
+                        >
+                          CURRENT
+                        </span>
+                      )}
+                    </p>
+                    <p style={{ fontSize: "0.7rem", color: "var(--text-muted)" }}>{step.desc}</p>
+                  </div>
+                  {stepStatus === "locked" && <Lock size={13} style={{ color: "var(--text-muted)", flexShrink: 0 }} />}
+                </div>
+                {i < TRAINING_PATH.length - 1 && (
+                  <div style={{ width: 2, height: 16, marginLeft: 15, background: "rgba(91,140,255,0.15)" }} />
+                )}
+              </div>
+            );
+          })}
         </div>
       </div>
 
-      {/* ── Quick Links ── */}
-      <p className="section-title" style={{ marginTop: 20 }}>Training Modules</p>
-      <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 24 }}>
+      {/* ── Quick Stats ── */}
+      <div
+        style={{
+          display: "grid", gridTemplateColumns: "1fr 1fr 1fr",
+          gap: 8, marginBottom: 24,
+        }}
+      >
         {[
-          { path: "/missions", icon: <Target size={18} />, label: "Weekly Missions", desc: "Complete tasks to earn XP", color: "#5b8cff", bg: "#e8efff" },
-          { path: "/rewards", icon: <Trophy size={18} />, label: "Rewards Locker", desc: "Unlock badges & stickers", color: "#7b5cff", bg: "#ede8ff" },
-          { path: "/ranks", icon: <Zap size={18} />, label: "Rank Progression", desc: "Track your training path", color: "#f59e0b", bg: "#fef3c7" },
-        ].map((item) => (
-          <Link key={item.path} href={item.path} style={{ textDecoration: "none" }}>
-            <div
-              className="academy-card"
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 14,
-                cursor: "pointer",
-              }}
-            >
-              <div
-                style={{
-                  width: 40,
-                  height: 40,
-                  borderRadius: 11,
-                  background: item.bg,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  color: item.color,
-                  flexShrink: 0,
-                }}
-              >
-                {item.icon}
-              </div>
-              <div style={{ flex: 1 }}>
-                <p style={{ fontWeight: 700, fontSize: "0.875rem", color: "var(--text-main)", marginBottom: 1 }}>
-                  {item.label}
-                </p>
-                <p style={{ fontSize: "0.775rem", color: "var(--text-sub)" }}>{item.desc}</p>
-              </div>
-              <ChevronRight size={16} style={{ color: "var(--text-muted)" }} />
-            </div>
-          </Link>
-        ))}
-      </div>
-
-      {/* ── Graduation Teaser ── */}
-      {yearTrack >= 3 && (
-        <Link href="/graduation" style={{ textDecoration: "none" }}>
+          { label: "XP",       value: xp.toLocaleString(),       icon: <Zap size={14} />,   color: "var(--primary)",  bg: "var(--primary-light)" },
+          { label: "Streak",   value: `${streak}d`,               icon: <Flame size={14} />, color: "#f97316",         bg: "#fff7ed" },
+          { label: "Gems",     value: gems.toLocaleString(),      icon: "💎",                color: "var(--accent)",   bg: "var(--accent-light)" },
+        ].map((stat) => (
           <div
-            className="academy-card"
+            key={stat.label}
             style={{
-              background: "linear-gradient(135deg, rgba(91,140,255,0.08) 0%, rgba(123,92,255,0.08) 100%)",
-              border: "1.5px solid rgba(91,140,255,0.2)",
-              display: "flex",
-              alignItems: "center",
-              gap: 14,
-              marginBottom: 24,
-              cursor: "pointer",
+              background: stat.bg, borderRadius: 14, padding: "12px 10px",
+              textAlign: "center",
             }}
           >
-            <div
-              style={{
-                width: 44,
-                height: 44,
-                borderRadius: 12,
-                background: "linear-gradient(135deg, #5b8cff, #7b5cff)",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                fontSize: "1.25rem",
-                flexShrink: 0,
-              }}
-            >
-              🎓
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 4, color: stat.color, marginBottom: 4 }}>
+              {typeof stat.icon === "string" ? <span style={{ fontSize: "0.875rem" }}>{stat.icon}</span> : stat.icon}
             </div>
-            <div style={{ flex: 1 }}>
-              <p style={{ fontWeight: 700, fontSize: "0.875rem", color: "var(--text-main)", marginBottom: 2 }}>
-                Vault Activation Approaching
-              </p>
-              <p style={{ fontSize: "0.775rem", color: "var(--text-sub)" }}>
-                Year {yearTrack} · Graduate at 18 → Full Vault Access
-              </p>
-            </div>
-            <Lock size={16} style={{ color: "var(--primary)" }} />
+            <p style={{ fontFamily: "'Space Grotesk', sans-serif", fontWeight: 800, fontSize: "1.1rem", color: stat.color, letterSpacing: "-0.02em", lineHeight: 1 }}>
+              {stat.value}
+            </p>
+            <p style={{ fontSize: "0.62rem", fontWeight: 700, color: stat.color, opacity: 0.7, textTransform: "uppercase", letterSpacing: "0.04em", marginTop: 2 }}>
+              {stat.label}
+            </p>
           </div>
-        </Link>
-      )}
+        ))}
+      </div>
 
       {/* ── Footer ── */}
       <div
@@ -648,11 +631,8 @@ export default function Home() {
             key={label}
             href={label === "Parents" ? "/parents" : "#"}
             style={{
-              fontSize: "0.7rem",
-              color: "var(--text-muted)",
-              textDecoration: "none",
-              fontWeight: 600,
-              letterSpacing: "0.02em",
+              fontSize: "0.7rem", color: "var(--text-muted)",
+              textDecoration: "none", fontWeight: 600, letterSpacing: "0.02em",
             }}
           >
             {label}

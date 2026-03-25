@@ -3,31 +3,8 @@ import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
 import { toast } from "sonner";
 import { useState, useEffect } from "react";
-import { CheckCircle2, Lock, ArrowRight, Flame, Zap, Gem } from "lucide-react";
-
-// ── XP level thresholds ──────────────────────────────────────────────────────
-const LEVELS = [
-  { level: 1, minXp: 0,    maxXp: 150  },
-  { level: 2, minXp: 150,  maxXp: 350  },
-  { level: 3, minXp: 350,  maxXp: 600  },
-  { level: 4, minXp: 600,  maxXp: 900  },
-  { level: 5, minXp: 900,  maxXp: 1200 },
-  { level: 6, minXp: 1200, maxXp: 1600 },
-  { level: 7, minXp: 1600, maxXp: 2100 },
-  { level: 8, minXp: 2100, maxXp: 2700 },
-  { level: 9, minXp: 2700, maxXp: 3400 },
-  { level: 10, minXp: 3400, maxXp: 9_999_999 },
-];
-
-function getLevelInfo(xp: number) {
-  const idx = LEVELS.findLastIndex(l => xp >= l.minXp);
-  const current = LEVELS[Math.max(0, idx)];
-  const next = LEVELS[idx + 1];
-  const pct = next
-    ? Math.min(100, Math.round(((xp - current.minXp) / (next.minXp - current.minXp)) * 100))
-    : 100;
-  return { current, next, pct };
-}
+import { CheckCircle2, Lock, ArrowRight, Flame, Zap } from "lucide-react";
+import { useFDF, getLevelInfo } from "@/contexts/FDFContext";
 
 // ── Category config ──────────────────────────────────────────────────────────
 const CATEGORIES = [
@@ -57,11 +34,14 @@ function XPBar({ xp }: { xp: number }) {
   useEffect(() => { const t = setTimeout(() => setAnimPct(pct), 120); return () => clearTimeout(t); }, [pct]);
 
   return (
-    <div className="academy-card" style={{ marginBottom: 14 }}>
+    <div className="academy-card" style={{ marginBottom: 12 }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
-        <span style={{ fontWeight: 800, fontSize: "0.9rem", color: "var(--text-main)", fontFamily: "'Space Grotesk', sans-serif" }}>
-          Level {current.level}
-        </span>
+        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+          <Zap size={14} style={{ color: "var(--primary)" }} />
+          <span style={{ fontWeight: 800, fontSize: "0.9rem", color: "var(--text-main)", fontFamily: "'Space Grotesk', sans-serif" }}>
+            Level {current.level}
+          </span>
+        </div>
         <span style={{ fontSize: "0.75rem", color: "var(--text-sub)", fontWeight: 600 }}>
           {xp.toLocaleString()} {next ? `/ ${next.minXp.toLocaleString()} XP` : "XP — Max"}
         </span>
@@ -88,11 +68,11 @@ function XPBar({ xp }: { xp: number }) {
 // ── 7-day streak indicator ────────────────────────────────────────────────────
 function StreakBar({ streak }: { streak: number }) {
   const labels = ["M", "T", "W", "T", "F", "S", "S"];
-  const todayDow = new Date().getDay(); // 0=Sun
-  const todayIdx = todayDow === 0 ? 6 : todayDow - 1; // Mon=0
+  const todayDow = new Date().getDay();
+  const todayIdx = todayDow === 0 ? 6 : todayDow - 1;
 
   return (
-    <div className="academy-card" style={{ marginBottom: 14 }}>
+    <div className="academy-card" style={{ marginBottom: 12 }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           <Flame size={18} color="#f97316" />
@@ -100,7 +80,7 @@ function StreakBar({ streak }: { streak: number }) {
             {streak} Day Streak
           </span>
         </div>
-        <span style={{ fontSize: "0.75rem", color: "var(--text-sub)" }}>Stay consistent to level up faster</span>
+        <span style={{ fontSize: "0.72rem", color: "var(--text-sub)" }}>Stay consistent to level up faster</span>
       </div>
       <div style={{ display: "flex", gap: 6, justifyContent: "center" }}>
         {labels.map((lbl, i) => {
@@ -116,8 +96,7 @@ function StreakBar({ streak }: { streak: number }) {
                   display: "flex", alignItems: "center", justifyContent: "center",
                   fontSize: "0.75rem", color: filled ? "white" : "#94a3b8",
                   boxShadow: filled ? "0 0 10px rgba(249,115,22,0.35)" : "none",
-                  transition: "all 0.2s ease",
-                  fontWeight: 700,
+                  transition: "all 0.2s ease", fontWeight: 700,
                 }}
               >
                 {filled ? "✓" : ""}
@@ -141,7 +120,7 @@ function DailyActivation({ lastCheckin, onCheckIn, loading }: { lastCheckin?: st
     <div
       className="academy-card"
       style={{
-        marginBottom: 20,
+        marginBottom: 12,
         display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12,
         background: done ? "linear-gradient(135deg, rgba(16,185,129,0.06), rgba(5,150,105,0.04))" : undefined,
         border: done ? "1.5px solid rgba(16,185,129,0.25)" : undefined,
@@ -152,7 +131,7 @@ function DailyActivation({ lastCheckin, onCheckIn, loading }: { lastCheckin?: st
           Daily Activation
         </p>
         <p style={{ fontSize: "0.75rem", color: "var(--text-sub)" }}>
-          {done ? "Activated today ✓" : "+5 XP · Keeps your streak alive"}
+          {done ? "Activated today ✓" : "+5 💎 · Keeps your streak alive"}
         </p>
       </div>
       <button
@@ -214,329 +193,304 @@ function CompletionOverlay({ xpEarned, gemsEarned, title, onContinue }: {
         <p style={{ fontSize: "0.8rem", color: "#64748b", marginBottom: 22 }}>{title}</p>
         <div style={{ display: "flex", gap: 10, justifyContent: "center", marginBottom: 24 }}>
           {[
-            { label: "XP", value: `+${xpEarned}`, icon: <Zap size={14} />, bg: "#eff6ff", color: "#2563eb" },
-            { label: "GEMS", value: `+${gemsEarned}`, icon: <Gem size={14} />, bg: "#f0fdf4", color: "#16a34a" },
-          ].map(r => (
-            <div key={r.label} style={{ background: r.bg, borderRadius: 12, padding: "10px 20px", textAlign: "center" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 4, justifyContent: "center", color: r.color, fontWeight: 800, fontSize: "1rem", fontFamily: "'Space Grotesk', sans-serif" }}>
-                {r.icon}{r.value}
+            { label: "XP",   value: `+${xpEarned}`,   icon: <Zap size={14} />,  bg: "#eff6ff", color: "#2563eb" },
+            { label: "GEMS", value: `+${gemsEarned}`,  icon: "💎",               bg: "#ede8ff", color: "#7c3aed" },
+          ].map((r) => (
+            <div key={r.label}
+              style={{
+                background: r.bg, borderRadius: 12, padding: "12px 18px",
+                display: "flex", flexDirection: "column", alignItems: "center", gap: 4,
+              }}
+            >
+              <div style={{ color: r.color, display: "flex", alignItems: "center" }}>
+                {typeof r.icon === "string" ? <span>{r.icon}</span> : r.icon}
               </div>
-              <p style={{ fontSize: "0.65rem", color: "#64748b", fontWeight: 600, letterSpacing: "0.05em", marginTop: 2 }}>{r.label}</p>
+              <p style={{ fontWeight: 800, fontSize: "1rem", color: r.color }}>{r.value}</p>
+              <p style={{ fontSize: "0.6rem", fontWeight: 700, color: r.color, opacity: 0.7, letterSpacing: "0.06em" }}>{r.label}</p>
             </div>
           ))}
         </div>
-        <button
-          onClick={onContinue}
-          className="btn-primary"
-          style={{ width: "100%", justifyContent: "center" }}
-        >
-          Continue →
+        <button className="btn-primary" style={{ width: "100%", justifyContent: "center" }} onClick={onContinue}>
+          Continue Training
+          <ArrowRight size={15} />
         </button>
       </div>
     </div>
   );
 }
 
-// ── Mission card ──────────────────────────────────────────────────────────────
-function MissionCard({
-  mission, isLocked, isClaimed, onClaim, isLoading,
-}: {
-  mission: typeof STATIC_MISSIONS[0];
-  isLocked: boolean; isClaimed: boolean;
-  onClaim: (id: number) => void; isLoading: boolean;
-}) {
-  const [hov, setHov] = useState(false);
-  const cat = CATEGORIES.find(c => c.key === mission.category) ?? CATEGORIES[0];
-
-  return (
-    <div
-      onMouseEnter={() => setHov(true)}
-      onMouseLeave={() => setHov(false)}
-      style={{
-        background: isLocked ? "rgba(248,250,252,0.55)" : "rgba(255,255,255,0.88)",
-        backdropFilter: "blur(12px)",
-        borderRadius: 16, padding: "16px 18px", marginBottom: 10,
-        border: isClaimed
-          ? "1.5px solid rgba(16,185,129,0.35)"
-          : isLocked
-          ? "1px solid rgba(226,232,240,0.5)"
-          : `1.5px solid ${hov ? cat.color + "55" : "rgba(91,140,255,0.12)"}`,
-        boxShadow: hov && !isLocked ? `0 6px 24px rgba(91,140,255,0.12)` : "0 2px 8px rgba(91,140,255,0.05)",
-        transform: hov && !isLocked ? "translateY(-2px)" : "none",
-        transition: "all 0.18s ease",
-        opacity: isLocked ? 0.55 : 1,
-        position: "relative", overflow: "hidden",
-      }}
-    >
-      {/* Top accent line on hover */}
-      {hov && !isLocked && !isClaimed && (
-        <div style={{
-          position: "absolute", top: 0, left: 0, right: 0, height: 2,
-          background: `linear-gradient(90deg, ${cat.color}, transparent)`,
-        }} />
-      )}
-
-      <div style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>
-        {/* Icon */}
-        <div style={{
-          width: 42, height: 42, borderRadius: 11, flexShrink: 0,
-          background: isLocked ? "#f1f5f9" : cat.bg,
-          border: `1px solid ${isLocked ? "#e2e8f0" : cat.color + "30"}`,
-          display: "flex", alignItems: "center", justifyContent: "center", fontSize: "1.1rem",
-        }}>
-          {isLocked ? <Lock size={16} color="#94a3b8" /> : mission.iconEmoji}
-        </div>
-
-        {/* Body */}
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 3 }}>
-            <span style={{
-              fontFamily: "'Space Grotesk', sans-serif", fontWeight: 700, fontSize: "0.9rem",
-              color: isLocked ? "#94a3b8" : "var(--text-main)",
-            }}>
-              {mission.title}
-            </span>
-            {isClaimed && (
-              <span className="badge-pill green" style={{ fontSize: "0.62rem" }}>DONE</span>
-            )}
-          </div>
-          <p style={{ fontSize: "0.775rem", color: isLocked ? "#94a3b8" : "var(--text-sub)", marginBottom: 10, lineHeight: 1.5 }}>
-            {isLocked ? "Complete previous mission to unlock" : mission.description}
-          </p>
-
-          {!isLocked && (
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 8 }}>
-              <div style={{ display: "flex", gap: 6 }}>
-                <span className="badge-pill blue" style={{ fontSize: "0.68rem" }}>
-                  <Zap size={10} style={{ marginRight: 2 }} />+{mission.xpReward} XP
-                </span>
-                <span className="badge-pill purple" style={{ fontSize: "0.68rem" }}>
-                  💎 +{mission.gemsReward}
-                </span>
-              </div>
-              {!isClaimed && (
-                <button
-                  onClick={() => onClaim(mission.id)}
-                  disabled={isLoading}
-                  style={{
-                    padding: "7px 16px",
-                    background: isLoading ? "#e2e8f0" : `linear-gradient(135deg, ${cat.color}, ${cat.color}cc)`,
-                    color: isLoading ? "#94a3b8" : "white",
-                    border: "none", borderRadius: 9,
-                    fontFamily: "'Space Grotesk', sans-serif", fontWeight: 700, fontSize: "0.78rem",
-                    cursor: isLoading ? "not-allowed" : "pointer",
-                    boxShadow: isLoading ? "none" : `0 3px 10px ${cat.color}40`,
-                    transition: "all 0.15s ease",
-                  }}
-                >
-                  {isLoading ? "…" : "Collect →"}
-                </button>
-              )}
-            </div>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ── Category section ──────────────────────────────────────────────────────────
-function CategorySection({ category, missions, completedIds, lockedIds, onClaim, loadingId }: {
-  category: typeof CATEGORIES[number];
-  missions: typeof STATIC_MISSIONS;
-  completedIds: Set<number>; lockedIds: Set<number>;
-  onClaim: (id: number) => void; loadingId: number | null;
-}) {
-  const [collapsed, setCollapsed] = useState(false);
-  const done = missions.filter(m => completedIds.has(m.id)).length;
-
-  return (
-    <div style={{ marginBottom: 20 }}>
-      <button
-        onClick={() => setCollapsed(c => !c)}
-        style={{
-          width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between",
-          background: "none", border: "none", cursor: "pointer", padding: "0 0 10px",
-        }}
-      >
-        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <div style={{
-            width: 30, height: 30, borderRadius: 8,
-            background: category.bg, border: `1px solid ${category.color}30`,
-            display: "flex", alignItems: "center", justifyContent: "center", fontSize: "0.85rem",
-          }}>
-            {category.icon}
-          </div>
-          <span style={{ fontFamily: "'Space Grotesk', sans-serif", fontWeight: 700, fontSize: "0.9rem", color: "var(--text-main)" }}>
-            {category.label}
-          </span>
-          <span className="badge-pill" style={{ fontSize: "0.65rem", background: "#f1f5f9", color: "#64748b" }}>
-            {done}/{missions.length}
-          </span>
-        </div>
-        <span style={{ color: "#94a3b8", fontSize: "0.75rem", transform: collapsed ? "rotate(-90deg)" : "none", transition: "transform 0.2s" }}>▼</span>
-      </button>
-
-      {!collapsed && missions.map(m => (
-        <MissionCard
-          key={m.id}
-          mission={m}
-          isLocked={lockedIds.has(m.id)}
-          isClaimed={completedIds.has(m.id)}
-          onClaim={onClaim}
-          isLoading={loadingId === m.id}
-        />
-      ))}
-    </div>
-  );
-}
-
-// ── Main page ─────────────────────────────────────────────────────────────────
+// ── Main Component ────────────────────────────────────────────────────────────
 export default function Missions() {
   const { isAuthenticated } = useAuth();
-  const utils = trpc.useUtils();
+  const { xp, streak, lastCheckin, isEnrolled, refetch } = useFDF();
 
-  const { data: profile } = trpc.fdf.getProfile.useQuery(undefined, { enabled: isAuthenticated });
-  const { data: missionsData, isLoading } = trpc.fdf.getMissions.useQuery(undefined, {
-    enabled: isAuthenticated && !!profile?.fdfUser,
+  const { data: missionsData, isLoading, refetch: refetchMissions } = trpc.fdf.getMissions.useQuery(undefined, {
+    enabled: isAuthenticated && isEnrolled,
   });
 
-  const [overlay, setOverlay] = useState<{ xpEarned: number; gemsEarned: number; title: string } | null>(null);
-  const [loadingId, setLoadingId] = useState<number | null>(null);
-
-  const claimMutation = trpc.fdf.claimMission.useMutation({
+  const checkIn = trpc.fdf.checkIn.useMutation({
     onSuccess: (data) => {
-      setOverlay({ xpEarned: data.xpEarned, gemsEarned: data.gemsEarned, title: data.missionTitle });
-      utils.fdf.getMissions.invalidate();
-      utils.fdf.getProfile.invalidate();
-      setLoadingId(null);
+      toast.success(`Day ${data.streak} streak! +${data.gemsEarned} 💎`);
+      refetch();
     },
-    onError: (err) => { toast.error(err.message); setLoadingId(null); },
-  });
-
-  const checkInMutation = trpc.fdf.checkIn.useMutation({
-    onSuccess: () => { utils.fdf.getProfile.invalidate(); toast.success("+5 XP — Activated!"); },
     onError: (err) => toast.error(err.message),
   });
 
-  // Build mission list
-  const rawMissions = missionsData?.missions?.length
-    ? missionsData.missions.map(m => ({
-        id: m.id,
-        title: m.title,
-        description: m.description ?? "",
-        xpReward: m.xpReward,
-        gemsReward: m.gemsReward,
-        category: (m.category ?? "money") as Category,
-        sortOrder: m.sortOrder ?? 0,
-        iconEmoji: m.iconEmoji ?? "📋",
-      }))
-    : STATIC_MISSIONS;
+  const claimMission = trpc.fdf.claimMission.useMutation({
+    onSuccess: (data) => {
+      setCompletionData({ xpEarned: data.xpEarned, gemsEarned: data.gemsEarned, title: data.missionTitle });
+      refetch();
+      refetchMissions();
+    },
+    onError: (err) => toast.error(err.message),
+  });
 
-  const completions = missionsData?.completions ?? [];
-  const completedIds = new Set(completions.filter(c => c.status === "claimed").map(c => c.missionId));
+  const [completionData, setCompletionData] = useState<{ xpEarned: number; gemsEarned: number; title: string } | null>(null);
+  const [openCategories, setOpenCategories] = useState<Set<string>>(new Set(["money"]));
 
-  // Build locked set: lock all missions after the first uncompleted one
-  const sorted = [...rawMissions].sort((a, b) => a.sortOrder - b.sortOrder);
-  const lockedIds = new Set<number>();
-  let foundUnlocked = false;
-  for (let i = 0; i < sorted.length; i++) {
-    if (foundUnlocked) { lockedIds.add(sorted[i].id); continue; }
-    if (!completedIds.has(sorted[i].id)) {
-      foundUnlocked = true;
-      // first uncompleted is unlocked; everything after is locked
-    }
-  }
+  const toggleCategory = (key: string) => {
+    setOpenCategories(prev => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  };
 
-  const progress = profile?.progress;
-  const xp = progress?.xpTotal ?? 0;
-  const streak = progress?.streakDays ?? 0;
-
-  // Group by category
-  const byCategory = CATEGORIES.map(cat => ({
-    category: cat,
-    missions: rawMissions.filter(m => m.category === cat.key),
-  })).filter(g => g.missions.length > 0);
-
-  // ── Unauthenticated ──
   if (!isAuthenticated) {
     return (
       <div className="page-container animate-fade-in">
-        <div style={{ paddingTop: 48, textAlign: "center" }}>
+        <div style={{ paddingTop: 40, textAlign: "center" }}>
           <div style={{ fontSize: "2.5rem", marginBottom: 16 }}>🎯</div>
-          <h2 style={{ fontSize: "1.25rem", fontWeight: 800, color: "var(--text-main)", marginBottom: 8 }}>Missions Locked</h2>
-          <p style={{ fontSize: "0.875rem", color: "var(--text-sub)", marginBottom: 24 }}>Sign in to access your weekly training missions.</p>
-          <a href={getLoginUrl()} className="btn-primary" style={{ display: "inline-flex" }}>
-            Sign In to Continue <ArrowRight size={16} style={{ marginLeft: 6 }} />
+          <h2 style={{ fontSize: "1.25rem", fontWeight: 800, color: "var(--text-main)", marginBottom: 8 }}>
+            Missions Locked
+          </h2>
+          <p style={{ fontSize: "0.875rem", color: "var(--text-sub)", marginBottom: 24 }}>
+            Sign in to access your training missions.
+          </p>
+          <a href={getLoginUrl()} className="btn-primary">
+            Sign In to Continue
+            <ArrowRight size={16} />
           </a>
         </div>
       </div>
     );
   }
 
-  if (!profile?.fdfUser) {
+  if (!isEnrolled) {
     return (
       <div className="page-container animate-fade-in">
-        <div style={{ paddingTop: 48, textAlign: "center" }}>
+        <div style={{ paddingTop: 40, textAlign: "center" }}>
           <div style={{ fontSize: "2.5rem", marginBottom: 16 }}>🔒</div>
-          <h2 style={{ fontSize: "1.25rem", fontWeight: 800, color: "var(--text-main)", marginBottom: 8 }}>Complete Onboarding First</h2>
-          <p style={{ fontSize: "0.875rem", color: "var(--text-sub)" }}>Set up your FDF profile on the Home page to unlock missions.</p>
+          <h2 style={{ fontSize: "1.25rem", fontWeight: 800, color: "var(--text-main)", marginBottom: 8 }}>
+            Complete Onboarding First
+          </h2>
+          <p style={{ fontSize: "0.875rem", color: "var(--text-sub)", marginBottom: 24 }}>
+            Set up your FDF profile on the Home page to unlock missions.
+          </p>
         </div>
       </div>
     );
   }
 
+  if (isLoading) {
+    return (
+      <div className="page-container">
+        <div style={{ paddingTop: 24, display: "flex", flexDirection: "column", gap: 10 }}>
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="skeleton" style={{ height: 80, borderRadius: 18 }} />
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  const missions = (missionsData?.missions?.length ? missionsData.missions : STATIC_MISSIONS) as typeof STATIC_MISSIONS;
+  const completions = missionsData?.completions ?? [];
+  const sortedMissions = [...missions].sort((a, b) => a.sortOrder - b.sortOrder);
+  const claimedIds = new Set(completions.filter(c => c.status === "claimed").map(c => c.missionId));
+
   return (
     <div className="page-container animate-fade-in">
-      {/* Header */}
+
+      {/* ── Header ── */}
       <div style={{ paddingTop: 20, paddingBottom: 16 }}>
-        <h1 style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: "1.5rem", fontWeight: 800, color: "var(--text-main)", letterSpacing: "-0.02em", marginBottom: 3 }}>
+        <h1
+          style={{
+            fontFamily: "'Space Grotesk', sans-serif",
+            fontSize: "1.5rem", fontWeight: 800,
+            color: "var(--text-main)", letterSpacing: "-0.02em", marginBottom: 4,
+          }}
+        >
           Missions
         </h1>
-        <p style={{ fontSize: "0.82rem", color: "var(--text-sub)" }}>
-          Complete weekly missions to build real skills and earn XP.
+        <p style={{ fontSize: "0.875rem", color: "var(--text-sub)" }}>
+          Complete missions to earn XP and build real skills.
         </p>
       </div>
 
-      {/* XP Level Bar */}
+      {/* ── XP Level Bar ── */}
       <XPBar xp={xp} />
 
-      {/* Streak */}
+      {/* ── Streak Bar ── */}
       <StreakBar streak={streak} />
 
-      {/* Daily Activation */}
+      {/* ── Daily Activation ── */}
       <DailyActivation
-        lastCheckin={progress?.lastCheckin}
-        onCheckIn={() => checkInMutation.mutate()}
-        loading={checkInMutation.isPending}
+        lastCheckin={lastCheckin}
+        onCheckIn={() => checkIn.mutate()}
+        loading={checkIn.isPending}
       />
 
-      {/* Missions by category */}
-      {isLoading ? (
-        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-          {[1, 2, 3].map(i => <div key={i} className="skeleton" style={{ height: 90, borderRadius: 16 }} />)}
-        </div>
-      ) : (
-        byCategory.map(({ category, missions: catMissions }) => (
-          <CategorySection
-            key={category.key}
-            category={category}
-            missions={catMissions}
-            completedIds={completedIds}
-            lockedIds={lockedIds}
-            onClaim={(id) => { setLoadingId(id); claimMutation.mutate({ missionId: id }); }}
-            loadingId={loadingId}
-          />
-        ))
-      )}
+      {/* ── Mission Categories ── */}
+      {CATEGORIES.map((cat) => {
+        const catMissions = sortedMissions.filter(m => m.category === cat.key);
+        if (catMissions.length === 0) return null;
+        const isOpen = openCategories.has(cat.key);
+        const completedCount = catMissions.filter(m => claimedIds.has(m.id)).length;
 
-      {/* Completion overlay */}
-      {overlay && (
+        return (
+          <div key={cat.key} style={{ marginBottom: 12 }}>
+            {/* Category Header */}
+            <button
+              onClick={() => toggleCategory(cat.key)}
+              style={{
+                width: "100%", display: "flex", alignItems: "center",
+                justifyContent: "space-between", padding: "12px 16px",
+                background: "rgba(255,255,255,0.85)",
+                backdropFilter: "blur(12px)",
+                border: "1px solid var(--card-border)",
+                borderRadius: isOpen ? "14px 14px 0 0" : 14,
+                cursor: "pointer",
+                boxShadow: "var(--card-shadow)",
+                transition: "border-radius 0.2s ease",
+              }}
+            >
+              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                <div
+                  style={{
+                    width: 32, height: 32, borderRadius: 9,
+                    background: cat.bg,
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    fontSize: "0.9rem",
+                  }}
+                >
+                  {cat.icon}
+                </div>
+                <div style={{ textAlign: "left" }}>
+                  <p style={{ fontWeight: 700, fontSize: "0.875rem", color: "var(--text-main)" }}>
+                    {cat.label}
+                  </p>
+                  <p style={{ fontSize: "0.68rem", color: "var(--text-muted)" }}>
+                    {completedCount}/{catMissions.length} completed
+                  </p>
+                </div>
+              </div>
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                {completedCount === catMissions.length && catMissions.length > 0 && (
+                  <span style={{ fontSize: "0.65rem", fontWeight: 700, color: "#16a34a", background: "#dcfce7", padding: "2px 8px", borderRadius: 99 }}>
+                    DONE
+                  </span>
+                )}
+                <span style={{ color: "var(--text-muted)", fontSize: "0.75rem", transform: isOpen ? "rotate(180deg)" : "none", transition: "transform 0.2s ease" }}>
+                  ▾
+                </span>
+              </div>
+            </button>
+
+            {/* Mission Cards */}
+            {isOpen && (
+              <div
+                style={{
+                  background: "rgba(248,250,255,0.9)",
+                  border: "1px solid var(--card-border)",
+                  borderTop: "none",
+                  borderRadius: "0 0 14px 14px",
+                  overflow: "hidden",
+                }}
+              >
+                {catMissions.map((mission, idx) => {
+                  const globalIdx = sortedMissions.findIndex(m => m.id === mission.id);
+                  const isClaimed = claimedIds.has(mission.id);
+                  const isLocked = globalIdx > 0 && !claimedIds.has(sortedMissions[globalIdx - 1].id);
+                  const isPending = claimMission.isPending && claimMission.variables?.missionId === mission.id;
+
+                  return (
+                    <div
+                      key={mission.id}
+                      style={{
+                        display: "flex", alignItems: "center", gap: 14,
+                        padding: "14px 16px",
+                        borderBottom: idx < catMissions.length - 1 ? "1px solid rgba(91,140,255,0.07)" : "none",
+                        opacity: isLocked ? 0.5 : 1,
+                        transition: "opacity 0.2s ease",
+                      }}
+                    >
+                      {/* Icon */}
+                      <div
+                        style={{
+                          width: 44, height: 44, borderRadius: 12,
+                          background: isClaimed ? "#dcfce7" : isLocked ? "rgba(226,232,240,0.5)" : cat.bg,
+                          display: "flex", alignItems: "center", justifyContent: "center",
+                          fontSize: "1.2rem", flexShrink: 0,
+                        }}
+                      >
+                        {isClaimed ? "✅" : isLocked ? "🔒" : mission.iconEmoji}
+                      </div>
+
+                      {/* Content */}
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <p style={{ fontWeight: 700, fontSize: "0.875rem", color: isClaimed ? "#16a34a" : isLocked ? "var(--text-muted)" : "var(--text-main)", marginBottom: 3 }}>
+                          {mission.title}
+                        </p>
+                        <p style={{ fontSize: "0.75rem", color: "var(--text-sub)", lineHeight: 1.5, marginBottom: 6 }}>
+                          {mission.description}
+                        </p>
+                        <div style={{ display: "flex", gap: 6 }}>
+                          <span className="badge-pill blue" style={{ fontSize: "0.65rem" }}>
+                            +{mission.xpReward} XP
+                          </span>
+                          <span className="badge-pill purple" style={{ fontSize: "0.65rem" }}>
+                            +{mission.gemsReward} 💎
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Action */}
+                      <div style={{ flexShrink: 0 }}>
+                        {isClaimed ? (
+                          <div style={{ display: "flex", alignItems: "center", gap: 4, color: "#16a34a", fontSize: "0.75rem", fontWeight: 700 }}>
+                            <CheckCircle2 size={16} />
+                          </div>
+                        ) : isLocked ? (
+                          <Lock size={16} style={{ color: "var(--text-muted)" }} />
+                        ) : (
+                          <button
+                            className="btn-primary"
+                            style={{ padding: "8px 14px", fontSize: "0.78rem" }}
+                            disabled={isPending}
+                            onClick={() => claimMission.mutate({ missionId: mission.id })}
+                          >
+                            {isPending ? "…" : "Start"}
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        );
+      })}
+
+      {/* Completion Overlay */}
+      {completionData && (
         <CompletionOverlay
-          xpEarned={overlay.xpEarned}
-          gemsEarned={overlay.gemsEarned}
-          title={overlay.title}
-          onContinue={() => setOverlay(null)}
+          xpEarned={completionData.xpEarned}
+          gemsEarned={completionData.gemsEarned}
+          title={completionData.title}
+          onContinue={() => setCompletionData(null)}
         />
       )}
     </div>
