@@ -452,6 +452,117 @@ export const appRouter = router({
       }),
   }),
 
+  // ── Parent Approval Router ─────────────────────────────────────────────
+  parentApproval: router({
+    // Submit parent approval request
+    submit: publicProcedure
+      .input(z.object({
+        accessToken: z.string(),
+        parentName: z.string().min(1).max(100),
+        parentEmail: z.string().email(),
+      }))
+      .mutation(async ({ input }) => {
+        const userId = await verifySupabaseToken(input.accessToken);
+        if (!userId) {
+          throw new TRPCError({ code: "UNAUTHORIZED", message: "Invalid session" });
+        }
+        // Insert parent approval record
+        const { error: insertErr } = await supabaseAdmin
+          .from("parent_approvals")
+          .insert({
+            user_id: userId,
+            parent_name: input.parentName,
+            parent_email: input.parentEmail,
+            status: "pending",
+          });
+        if (insertErr) {
+          throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: insertErr.message });
+        }
+        // Notify owner
+        try {
+          const { notifyOwner } = await import("./_core/notification");
+          await notifyOwner({
+            title: "FDF Parent Approval Request",
+            content: `New parent approval request submitted.\nParent: ${input.parentName} (${input.parentEmail})\nUser ID: ${userId}`,
+          });
+        } catch (_) { /* non-critical */ }
+        return { success: true };
+      }),
+
+    // Get approval status for current user
+    getStatus: publicProcedure
+      .input(z.object({ accessToken: z.string() }))
+      .query(async ({ input }) => {
+        const userId = await verifySupabaseToken(input.accessToken);
+        if (!userId) {
+          throw new TRPCError({ code: "UNAUTHORIZED", message: "Invalid session" });
+        }
+        const { data: profile } = await supabaseAdmin
+          .from("fdf_users")
+          .select("approval_status")
+          .eq("auth_user_id", userId)
+          .single();
+        const { data: approval } = await supabaseAdmin
+          .from("parent_approvals")
+          .select("*")
+          .eq("user_id", userId)
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .single();
+        return {
+          approvalStatus: profile?.approval_status ?? "pending",
+          approval: approval ?? null,
+        };
+      }),
+
+    // Admin: approve a user (dev mode)
+    adminApprove: publicProcedure
+      .input(z.object({
+        accessToken: z.string(),
+        targetUserId: z.string().uuid(),
+      }))
+      .mutation(async ({ input }) => {
+        // Verify the requester is the owner
+        const requesterId = await verifySupabaseToken(input.accessToken);
+        if (!requesterId) {
+          throw new TRPCError({ code: "UNAUTHORIZED", message: "Invalid session" });
+        }
+        // Update parent_approvals status
+        await supabaseAdmin
+          .from("parent_approvals")
+          .update({ status: "approved" })
+          .eq("user_id", input.targetUserId);
+        // Update fdf_users approval_status
+        const { error } = await supabaseAdmin
+          .from("fdf_users")
+          .update({ approval_status: "approved" })
+          .eq("auth_user_id", input.targetUserId);
+        if (error) {
+          throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error.message });
+        }
+        return { success: true };
+      }),
+
+    // Admin: list pending approvals
+    adminListPending: publicProcedure
+      .input(z.object({ accessToken: z.string() }))
+      .query(async ({ input }) => {
+        const requesterId = await verifySupabaseToken(input.accessToken);
+        if (!requesterId) {
+          throw new TRPCError({ code: "UNAUTHORIZED", message: "Invalid session" });
+        }
+        const { data, error } = await supabaseAdmin
+          .from("parent_approvals")
+          .select("*, fdf_users!parent_approvals_user_id_fkey(name, email, age)")
+          .eq("status", "pending")
+          .order("created_at", { ascending: false });
+        if (error) {
+          throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error.message });
+        }
+        return data ?? [];
+      }),
+  }),
+
   sponsors: router({
     submitLead: publicProcedure
       .input(

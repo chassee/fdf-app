@@ -61,6 +61,25 @@ export default function SignIn() {
         });
       }
 
+      // Check approval status — redirect to pending screen if not approved
+      const approvalStatus = profile?.approval_status ?? "pending";
+      if (approvalStatus === "pending") {
+        // Check if they have a pending approval request or need to submit one
+        const { data: approvalRecord } = await supabase
+          .from("parent_approvals")
+          .select("id")
+          .eq("user_id", data.user.id)
+          .single();
+        if (approvalRecord) {
+          toast.success(`Welcome back! 👋`);
+          setLocation("/pending-approval");
+          return;
+        } else {
+          toast.success(`Welcome back! 👋`);
+          setLocation("/parent-approval");
+          return;
+        }
+      }
       toast.success(`Welcome back! 👋`);
       setLocation("/");
     } catch (e: any) {

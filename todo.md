@@ -413,3 +413,17 @@
 - [ ] TypeScript clean
 - [ ] Save checkpoint
 - [ ] Publish site
+
+## Parent Approval System
+
+- [x] Create `parent_approvals` table in Supabase (id, user_id, parent_name, parent_email, status, created_at)
+- [x] Add `approval_status` column to `fdf_users` table (default "pending")
+- [x] Build ParentApproval page — form with parent name + email, "Request Parent Approval" CTA
+- [x] Build PendingApproval page — "Approval in Progress" screen, no nav access
+- [x] Post-signup redirect: if age < 18 → /parent-approval; if age >= 18 → /
+- [x] Post-signin redirect: if approval_status != "approved" → /pending-approval
+- [x] Access control gates: block Missions, Rewards, Ranks, Vault if not approved
+- [x] Admin approval toggle (dev mode): "Approve User" button updates both tables
+- [x] Optional: trigger owner notification email on parent approval submission
+- [x] TypeScript clean, all tests pass
+- [ ] Save checkpoint

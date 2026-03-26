@@ -31,7 +31,10 @@ export default function SignUp() {
         }));
         setSuccess(true);
         toast.success("Account created! Welcome to FDF 🎉");
-        setTimeout(() => setLocation("/"), 1500);
+        // All FDF users are 13-17, so always require parent approval
+        const age = parseInt(form.age);
+        const redirectTo = age < 18 ? "/parent-approval" : "/";
+        setTimeout(() => setLocation(redirectTo), 1500);
       } catch (e: any) {
         toast.error(e.message);
       }
