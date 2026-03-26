@@ -411,7 +411,7 @@
 ### Tests + Deploy
 - [ ] Add vitest tests for signUp, signIn, getSession procedures
 - [ ] TypeScript clean
-- [ ] Save checkpoint
+- [x] Save checkpoint
 - [ ] Publish site
 
 ## Parent Approval System
@@ -426,4 +426,19 @@
 - [x] Admin approval toggle (dev mode): "Approve User" button updates both tables
 - [x] Optional: trigger owner notification email on parent approval submission
 - [x] TypeScript clean, all tests pass
+- [x] Save checkpoint
+
+## DNA Score System
+
+- [ ] Add DNA columns to fdf_users in Supabase: dna_score, dna_level, consistency_score, discipline_score, intelligence_score
+- [ ] Add DNA computation logic to FDFContext: dna_score = xp + (streak_days * 5), dna_level tiers (Seed/Growth/Builder/Operator/Elite)
+- [ ] Expose dna_score, dna_level, consistency_score, discipline_score, intelligence_score from FDFContext
+- [ ] Update mission completion to increment discipline_score (+10) and intelligence_score (+10)
+- [ ] Update daily check-in to increment consistency_score (+5)
+- [ ] Sync DNA scores to Supabase via syncProgress procedure
+- [ ] Build /dna page: DNA score (large), DNA level badge, 3 trait bars (Discipline/Consistency/Intelligence), evolving tagline
+- [ ] Add /dna route to App.tsx and bottom nav
+- [ ] Add +DNA animation on mission completion (alongside +XP pop)
+- [ ] Add DNA score + "Your DNA is evolving" label to Home dashboard
+- [ ] TypeScript clean, all tests pass
 - [ ] Save checkpoint

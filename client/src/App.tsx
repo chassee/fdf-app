@@ -18,6 +18,7 @@ import SignUp from "./pages/SignUp";
 import SignIn from "./pages/SignIn";
 import ParentApproval from "./pages/ParentApproval";
 import PendingApproval from "./pages/PendingApproval";
+import DNA from "./pages/DNA";
 
 // Full-screen routes (no bottom nav / layout chrome)
 const AUTH_ROUTES = ["/signup", "/signin", "/parent-approval", "/pending-approval"];
@@ -46,6 +47,7 @@ function Router() {
         <Route path="/ranks" component={Ranks} />
         <Route path="/graduation" component={Graduation} />
         <Route path="/parents" component={Parents} />
+        <Route path="/dna" component={DNA} />
         <Route component={NotFound} />
       </Switch>
     </Layout>

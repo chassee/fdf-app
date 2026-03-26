@@ -48,6 +48,40 @@ export function getLevelInfo(xp: number) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// DNA SCORE SYSTEM
+// ─────────────────────────────────────────────────────────────────────────────
+
+export type DNALevel = "Seed" | "Growth" | "Builder" | "Operator" | "Elite";
+
+export const DNA_LEVEL_META: Record<DNALevel, {
+  emoji: string;
+  color: string;
+  gradientFrom: string;
+  gradientTo: string;
+  minScore: number;
+  maxScore: number;
+  tagline: string;
+}> = {
+  Seed:     { emoji: "🌱", color: "#64748b", gradientFrom: "#94a3b8", gradientTo: "#64748b", minScore: 0,    maxScore: 99,   tagline: "Your financial DNA is just beginning to form." },
+  Growth:   { emoji: "🌿", color: "#22c55e", gradientFrom: "#86efac", gradientTo: "#16a34a", minScore: 100,  maxScore: 249,  tagline: "You're building real financial instincts." },
+  Builder:  { emoji: "🌳", color: "#7c3aed", gradientFrom: "#a78bfa", gradientTo: "#6d28d9", minScore: 250,  maxScore: 499,  tagline: "Your habits are becoming your identity." },
+  Operator: { emoji: "🧬", color: "#f59e0b", gradientFrom: "#fbbf24", gradientTo: "#d97706", minScore: 500,  maxScore: 999,  tagline: "You operate with discipline and intelligence." },
+  Elite:    { emoji: "🧠", color: "#10b981", gradientFrom: "#34d399", gradientTo: "#059669", minScore: 1000, maxScore: 9999, tagline: "Elite financial DNA. You are the system." },
+};
+
+export function computeDNAScore(xp: number, streakDays: number): number {
+  return xp + (streakDays * 5);
+}
+
+export function computeDNALevel(dnaScore: number): DNALevel {
+  if (dnaScore >= 1000) return "Elite";
+  if (dnaScore >= 500)  return "Operator";
+  if (dnaScore >= 250)  return "Builder";
+  if (dnaScore >= 100)  return "Growth";
+  return "Seed";
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // UNLOCK THRESHOLDS
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -75,6 +109,12 @@ export interface LocalFDFState {
   gems: number;
   dawg_class: string | null;
   dob: string | null;
+  // DNA Score System
+  dna_score: number;
+  dna_level: DNALevel;
+  consistency_score: number;
+  discipline_score: number;
+  intelligence_score: number;
   unlocked_sections: {
     missions: boolean;
     rewards: boolean;
@@ -96,6 +136,11 @@ const DEFAULT_LOCAL_STATE: LocalFDFState = {
   gems: 0,
   dawg_class: null,
   dob: null,
+  dna_score: 0,
+  dna_level: "Seed",
+  consistency_score: 0,
+  discipline_score: 0,
+  intelligence_score: 0,
   unlocked_sections: {
     missions: false,
     rewards: false,
@@ -151,6 +196,13 @@ interface FDFContextValue {
   isLoading: boolean;
   yearTrack: number;
 
+  // DNA Score System
+  dnaScore: number;
+  dnaLevel: DNALevel;
+  consistencyScore: number;
+  disciplineScore: number;
+  intelligenceScore: number;
+
   // Unlock flags
   unlockedSections: LocalFDFState["unlocked_sections"];
 
@@ -168,6 +220,7 @@ const FDFContext = createContext<FDFContextValue>({
   xp: 0, gems: 0, streak: 0, missionsCompleted: 0,
   lastCheckin: null, rankId: "rookie", level: 1, levelPct: 0,
   dawgClass: null, dob: null, isEnrolled: false, isLoading: false, yearTrack: 1,
+  dnaScore: 0, dnaLevel: "Seed", consistencyScore: 0, disciplineScore: 0, intelligenceScore: 0,
   unlockedSections: { missions: false, rewards: false, ranks: false, vault: false },
   addXP: () => {}, completeMission: () => {}, doCheckIn: () => {}, setLocalProfile: () => {},
   refetch: () => {},
@@ -217,7 +270,10 @@ export function FDFProvider({ children }: { children: React.ReactNode }) {
       const { level } = getLevelInfo(next.xp);
       const unlocked_sections = computeUnlocks(next.xp, isAuthenticated);
       const vault_progress = Math.min(100, Math.round((next.xp / 500) * 100));
-      const updated: LocalFDFState = { ...next, rank, level, unlocked_sections, vault_progress };
+      // Recompute DNA
+      const dna_score = computeDNAScore(next.xp, next.streak_days);
+      const dna_level = computeDNALevel(dna_score);
+      const updated: LocalFDFState = { ...next, rank, level, unlocked_sections, vault_progress, dna_score, dna_level };
       saveLocal(updated);
       return updated;
     });
@@ -294,6 +350,8 @@ export function FDFProvider({ children }: { children: React.ReactNode }) {
     xp?: number; gems?: number; streak_days?: number;
     completed_missions?: number[]; last_checkin?: string | null;
     vault_progress?: number; rank?: string; level?: number;
+    dna_score?: number; dna_level?: string;
+    consistency_score?: number; discipline_score?: number; intelligence_score?: number;
   }) => {
     if (!supabaseUser) return;
     // Fire-and-forget: update fdf_users row in Supabase
@@ -328,8 +386,20 @@ export function FDFProvider({ children }: { children: React.ReactNode }) {
       const rank = computeRank(newXp);
       const { level } = getLevelInfo(newXp);
       const vault_progress = Math.min(100, Math.round((newXp / 500) * 100));
-      syncToSupabase({ xp: newXp, gems: newGems, completed_missions: newMissions, rank: rank, level, vault_progress });
-      return { ...prev, xp: newXp, gems: newGems, completed_missions: newMissions };
+      // DNA updates: mission completion → +discipline +intelligence
+      const newDiscipline = Math.min(999, prev.discipline_score + 10);
+      const newIntelligence = Math.min(999, prev.intelligence_score + 10);
+      const newDnaScore = computeDNAScore(newXp, prev.streak_days);
+      const newDnaLevel = computeDNALevel(newDnaScore);
+      syncToSupabase({
+        xp: newXp, gems: newGems, completed_missions: newMissions, rank: rank, level, vault_progress,
+        dna_score: newDnaScore, dna_level: newDnaLevel,
+        discipline_score: newDiscipline, intelligence_score: newIntelligence,
+      });
+      return {
+        ...prev, xp: newXp, gems: newGems, completed_missions: newMissions,
+        discipline_score: newDiscipline, intelligence_score: newIntelligence,
+      };
     });
   }, [setLocal, syncToSupabase]);
 
@@ -343,13 +413,21 @@ export function FDFProvider({ children }: { children: React.ReactNode }) {
       const newStreak = prev.last_checkin === yStr ? prev.streak_days + 1 : 1;
       const newXp = prev.xp + 5;
       const newGems = prev.gems + 5;
-      syncToSupabase({ xp: newXp, gems: newGems, streak_days: newStreak, last_checkin: today });
+      // DNA updates: daily login → +consistency
+      const newConsistency = Math.min(999, prev.consistency_score + 5);
+      const newDnaScore = computeDNAScore(newXp, newStreak);
+      const newDnaLevel = computeDNALevel(newDnaScore);
+      syncToSupabase({
+        xp: newXp, gems: newGems, streak_days: newStreak, last_checkin: today,
+        dna_score: newDnaScore, dna_level: newDnaLevel, consistency_score: newConsistency,
+      });
       return {
         ...prev,
         last_checkin: today,
         streak_days: newStreak,
         gems: newGems,
         xp: newXp,
+        consistency_score: newConsistency,
       };
     });
   }, [setLocal, syncToSupabase]);
@@ -392,10 +470,18 @@ export function FDFProvider({ children }: { children: React.ReactNode }) {
     [xp, isAuthenticated]
   );
 
+  // DNA derived values
+  const dnaScore        = local.dna_score;
+  const dnaLevel        = local.dna_level;
+  const consistencyScore = local.consistency_score;
+  const disciplineScore  = local.discipline_score;
+  const intelligenceScore = local.intelligence_score;
+
   const value: FDFContextValue = {
     xp, gems, streak, missionsCompleted,
     lastCheckin, rankId, level, levelPct,
     dawgClass, dob, isEnrolled, isLoading, yearTrack,
+    dnaScore, dnaLevel, consistencyScore, disciplineScore, intelligenceScore,
     unlockedSections,
     addXP, completeMission, doCheckIn, setLocalProfile,
     refetch,

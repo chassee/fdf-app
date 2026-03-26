@@ -4,7 +4,7 @@ import { getLoginUrl } from "@/const";
 import { useState } from "react";
 import { Link } from "wouter";
 import { toast } from "sonner";
-import { useFDF, RANK_META, getLevelInfo } from "@/contexts/FDFContext";
+import { useFDF, RANK_META, getLevelInfo, DNA_LEVEL_META } from "@/contexts/FDFContext";
 import {
   ArrowRight,
   Target,
@@ -36,7 +36,7 @@ const TRAINING_PATH = [
 
 export default function Home() {
   const { user, isAuthenticated } = useAuth();
-  const { xp, gems, streak, missionsCompleted, lastCheckin, rankId, level, levelPct, isEnrolled, isLoading, refetch } = useFDF();
+  const { xp, gems, streak, missionsCompleted, lastCheckin, rankId, level, levelPct, isEnrolled, isLoading, refetch, dnaScore, dnaLevel, disciplineScore, consistencyScore, intelligenceScore } = useFDF();
 
   const [onboardStep, setOnboardStep] = useState<"dob" | "class" | null>(null);
   const [dob, setDob] = useState("");
@@ -488,6 +488,72 @@ export default function Home() {
           </div>
         )}
       </div>
+
+      {/* ── DNA Score Widget ── */}
+      <Link href="/dna" style={{ textDecoration: "none" }}>
+        <div
+          className="academy-card"
+          style={{
+            marginBottom: 12, cursor: "pointer",
+            background: `linear-gradient(135deg, ${DNA_LEVEL_META[dnaLevel].gradientFrom}12, ${DNA_LEVEL_META[dnaLevel].gradientTo}08)`,
+            border: `1.5px solid ${DNA_LEVEL_META[dnaLevel].color}28`,
+          }}
+        >
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              <div
+                style={{
+                  width: 36, height: 36, borderRadius: 10,
+                  background: `linear-gradient(135deg, ${DNA_LEVEL_META[dnaLevel].gradientFrom}, ${DNA_LEVEL_META[dnaLevel].gradientTo})`,
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  fontSize: "1.1rem",
+                  boxShadow: `0 4px 10px ${DNA_LEVEL_META[dnaLevel].color}30`,
+                }}
+              >
+                🧬
+              </div>
+              <div>
+                <p style={{ fontWeight: 700, fontSize: "0.875rem", color: "var(--text-main)" }}>Financial DNA</p>
+                <p style={{ fontSize: "0.72rem", color: DNA_LEVEL_META[dnaLevel].color, fontWeight: 700 }}>
+                  {DNA_LEVEL_META[dnaLevel].emoji} {dnaLevel} Level
+                </p>
+              </div>
+            </div>
+            <div style={{ textAlign: "right" }}>
+              <div style={{
+                fontFamily: "'Space Grotesk', sans-serif",
+                fontWeight: 900, fontSize: "1.375rem",
+                background: `linear-gradient(135deg, ${DNA_LEVEL_META[dnaLevel].gradientFrom}, ${DNA_LEVEL_META[dnaLevel].gradientTo})`,
+                WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent",
+              }}>
+                {dnaScore}
+              </div>
+              <div style={{ fontSize: "0.65rem", color: "var(--text-muted)", fontWeight: 600 }}>DNA Score</div>
+            </div>
+          </div>
+          {/* Trait mini-bars */}
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 6 }}>
+            {[
+              { label: "Discipline",   score: disciplineScore,   color: "#7c3aed" },
+              { label: "Consistency",  score: consistencyScore,  color: "#3b82f6" },
+              { label: "Intelligence", score: intelligenceScore, color: "#10b981" },
+            ].map(t => (
+              <div key={t.label}>
+                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 3 }}>
+                  <span style={{ fontSize: "0.6rem", color: "var(--text-muted)", fontWeight: 600 }}>{t.label.slice(0,4)}</span>
+                  <span style={{ fontSize: "0.6rem", color: t.color, fontWeight: 700 }}>{t.score}</span>
+                </div>
+                <div style={{ height: 4, borderRadius: 99, background: "rgba(0,0,0,0.06)", overflow: "hidden" }}>
+                  <div style={{ height: "100%", borderRadius: 99, background: t.color, width: `${Math.min(100, t.score)}%`, transition: "width 0.8s ease" }} />
+                </div>
+              </div>
+            ))}
+          </div>
+          <p style={{ fontSize: "0.68rem", color: "var(--text-muted)", marginTop: 8, fontStyle: "italic" }}>
+            Your DNA is evolving daily →
+          </p>
+        </div>
+      </Link>
 
       {/* ── Missions Preview Card ── */}
       <Link href="/missions" style={{ textDecoration: "none" }}>

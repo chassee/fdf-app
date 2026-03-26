@@ -7,6 +7,7 @@ import {
   Gift,
   GraduationCap,
   LogOut,
+  Dna,
 } from "lucide-react";
 import { useLocation, Link } from "wouter";
 import { useFDF } from "@/contexts/FDFContext";
@@ -15,9 +16,9 @@ import { useState, useEffect } from "react";
 
 const NAV_TABS = [
   { icon: Home,          label: "Home",     path: "/" },
-  { icon: Trophy,        label: "Ranks",    path: "/ranks" },
   { icon: Target,        label: "Missions", path: "/missions" },
-  { icon: Gift,          label: "Rewards",  path: "/rewards" },
+  { icon: Dna,           label: "DNA",      path: "/dna" },
+  { icon: Trophy,        label: "Ranks",    path: "/ranks" },
   { icon: GraduationCap, label: "Vault",    path: "/graduation" },
 ];
 
