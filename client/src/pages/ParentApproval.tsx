@@ -369,7 +369,7 @@ export default function ParentApproval() {
             lineHeight: 1.5,
           }}
         >
-          FDF is 100% free. No purchases required. Contact admin@crypdawgs.com for questions.
+          FDF is 100% free. No purchases required.
         </p>
       </div>
     </div>

@@ -54,11 +54,11 @@ const FAQS = [
   },
   {
     q: "Can I monitor my child's progress?",
-    a: "Yes. Parents can request a progress report by emailing admin@crypdawgs.com with their child's registered first name. We will provide a summary of completed missions and current rank.",
+    a: "Yes. Parents can request a progress report through the app. We will provide a summary of completed missions and current rank.",
   },
   {
     q: "How do I remove my child's account?",
-    a: "Email admin@crypdawgs.com with the subject line 'Account Removal Request' and your child's registered first name. All data will be permanently deleted within 7 business days.",
+    a: "Submit an account removal request through the app. All data will be permanently deleted within 7 business days.",
   },
   {
     q: "What are the XP and Gems used for?",
@@ -265,25 +265,10 @@ export default function Parents() {
             <p style={{ fontWeight: 800, fontSize: "0.9rem", color: "var(--text-main)", marginBottom: 5 }}>
               Need Help?
             </p>
-            <p style={{ fontSize: "0.8rem", color: "var(--text-sub)", lineHeight: 1.6, marginBottom: 10 }}>
+            <p style={{ fontSize: "0.8rem", color: "var(--text-sub)", lineHeight: 1.6 }}>
               For questions about your child's account, data removal requests, or program concerns,
-              contact us directly. We respond within 1–2 business days.
+              use the in-app support form. We respond within 1–2 business days.
             </p>
-            <a
-              href="mailto:admin@crypdawgs.com"
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                gap: 6,
-                fontSize: "0.8125rem",
-                fontWeight: 700,
-                color: "var(--primary)",
-                textDecoration: "none",
-              }}
-            >
-              admin@crypdawgs.com
-              <ExternalLink size={13} />
-            </a>
           </div>
         </div>
       </div>
@@ -312,9 +297,7 @@ export default function Parents() {
               cursor: "pointer",
               textDecoration: "none",
             }}
-            onClick={() => {
-              if (link === "Contact") window.location.href = "mailto:admin@crypdawgs.com";
-            }}
+            onClick={() => {}}
           >
             {link}
           </button>

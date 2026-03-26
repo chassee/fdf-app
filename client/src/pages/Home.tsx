@@ -182,7 +182,7 @@ export default function Home() {
             }}
           >
             <Shield size={11} />
-            No purchases · No ads · admin@crypdawgs.com
+            No purchases · No ads · 100% Free
           </p>
         </div>
 

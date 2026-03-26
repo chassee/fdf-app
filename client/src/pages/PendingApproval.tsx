@@ -439,16 +439,7 @@ export default function PendingApproval() {
           )}
         </div>
 
-        <p
-          style={{
-            textAlign: "center",
-            fontSize: "0.72rem",
-            color: "#94a3b8",
-            marginTop: 20,
-          }}
-        >
-          Questions? Contact admin@crypdawgs.com
-        </p>
+
       </div>
 
       <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
