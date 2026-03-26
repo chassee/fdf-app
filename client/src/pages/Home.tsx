@@ -350,23 +350,90 @@ export default function Home() {
     <div className="page-container animate-fade-in">
 
       {/* ── Welcome Header ── */}
-      <div style={{ paddingTop: 20, paddingBottom: 20 }}>
+      <div style={{ paddingTop: 20, paddingBottom: 16 }}>
         <p style={{ fontSize: "0.7rem", fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.06em", textTransform: "uppercase", marginBottom: 4 }}>
           Welcome back
         </p>
-        <h1
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
+          <h1
+            style={{
+              fontFamily: "'Space Grotesk', sans-serif",
+              fontSize: "1.5rem", fontWeight: 800,
+              color: "var(--text-main)", letterSpacing: "-0.02em",
+            }}
+          >
+            {user?.name?.split(" ")[0] ?? "Dawg"}
+          </h1>
+          {/* Rank badge */}
+          <div
+            style={{
+              display: "inline-flex", alignItems: "center", gap: 5,
+              background: `linear-gradient(135deg, ${rankMeta.gradientFrom}, ${rankMeta.gradientTo})`,
+              color: "white",
+              fontSize: "0.7rem", fontWeight: 800,
+              padding: "5px 12px", borderRadius: 99,
+              letterSpacing: "0.04em", textTransform: "uppercase",
+              boxShadow: `0 4px 12px ${rankMeta.gradientFrom}44`,
+            }}
+          >
+            <span style={{ fontSize: "0.85rem" }}>{rankMeta.emoji}</span>
+            {rankMeta.label}
+          </div>
+        </div>
+
+        {/* XP progress bar */}
+        <div style={{ marginBottom: 6 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
+            <span style={{ fontSize: "0.72rem", fontWeight: 700, color: "var(--primary)" }}>Level {level}</span>
+            <span style={{ fontSize: "0.72rem", color: "var(--text-muted)" }}>{xp.toLocaleString()} / {getLevelInfo(xp).levelCeil.toLocaleString()} XP</span>
+          </div>
+          <div className="progress-track" style={{ height: 8 }}>
+            <div
+              className="progress-fill"
+              style={{ width: `${levelPct}%`, transition: "width 0.8s cubic-bezier(0.4,0,0.2,1)", boxShadow: "0 0 8px rgba(91,140,255,0.4)" }}
+            />
+          </div>
+        </div>
+
+        {/* Daily streak line */}
+        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+          <Flame size={13} style={{ color: streak > 0 ? "#f97316" : "var(--text-muted)" }} />
+          <span style={{ fontSize: "0.75rem", fontWeight: 700, color: streak > 0 ? "#f97316" : "var(--text-muted)" }}>
+            Daily Streak: {streak} day{streak !== 1 ? "s" : ""}
+          </span>
+          {streak >= 3 && <span style={{ fontSize: "0.7rem" }}>🔥</span>}
+        </div>
+      </div>
+
+      {/* ── Continue Mission CTA ── */}
+      <Link href="/missions" style={{ textDecoration: "none" }}>
+        <div
           style={{
-            fontFamily: "'Space Grotesk', sans-serif",
-            fontSize: "1.5rem", fontWeight: 800,
-            color: "var(--text-main)", letterSpacing: "-0.02em", marginBottom: 2,
+            marginBottom: 12,
+            background: "linear-gradient(135deg, var(--primary), var(--accent))",
+            borderRadius: 18,
+            padding: "16px 18px",
+            display: "flex", alignItems: "center", justifyContent: "space-between",
+            boxShadow: "0 8px 24px rgba(91,140,255,0.3)",
+            cursor: "pointer",
           }}
         >
-          {user?.name?.split(" ")[0] ?? "Dawg"}
-        </h1>
-        <p style={{ fontSize: "0.8125rem", color: "var(--text-sub)" }}>
-          {rankMeta.label} Rank · Level {level} · {xp.toLocaleString()} XP
-        </p>
-      </div>
+          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+            <div style={{ width: 42, height: 42, borderRadius: 12, background: "rgba(255,255,255,0.2)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "1.25rem" }}>
+              🎯
+            </div>
+            <div>
+              <p style={{ fontWeight: 800, fontSize: "0.9375rem", color: "white", marginBottom: 2, fontFamily: "'Space Grotesk', sans-serif" }}>
+                Continue Training
+              </p>
+              <p style={{ fontSize: "0.75rem", color: "rgba(255,255,255,0.8)" }}>
+                {missionsCompleted} mission{missionsCompleted !== 1 ? "s" : ""} completed · Earn more XP
+              </p>
+            </div>
+          </div>
+          <ArrowRight size={20} style={{ color: "white", flexShrink: 0 }} />
+        </div>
+      </Link>
 
       {/* ── Daily Activation Card ── */}
       <div

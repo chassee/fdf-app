@@ -308,5 +308,56 @@
 ### Deploy
 - [x] All 6 tests pass
 - [x] TypeScript clean
+- [x] Save checkpoint
+- [ ] Publish site
+
+## Live Progression Engine Upgrade
+
+### User State System
+- [x] Upgrade FDFContext to include full user state object (name, age, xp, level, rank, completed_missions, streak_days, vault_progress, unlocked_sections)
+- [x] Persist state to localStorage (merge with backend on login)
+- [x] Expose setters: addXP, completeMission, checkIn, setProfile
+
+### Unlock Flow
+- [x] Missions unlock immediately after sign-in
+- [x] Rewards unlock at 100 XP
+- [x] Ranks unlock at 250 XP
+- [x] Vault unlock preview at 500 XP
+- [x] Replace all static lock screens with dynamic unlock logic
+
+### Missions System
+- [x] Define real mission list (Save $10, Learn Credit, Track Spending, etc.)
+- [x] Complete Mission button → adds XP → triggers animation
+- [x] XP gain pop animation (+50 XP floating label)
+- [x] Progress bar smooth fill animation
+- [x] Completion state persisted to localStorage
+
+### XP + Level + Rank System
+- [x] Level formula: floor(xp / 100)
+- [x] Rank tiers: Rookie (0-99), Starter (100-249), Builder (250-499), Operator (500-999), Elite (1000+)
+- [x] Rank badge displayed on Home and Ranks pages
+- [x] XP counter with animated increment
+
+### Home Screen Upgrade
+- [x] "Welcome back, [Name]" personalized header
+- [x] Live XP bar + rank badge
+- [x] "Continue Mission" primary CTA (links to next incomplete mission)
+- [x] "Daily Streak: X days" display
+- [x] Remove all placeholder/static content
+
+### Micro-interactions
+- [x] XP gain pop animation (+N XP floating label)
+- [x] Progress bar smooth fill
+- [x] Button press visual feedback (scale + glow)
+- [x] Mission completion celebration overlay
+
+### Remove Dead UI
+- [x] Every button functional
+- [x] Every tab navigates correctly
+- [x] No placeholder text anywhere
+
+### Tests + Deploy
+- [x] Update vitest tests for new XP/rank/unlock logic
+- [x] TypeScript clean
 - [ ] Save checkpoint
 - [ ] Publish site

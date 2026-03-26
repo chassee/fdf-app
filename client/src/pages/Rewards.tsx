@@ -4,7 +4,7 @@ import { getLoginUrl } from "@/const";
 import { toast } from "sonner";
 import { useState } from "react";
 import { ArrowRight, CheckCircle2, Lock, ShieldCheck } from "lucide-react";
-import { useFDF } from "@/contexts/FDFContext";
+import { useFDF, UNLOCK_XP } from "@/contexts/FDFContext";
 
 // ── Static fallback rewards ───────────────────────────────────────────────────
 const STATIC_REWARDS = [
@@ -118,7 +118,7 @@ function ConfirmModal({
 // ── Main Component ────────────────────────────────────────────────────────────
 export default function Rewards() {
   const { isAuthenticated } = useAuth();
-  const { gems, isEnrolled, refetch } = useFDF();
+  const { gems, xp, isEnrolled, refetch, unlockedSections } = useFDF();
 
   const { data: rewardsData, isLoading, refetch: refetchRewards } = trpc.fdf.getRewards.useQuery(undefined, {
     enabled: isAuthenticated && isEnrolled,
@@ -170,6 +170,41 @@ export default function Rewards() {
           <p style={{ fontSize: "0.875rem", color: "var(--text-sub)", marginBottom: 24 }}>
             Set up your FDF profile on the Home page to access rewards.
           </p>
+        </div>
+      </div>
+    );
+  }
+
+  // XP-based unlock gate
+  if (!unlockedSections.rewards) {
+    const needed = UNLOCK_XP.rewards - xp;
+    return (
+      <div className="page-container animate-fade-in">
+        <div style={{ paddingTop: 40, textAlign: "center" }}>
+          <div style={{ fontSize: "3rem", marginBottom: 16 }}>🎁</div>
+          <h2 style={{ fontSize: "1.25rem", fontWeight: 800, color: "var(--text-main)", marginBottom: 8 }}>
+            Rewards Locked
+          </h2>
+          <p style={{ fontSize: "0.875rem", color: "var(--text-sub)", marginBottom: 20, lineHeight: 1.6 }}>
+            Earn <strong>{needed} more XP</strong> by completing missions to unlock the Rewards Shop.
+          </p>
+          <div
+            style={{
+              background: "var(--primary-light)", borderRadius: 14, padding: "14px 18px",
+              display: "inline-flex", alignItems: "center", gap: 10, marginBottom: 24,
+            }}
+          >
+            <span style={{ fontSize: "1.1rem" }}>⚡</span>
+            <div style={{ textAlign: "left" }}>
+              <p style={{ fontSize: "0.72rem", fontWeight: 700, color: "var(--primary-dark)", textTransform: "uppercase", letterSpacing: "0.05em" }}>Your Progress</p>
+              <p style={{ fontSize: "0.875rem", fontWeight: 800, color: "var(--primary)" }}>{xp} / {UNLOCK_XP.rewards} XP</p>
+            </div>
+          </div>
+          <div style={{ maxWidth: 240, margin: "0 auto" }}>
+            <div className="progress-track" style={{ height: 8 }}>
+              <div className="progress-fill" style={{ width: `${Math.min(100, (xp / UNLOCK_XP.rewards) * 100)}%`, transition: "width 0.8s ease" }} />
+            </div>
+          </div>
         </div>
       </div>
     );

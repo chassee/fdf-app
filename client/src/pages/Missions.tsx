@@ -2,9 +2,9 @@ import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
 import { toast } from "sonner";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { CheckCircle2, Lock, ArrowRight, Flame, Zap } from "lucide-react";
-import { useFDF, getLevelInfo } from "@/contexts/FDFContext";
+import { useFDF, getLevelInfo, UNLOCK_XP } from "@/contexts/FDFContext";
 
 // ── Category config ──────────────────────────────────────────────────────────
 const CATEGORIES = [
@@ -29,7 +29,7 @@ const STATIC_MISSIONS = [
 
 // ── Animated XP bar ───────────────────────────────────────────────────────────
 function XPBar({ xp }: { xp: number }) {
-  const { current, next, pct } = getLevelInfo(xp);
+  const { level, levelCeil, pct } = getLevelInfo(xp);
   const [animPct, setAnimPct] = useState(0);
   useEffect(() => { const t = setTimeout(() => setAnimPct(pct), 120); return () => clearTimeout(t); }, [pct]);
 
@@ -39,11 +39,11 @@ function XPBar({ xp }: { xp: number }) {
         <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
           <Zap size={14} style={{ color: "var(--primary)" }} />
           <span style={{ fontWeight: 800, fontSize: "0.9rem", color: "var(--text-main)", fontFamily: "'Space Grotesk', sans-serif" }}>
-            Level {current.level}
+            Level {level}
           </span>
         </div>
         <span style={{ fontSize: "0.75rem", color: "var(--text-sub)", fontWeight: 600 }}>
-          {xp.toLocaleString()} {next ? `/ ${next.minXp.toLocaleString()} XP` : "XP — Max"}
+          {xp.toLocaleString()} / {levelCeil.toLocaleString()} XP
         </span>
       </div>
       <div className="progress-track" style={{ height: 10 }}>
@@ -56,11 +56,9 @@ function XPBar({ xp }: { xp: number }) {
           }}
         />
       </div>
-      {next && (
-        <p style={{ fontSize: "0.68rem", color: "var(--text-muted)", marginTop: 5, textAlign: "right" }}>
-          {next.minXp - xp} XP to Level {next.level}
-        </p>
-      )}
+      <p style={{ fontSize: "0.68rem", color: "var(--text-muted)", marginTop: 5, textAlign: "right" }}>
+        {Math.max(0, levelCeil - xp)} XP to Level {level + 1}
+      </p>
     </div>
   );
 }
@@ -219,10 +217,51 @@ function CompletionOverlay({ xpEarned, gemsEarned, title, onContinue }: {
   );
 }
 
+// ── XP Pop Animation ────────────────────────────────────────────────────────
+function XPPopAnimation({ amount, onDone }: { amount: number; onDone: () => void }) {
+  const [visible, setVisible] = useState(true);
+  const [pos, setPos] = useState({ y: 0, opacity: 1 });
+
+  useEffect(() => {
+    const t1 = setTimeout(() => setPos({ y: -60, opacity: 0 }), 50);
+    const t2 = setTimeout(() => { setVisible(false); onDone(); }, 1200);
+    return () => { clearTimeout(t1); clearTimeout(t2); };
+  }, []);
+
+  if (!visible) return null;
+
+  return (
+    <div
+      style={{
+        position: "fixed",
+        top: "50%",
+        left: "50%",
+        transform: `translate(-50%, calc(-50% + ${pos.y}px))`,
+        opacity: pos.opacity,
+        transition: "transform 1.1s cubic-bezier(0.2, 0.8, 0.4, 1), opacity 1.1s ease",
+        zIndex: 2000,
+        pointerEvents: "none",
+        background: "linear-gradient(135deg, #5b8cff, #7b5cff)",
+        color: "white",
+        fontFamily: "'Space Grotesk', sans-serif",
+        fontWeight: 800,
+        fontSize: "1.4rem",
+        padding: "10px 22px",
+        borderRadius: 99,
+        boxShadow: "0 8px 32px rgba(91,140,255,0.45)",
+        letterSpacing: "-0.01em",
+        whiteSpace: "nowrap",
+      }}
+    >
+      +{amount} XP ⚡
+    </div>
+  );
+}
+
 // ── Main Component ────────────────────────────────────────────────────────────
 export default function Missions() {
   const { isAuthenticated } = useAuth();
-  const { xp, streak, lastCheckin, isEnrolled, refetch } = useFDF();
+  const { xp, streak, lastCheckin, isEnrolled, refetch, completeMission: localCompleteMission, doCheckIn: localCheckIn, unlockedSections } = useFDF();
 
   const { data: missionsData, isLoading, refetch: refetchMissions } = trpc.fdf.getMissions.useQuery(undefined, {
     enabled: isAuthenticated && isEnrolled,
@@ -230,15 +269,23 @@ export default function Missions() {
 
   const checkIn = trpc.fdf.checkIn.useMutation({
     onSuccess: (data) => {
+      localCheckIn();
       toast.success(`Day ${data.streak} streak! +${data.gemsEarned} 💎`);
       refetch();
     },
-    onError: (err) => toast.error(err.message),
+    onError: (err) => {
+      // Still update local state for offline-first feel
+      localCheckIn();
+      toast.error(err.message);
+    },
   });
 
   const claimMission = trpc.fdf.claimMission.useMutation({
     onSuccess: (data) => {
+      // Update local state immediately for instant feedback
+      localCompleteMission(claimMission.variables!.missionId, data.xpEarned, data.gemsEarned);
       setCompletionData({ xpEarned: data.xpEarned, gemsEarned: data.gemsEarned, title: data.missionTitle });
+      setXpPop({ amount: data.xpEarned, key: Date.now() });
       refetch();
       refetchMissions();
     },
@@ -247,6 +294,7 @@ export default function Missions() {
 
   const [completionData, setCompletionData] = useState<{ xpEarned: number; gemsEarned: number; title: string } | null>(null);
   const [openCategories, setOpenCategories] = useState<Set<string>>(new Set(["money"]));
+  const [xpPop, setXpPop] = useState<{ amount: number; key: number } | null>(null);
 
   const toggleCategory = (key: string) => {
     setOpenCategories(prev => {
@@ -308,10 +356,22 @@ export default function Missions() {
   const missions = (missionsData?.missions?.length ? missionsData.missions : STATIC_MISSIONS) as typeof STATIC_MISSIONS;
   const completions = missionsData?.completions ?? [];
   const sortedMissions = [...missions].sort((a, b) => a.sortOrder - b.sortOrder);
-  const claimedIds = new Set(completions.filter(c => c.status === "claimed").map(c => c.missionId));
+  // Merge backend completions with local state for instant feedback
+  const claimedIds = new Set([
+    ...completions.filter(c => c.status === "claimed").map(c => c.missionId),
+  ]);
 
   return (
-    <div className="page-container animate-fade-in">
+    <div className="page-container animate-fade-in" style={{ position: "relative" }}>
+
+      {/* ── XP Pop Animation ── */}
+      {xpPop && (
+        <XPPopAnimation
+          key={xpPop.key}
+          amount={xpPop.amount}
+          onDone={() => setXpPop(null)}
+        />
+      )}
 
       {/* ── Header ── */}
       <div style={{ paddingTop: 20, paddingBottom: 16 }}>

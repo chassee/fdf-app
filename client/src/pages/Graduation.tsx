@@ -1,7 +1,7 @@
 import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
 import { ArrowRight, CheckCircle2 } from "lucide-react";
-import { useFDF, RANK_META } from "@/contexts/FDFContext";
+import { useFDF, RANK_META, UNLOCK_XP } from "@/contexts/FDFContext";
 
 function getDaysUntil18(dobStr: string): number {
   const dob = new Date(dobStr);
@@ -22,7 +22,7 @@ function getAge(dobStr: string): number {
 
 export default function Graduation() {
   const { isAuthenticated } = useAuth();
-  const { xp, streak, missionsCompleted, rankId, dob, isEnrolled, isLoading } = useFDF();
+  const { xp, streak, missionsCompleted, rankId, dob, isEnrolled, isLoading, unlockedSections } = useFDF();
 
   const age = dob ? getAge(dob) : null;
   const daysUntil18 = dob ? getDaysUntil18(dob) : null;
@@ -56,6 +56,43 @@ export default function Graduation() {
           <div className="skeleton" style={{ height: 120, borderRadius: 18 }} />
           <div className="skeleton" style={{ height: 100, borderRadius: 18 }} />
           <div className="skeleton" style={{ height: 80, borderRadius: 18 }} />
+        </div>
+      </div>
+    );
+  }
+
+  // XP-based vault unlock gate
+  if (!unlockedSections.vault) {
+    const needed = UNLOCK_XP.vault - xp;
+    return (
+      <div className="page-container animate-fade-in">
+        <div style={{ paddingTop: 20, paddingBottom: 20 }}>
+          <h1 style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: "1.5rem", fontWeight: 800, color: "var(--text-main)", letterSpacing: "-0.02em", marginBottom: 4 }}>
+            Vault Graduation
+          </h1>
+        </div>
+        <div
+          className="academy-card"
+          style={{
+            textAlign: "center", padding: "40px 24px",
+            background: "linear-gradient(135deg, rgba(123,92,255,0.05), rgba(91,140,255,0.04))",
+            border: "1.5px solid rgba(123,92,255,0.2)",
+          }}
+        >
+          <div style={{ fontSize: "3rem", marginBottom: 16 }}>🎓</div>
+          <p style={{ fontWeight: 800, fontSize: "1rem", color: "var(--text-main)", marginBottom: 6 }}>
+            Vault Preview Unlocks at 500 XP
+          </p>
+          <p style={{ fontSize: "0.875rem", color: "var(--text-sub)", marginBottom: 20, lineHeight: 1.6 }}>
+            Earn <strong style={{ color: "var(--accent)" }}>{needed} more XP</strong> to unlock your Vault graduation path.
+          </p>
+          <div style={{ background: "rgba(226,232,240,0.5)", borderRadius: 99, height: 8, overflow: "hidden", maxWidth: 240, margin: "0 auto 12px" }}>
+            <div style={{ height: "100%", borderRadius: 99, background: "linear-gradient(90deg, #7b5cff, #5b8cff)", width: `${Math.min(100, Math.round((xp / UNLOCK_XP.vault) * 100))}%`, transition: "width 0.6s ease" }} />
+          </div>
+          <p style={{ fontSize: "0.75rem", color: "var(--text-muted)" }}>{xp} / {UNLOCK_XP.vault} XP</p>
+          <p style={{ fontSize: "0.72rem", color: "var(--text-muted)", marginTop: 16, lineHeight: 1.6 }}>
+            Keep completing missions on the Missions tab to earn XP.
+          </p>
         </div>
       </div>
     );
