@@ -15,17 +15,7 @@ const CATEGORIES = [
 ] as const;
 type Category = (typeof CATEGORIES)[number]["key"];
 
-// ── Static fallback missions ──────────────────────────────────────────────────
-const STATIC_MISSIONS = [
-  { id: 1, title: "Save $5 This Week",       description: "Put $5 into a savings jar or account and track it.",         xpReward: 50,  gemsReward: 10, category: "money"   as Category, sortOrder: 0, iconEmoji: "💰" },
-  { id: 2, title: "Write Your Money Goal",   description: "Write down one clear financial goal for this month.",         xpReward: 40,  gemsReward: 8,  category: "mindset" as Category, sortOrder: 1, iconEmoji: "🧠" },
-  { id: 3, title: "Sell Something for $10",  description: "Sell a product, service, or skill for at least $10.",         xpReward: 100, gemsReward: 20, category: "build"   as Category, sortOrder: 2, iconEmoji: "🏗"  },
-  { id: 4, title: "Complete a Logo Design",  description: "Design a simple logo for a real or imaginary brand.",         xpReward: 80,  gemsReward: 15, category: "build"   as Category, sortOrder: 3, iconEmoji: "🎨" },
-  { id: 5, title: "Research One Investment", description: "Learn about one investment type (stocks, crypto, bonds).",    xpReward: 60,  gemsReward: 12, category: "money"   as Category, sortOrder: 4, iconEmoji: "📈" },
-  { id: 6, title: "Build a Morning Routine", description: "Follow a consistent morning routine for 3 days straight.",   xpReward: 70,  gemsReward: 14, category: "mindset" as Category, sortOrder: 5, iconEmoji: "⏰" },
-  { id: 7, title: "Launch a Social Post",    description: "Post about a skill or project you're currently working on.", xpReward: 90,  gemsReward: 18, category: "growth"  as Category, sortOrder: 6, iconEmoji: "🚀" },
-  { id: 8, title: "Read for 20 Minutes",     description: "Read any book about business, money, or self-development.",  xpReward: 45,  gemsReward: 9,  category: "mindset" as Category, sortOrder: 7, iconEmoji: "📚" },
-];
+// No static fallback missions — all missions come from Supabase only
 
 // ── Animated XP bar ───────────────────────────────────────────────────────────
 function XPBar({ xp }: { xp: number }) {
@@ -353,7 +343,8 @@ export default function Missions() {
     );
   }
 
-  const missions = (missionsData?.missions?.length ? missionsData.missions : STATIC_MISSIONS) as typeof STATIC_MISSIONS;
+  type MissionItem = NonNullable<typeof missionsData>["missions"][number];
+  const missions: MissionItem[] = missionsData?.missions ?? [];
   const completions = missionsData?.completions ?? [];
   const sortedMissions = [...missions].sort((a, b) => a.sortOrder - b.sortOrder);
   // Merge backend completions with local state for instant feedback
@@ -401,6 +392,27 @@ export default function Missions() {
         onCheckIn={() => checkIn.mutate()}
         loading={checkIn.isPending}
       />
+
+      {/* ── Empty State ── */}
+      {sortedMissions.length === 0 && (
+        <div style={{
+          background: "rgba(255,255,255,0.85)",
+          backdropFilter: "blur(12px)",
+          border: "1px solid var(--card-border)",
+          borderRadius: 16,
+          padding: "40px 24px",
+          textAlign: "center",
+          boxShadow: "var(--card-shadow)",
+        }}>
+          <div style={{ fontSize: "2.5rem", marginBottom: 12 }}>🎯</div>
+          <h3 style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: "1.125rem", fontWeight: 700, color: "var(--text-main)", marginBottom: 8 }}>
+            No missions available yet
+          </h3>
+          <p style={{ fontSize: "0.875rem", color: "var(--text-sub)", lineHeight: 1.6 }}>
+            New missions are added regularly. Check back soon.
+          </p>
+        </div>
+      )}
 
       {/* ── Mission Categories ── */}
       {CATEGORIES.map((cat) => {

@@ -750,6 +750,49 @@ export default function Home() {
         ))}
       </div>
 
+      {/* ── Vault Progress Card ── */}
+      <Link href="/graduation" style={{ textDecoration: "none" }}>
+        <div
+          className="academy-card"
+          style={{
+            marginBottom: 24, cursor: "pointer",
+            background: "linear-gradient(135deg, rgba(123,92,255,0.06), rgba(91,140,255,0.04))",
+            border: "1.5px solid rgba(123,92,255,0.18)",
+          }}
+        >
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              <div style={{ width: 36, height: 36, borderRadius: 10, background: "linear-gradient(135deg, #7b5cff, #5b8cff)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "1.1rem" }}>
+                🔐
+              </div>
+              <div>
+                <p style={{ fontWeight: 700, fontSize: "0.875rem", color: "var(--text-main)" }}>Vault Progress</p>
+                <p style={{ fontSize: "0.72rem", color: "var(--text-sub)" }}>DNA 500 required to graduate</p>
+              </div>
+            </div>
+            <div style={{ textAlign: "right" }}>
+              <span style={{ fontFamily: "'Space Grotesk', sans-serif", fontWeight: 800, fontSize: "1.1rem", color: "#7b5cff" }}>
+                {Math.min(100, Math.round((dnaScore / 500) * 100))}%
+              </span>
+            </div>
+          </div>
+          <div className="progress-track" style={{ height: 6 }}>
+            <div
+              style={{
+                height: "100%", borderRadius: 99,
+                background: "linear-gradient(90deg, #7b5cff, #5b8cff)",
+                width: `${Math.min(100, Math.round((dnaScore / 500) * 100))}%`,
+                transition: "width 0.8s cubic-bezier(0.4,0,0.2,1)",
+                boxShadow: "0 0 8px rgba(123,92,255,0.4)",
+              }}
+            />
+          </div>
+          <p style={{ fontSize: "0.68rem", color: "var(--text-muted)", marginTop: 5 }}>
+            {dnaScore >= 500 ? "✅ Eligible to graduate" : `${500 - dnaScore} DNA points to unlock Vault`}
+          </p>
+        </div>
+      </Link>
+
       {/* ── Footer ── */}
       <div
         style={{

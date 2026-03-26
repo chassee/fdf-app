@@ -7,6 +7,7 @@ import { ThemeProvider } from "./contexts/ThemeContext";
 import { FDFProvider, useFDF } from "./contexts/FDFContext";
 import Layout from "./components/Layout";
 import { ExternalLink } from "lucide-react";
+import { CelebrationOverlay } from "./components/CelebrationOverlay";
 
 // Pages
 import Home from "./pages/Home";
@@ -20,6 +21,7 @@ import SignIn from "./pages/SignIn";
 import ParentApproval from "./pages/ParentApproval";
 import PendingApproval from "./pages/PendingApproval";
 import DNA from "./pages/DNA";
+import Leaderboard from "./pages/Leaderboard";
 
 // Full-screen routes (no bottom nav / layout chrome)
 const AUTH_ROUTES = ["/signup", "/signin", "/parent-approval", "/pending-approval"];
@@ -102,6 +104,7 @@ function Router() {
         <Route path="/graduation" component={Graduation} />
         <Route path="/parents" component={Parents} />
         <Route path="/dna" component={DNA} />
+        <Route path="/leaderboard" component={Leaderboard} />
         <Route component={NotFound} />
       </Switch>
     </Layout>
@@ -116,6 +119,7 @@ function App() {
         <TooltipProvider>
           <Toaster />
           <FDFProvider>
+            <CelebrationOverlay />
             <GraduatedGuard>
               <Router />
             </GraduatedGuard>

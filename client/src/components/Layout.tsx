@@ -8,6 +8,7 @@ import {
   GraduationCap,
   LogOut,
   Dna,
+  BarChart3,
 } from "lucide-react";
 import { useLocation, Link } from "wouter";
 import { useFDF } from "@/contexts/FDFContext";
@@ -15,11 +16,11 @@ import { supabase } from "@/lib/supabase";
 import { useState, useEffect } from "react";
 
 const NAV_TABS = [
-  { icon: Home,          label: "Home",     path: "/" },
-  { icon: Target,        label: "Missions", path: "/missions" },
-  { icon: Dna,           label: "DNA",      path: "/dna" },
-  { icon: Trophy,        label: "Ranks",    path: "/ranks" },
-  { icon: GraduationCap, label: "Vault",    path: "/graduation" },
+  { icon: Home,          label: "Home",    path: "/" },
+  { icon: Target,        label: "Train",   path: "/missions" },
+  { icon: Dna,           label: "DNA",     path: "/dna" },
+  { icon: BarChart3,     label: "Ranks",   path: "/leaderboard" },
+  { icon: GraduationCap, label: "Vault",   path: "/graduation" },
 ];
 
 export default function Layout({ children }: { children: React.ReactNode }) {

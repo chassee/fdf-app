@@ -441,7 +441,7 @@
 - [ ] Add +DNA animation on mission completion (alongside +XP pop)
 - [ ] Add DNA score + "Your DNA is evolving" label to Home dashboard
 - [ ] TypeScript clean, all tests pass
-- [ ] Save checkpoint
+- [x] Save checkpoint
 
 ## Final Graduation System
 
@@ -455,4 +455,21 @@
 - [x] Login redirect: if graduated=true, always route to /graduation
 - [x] Sync graduated state from Supabase on login
 - [x] TypeScript clean, all 6 tests pass
+- [ ] Save checkpoint
+
+## FDF Final Polish — Complete Product
+
+- [ ] Level-Up celebration overlay (full-screen, fade+scale, auto-dismiss 2-3s, new level + rank name)
+- [ ] DNA Evolution celebration overlay (full-screen, cinematic, new DNA level name + emoji)
+- [ ] Both overlays triggered from FDFContext on XP/DNA level change
+- [ ] Leaderboard page (/leaderboard): top 10 users by dna_score, name + DNA score + rank, highlight current user
+- [ ] Add /leaderboard route to App.tsx and bottom nav
+- [ ] Remove ALL static mission fallbacks from Missions.tsx — Supabase data only
+- [ ] Seed 3 real missions into Supabase (Save $10, Learn Credit, Track Spending)
+- [ ] Empty state: "No missions available yet" when DB returns empty
+- [ ] Home screen: live XP bar, DNA score, rank badge, vault progress %, "Continue Training" CTA
+- [ ] Button press feedback: scale(0.97) on active, glow on hover
+- [ ] Smooth progress bar transitions (CSS transition 0.6s ease)
+- [ ] Every tab functional, no broken navigation, no placeholder text
+- [ ] TypeScript clean, all tests pass
 - [ ] Save checkpoint

@@ -643,6 +643,31 @@ export const appRouter = router({
       }),
   }),
 
+  leaderboard: router({
+    // Get top 10 users by DNA score
+    getTop10: publicProcedure.query(async () => {
+      const { data, error } = await supabaseAdmin
+        .from("fdf_users")
+        .select("auth_user_id, name, dna_score, rank, level, streak_days, graduated")
+        .eq("approval_status", "approved")
+        .eq("graduated", false)
+        .order("dna_score", { ascending: false })
+        .limit(10);
+      if (error) {
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error.message });
+      }
+      return (data ?? []).map((row, index) => ({
+        position: index + 1,
+        userId: row.auth_user_id as string,
+        name: (row.name as string) || "Anonymous Dawg",
+        dnaScore: (row.dna_score as number) ?? 0,
+        rank: (row.rank as string) ?? "Rookie",
+        level: (row.level as number) ?? 1,
+        streakDays: (row.streak_days as number) ?? 0,
+      }));
+    }),
+  }),
+
   sponsors: router({
     submitLead: publicProcedure
       .input(

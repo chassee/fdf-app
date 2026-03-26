@@ -513,7 +513,77 @@ p, span, li {
   box-shadow: 0 0 20px rgba(91, 140, 255, 0.3);
 }
 
-/* ─── Shadcn/Radix compatibility ─────────────────────────────── */
+/* ─── Micro-Interactions ─────────────────────────────────── */
+
+/* Button press scale feedback */
+.btn-primary:active {
+  transform: scale(0.97) translateY(0) !important;
+  box-shadow: 0 2px 8px rgba(91, 140, 255, 0.3) !important;
+}
+
+.btn-secondary:active {
+  transform: scale(0.97) !important;
+  box-shadow: none !important;
+}
+
+/* Tap glow on interactive cards */
+.academy-card[role="button"]:active,
+a .academy-card:active {
+  transform: scale(0.99) translateY(0) !important;
+  box-shadow: var(--card-shadow) !important;
+}
+
+/* Nav tab press feedback */
+.nav-tab:active {
+  transform: scale(0.92);
+}
+
+/* Mission card press */
+.mission-card:active {
+  transform: scale(0.98);
+  box-shadow: var(--card-shadow);
+}
+
+/* Reward card press */
+.reward-card:active {
+  transform: scale(0.98) translateY(0) !important;
+  box-shadow: var(--card-shadow) !important;
+}
+
+/* Smooth page transitions */
+.page-container {
+  animation: fadeIn 0.3s ease forwards;
+}
+
+/* Pulse glow for CTA buttons */
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: 0 4px 16px rgba(91, 140, 255, 0.35); }
+  50%       { box-shadow: 0 4px 24px rgba(91, 140, 255, 0.55); }
+}
+
+.btn-primary.pulse {
+  animation: pulse-glow 2s ease-in-out infinite;
+}
+
+/* Smooth progress bar fill animation */
+.progress-fill {
+  transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+/* Disabled button state */
+button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  transform: none !important;
+}
+
+/* Hover glow on interactive elements */
+.interactive-glow:hover {
+  box-shadow: 0 0 0 3px rgba(91, 140, 255, 0.15);
+  transition: box-shadow 0.2s ease;
+}
+
+/* ─── Shadcn/Radix compatibility ──────────────────────────────────── */
 @layer base {
   * {
     border-color: hsl(var(--border));

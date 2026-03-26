@@ -1,0 +1,55 @@
+{
+  "query": "SELECT id, title, xp_reward FROM missions LIMIT 10;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user MBaHpir5nUVCP1b.4ce6746da029 --database QBuUDUmcHrhrT9QwgJVhYU --execute SELECT id, title, xp_reward FROM missions LIMIT 10;",
+  "rows": [
+    {
+      "id": "1",
+      "title": "Save $5 this week",
+      "xp_reward": "120"
+    },
+    {
+      "id": "2",
+      "title": "Sell a product for $10",
+      "xp_reward": "200"
+    },
+    {
+      "id": "3",
+      "title": "Complete a logo design",
+      "xp_reward": "250"
+    },
+    {
+      "id": "4",
+      "title": "Build a simple website",
+      "xp_reward": "300"
+    },
+    {
+      "id": "5",
+      "title": "Learn 10 new coding terms",
+      "xp_reward": "150"
+    },
+    {
+      "id": "6",
+      "title": "Launch a side project",
+      "xp_reward": "500"
+    },
+    {
+      "id": "7",
+      "title": "Earn $100 this month",
+      "xp_reward": "400"
+    },
+    {
+      "id": "8",
+      "title": "Build your portfolio",
+      "xp_reward": "600"
+    },
+    {
+      "id": "9",
+      "title": "Network with 5 professionals",
+      "xp_reward": "350"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\ttitle\txp_reward\n1\tSave $5 this week\t120\n2\tSell a product for $10\t200\n3\tComplete a logo design\t250\n4\tBuild a simple website\t300\n5\tLearn 10 new coding terms\t150\n6\tLaunch a side project\t500\n7\tEarn $100 this month\t400\n8\tBuild your portfolio\t600\n9\tNetwork with 5 professionals\t350\n",
+  "stderr": "",
+  "execution_time_ms": 364
+}
