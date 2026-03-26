@@ -543,6 +543,86 @@ export const appRouter = router({
         return { success: true };
       }),
 
+    // Graduate user — one-way vault transition
+    graduate: publicProcedure
+      .input(z.object({
+        accessToken: z.string(),
+        dnaScore: z.number().int().min(0),
+        level: z.number().int().min(1),
+        disciplineScore: z.number().int().min(0),
+        consistencyScore: z.number().int().min(0),
+        intelligenceScore: z.number().int().min(0),
+      }))
+      .mutation(async ({ input }) => {
+        const userId = await verifySupabaseToken(input.accessToken);
+        if (!userId) {
+          throw new TRPCError({ code: "UNAUTHORIZED", message: "Invalid session" });
+        }
+        // Verify eligibility server-side
+        const profile = await getFDFProfile(userId);
+        if (!profile) {
+          throw new TRPCError({ code: "NOT_FOUND", message: "Profile not found" });
+        }
+        if (profile.graduated) {
+          throw new TRPCError({ code: "BAD_REQUEST", message: "Already graduated" });
+        }
+        const dnaScore = profile.xp + (profile.streak_days * 5);
+        const missionsCount = (profile.completed_missions ?? []).length;
+        if (dnaScore < 500 || missionsCount < 5 || profile.streak_days < 3) {
+          throw new TRPCError({
+            code: "FORBIDDEN",
+            message: "Graduation requirements not met",
+          });
+        }
+        // Store graduation snapshot + mark graduated
+        const { error } = await supabaseAdmin
+          .from("fdf_users")
+          .update({
+            graduated: true,
+            graduated_at: new Date().toISOString(),
+            dna_score: input.dnaScore,
+            level: input.level,
+            discipline_score: input.disciplineScore,
+            consistency_score: input.consistencyScore,
+            intelligence_score: input.intelligenceScore,
+          })
+          .eq("auth_user_id", userId);
+        if (error) {
+          throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error.message });
+        }
+        // Notify owner
+        try {
+          const { notifyOwner } = await import("./_core/notification");
+          await notifyOwner({
+            title: "🎓 FDF Graduation",
+            content: `A Dawg has graduated!\nUser: ${profile.name} (${profile.email})\nDNA Score: ${input.dnaScore} | Level: ${input.level}`,
+          });
+        } catch (_) { /* non-critical */ }
+        return { success: true, graduatedAt: new Date().toISOString() };
+      }),
+
+    // Check graduation status
+    getGraduationStatus: publicProcedure
+      .input(z.object({ accessToken: z.string() }))
+      .query(async ({ input }) => {
+        const userId = await verifySupabaseToken(input.accessToken);
+        if (!userId) {
+          throw new TRPCError({ code: "UNAUTHORIZED", message: "Invalid session" });
+        }
+        const { data } = await supabaseAdmin
+          .from("fdf_users")
+          .select("graduated, graduated_at, dna_score, level, name")
+          .eq("auth_user_id", userId)
+          .single();
+        return {
+          graduated: data?.graduated ?? false,
+          graduatedAt: data?.graduated_at ?? null,
+          dnaScore: data?.dna_score ?? 0,
+          level: data?.level ?? 1,
+          name: data?.name ?? "",
+        };
+      }),
+
     // Admin: list pending approvals
     adminListPending: publicProcedure
       .input(z.object({ accessToken: z.string() }))

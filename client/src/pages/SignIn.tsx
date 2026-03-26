@@ -61,6 +61,13 @@ export default function SignIn() {
         });
       }
 
+      // Check if already graduated — redirect to graduation lock screen
+      if (profile?.graduated === true) {
+        toast.success(`Welcome back! 👋`);
+        setLocation("/graduation");
+        return;
+      }
+
       // Check approval status — redirect to pending screen if not approved
       const approvalStatus = profile?.approval_status ?? "pending";
       if (approvalStatus === "pending") {

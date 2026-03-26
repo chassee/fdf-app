@@ -442,3 +442,17 @@
 - [ ] Add DNA score + "Your DNA is evolving" label to Home dashboard
 - [ ] TypeScript clean, all tests pass
 - [ ] Save checkpoint
+
+## Final Graduation System
+
+- [x] Add `graduated` (boolean, default false) and `graduated_at` (timestamp, nullable) to `fdf_users` in Supabase
+- [x] Graduation eligibility: DNA Score >= 500, missions >= 5, streak >= 3
+- [x] Vault tab locked state: show progress indicators toward eligibility (XP gate + 3 requirement bars)
+- [x] Vault tab ready state: full-screen "You're Ready to Graduate" ceremony with proof stats
+- [x] "Enter the Vault" CTA: set graduated=true, graduated_at=now(), redirect to vault.crypdawgs.com
+- [x] Account lock screen: if graduated=true, block all app access and show "Graduated" screen
+- [x] GraduatedGuard in App.tsx: intercepts all routes when graduated=true
+- [x] Login redirect: if graduated=true, always route to /graduation
+- [x] Sync graduated state from Supabase on login
+- [x] TypeScript clean, all 6 tests pass
+- [ ] Save checkpoint

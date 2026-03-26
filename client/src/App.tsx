@@ -4,8 +4,9 @@ import NotFound from "@/pages/NotFound";
 import { Route, Switch, useLocation } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
-import { FDFProvider } from "./contexts/FDFContext";
+import { FDFProvider, useFDF } from "./contexts/FDFContext";
 import Layout from "./components/Layout";
+import { ExternalLink } from "lucide-react";
 
 // Pages
 import Home from "./pages/Home";
@@ -22,6 +23,59 @@ import DNA from "./pages/DNA";
 
 // Full-screen routes (no bottom nav / layout chrome)
 const AUTH_ROUTES = ["/signup", "/signin", "/parent-approval", "/pending-approval"];
+
+// ── Graduated Guard: block all app access if user has graduated ──────────────
+function GraduatedGuard({ children }: { children: React.ReactNode }) {
+  const { graduated, graduatedAt } = useFDF();
+  const [location] = useLocation();
+
+  if (graduated && location !== "/graduation") {
+    const formattedDate = graduatedAt
+      ? new Date(graduatedAt).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })
+      : null;
+    return (
+      <div
+        style={{
+          minHeight: "100dvh",
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "center",
+          padding: "24px 20px",
+          background: "linear-gradient(160deg, #0f0f1a 0%, #1a1a2e 50%, #0f0f1a 100%)",
+          textAlign: "center",
+        }}
+      >
+        <div style={{ width: 80, height: 80, borderRadius: "50%", background: "linear-gradient(135deg, #f59e0b, #d97706)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "2rem", marginBottom: 20, boxShadow: "0 0 40px rgba(245,158,11,0.4)" }}>
+          🎓
+        </div>
+        <h1 style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: "1.625rem", fontWeight: 900, color: "#f8fafc", letterSpacing: "-0.03em", marginBottom: 8 }}>
+          Graduated
+        </h1>
+        {formattedDate && (
+          <p style={{ fontSize: "0.8125rem", color: "#94a3b8", marginBottom: 20 }}>Graduated on {formattedDate}</p>
+        )}
+        <p style={{ fontSize: "0.9375rem", color: "#cbd5e1", lineHeight: 1.7, maxWidth: 280, marginBottom: 6 }}>
+          You've moved beyond the Foundation.
+        </p>
+        <p style={{ fontSize: "0.875rem", color: "#64748b", lineHeight: 1.6, maxWidth: 260, marginBottom: 32 }}>
+          Your journey continues inside the Vault.
+        </p>
+        <a
+          href="https://vault.crypdawgs.com"
+          target="_blank"
+          rel="noopener noreferrer"
+          style={{ display: "inline-flex", alignItems: "center", gap: 8, background: "linear-gradient(135deg, #f59e0b, #d97706)", color: "#000", fontWeight: 800, fontSize: "0.9375rem", padding: "14px 28px", borderRadius: 14, textDecoration: "none", boxShadow: "0 4px 20px rgba(245,158,11,0.35)" }}
+        >
+          Go to Vault
+          <ExternalLink size={16} />
+        </a>
+      </div>
+    );
+  }
+
+  return <>{children}</>;
+}
 
 function Router() {
   const [location] = useLocation();
@@ -62,7 +116,9 @@ function App() {
         <TooltipProvider>
           <Toaster />
           <FDFProvider>
-            <Router />
+            <GraduatedGuard>
+              <Router />
+            </GraduatedGuard>
           </FDFProvider>
         </TooltipProvider>
       </ThemeProvider>

@@ -115,6 +115,9 @@ export interface LocalFDFState {
   consistency_score: number;
   discipline_score: number;
   intelligence_score: number;
+  // Graduation
+  graduated: boolean;
+  graduated_at: string | null;
   unlocked_sections: {
     missions: boolean;
     rewards: boolean;
@@ -141,6 +144,8 @@ const DEFAULT_LOCAL_STATE: LocalFDFState = {
   consistency_score: 0,
   discipline_score: 0,
   intelligence_score: 0,
+  graduated: false,
+  graduated_at: null,
   unlocked_sections: {
     missions: false,
     rewards: false,
@@ -203,6 +208,12 @@ interface FDFContextValue {
   disciplineScore: number;
   intelligenceScore: number;
 
+  // Graduation
+  graduated: boolean;
+  graduatedAt: string | null;
+  graduate: () => Promise<void>;
+  isGraduationEligible: boolean;
+
   // Unlock flags
   unlockedSections: LocalFDFState["unlocked_sections"];
 
@@ -221,6 +232,7 @@ const FDFContext = createContext<FDFContextValue>({
   lastCheckin: null, rankId: "rookie", level: 1, levelPct: 0,
   dawgClass: null, dob: null, isEnrolled: false, isLoading: false, yearTrack: 1,
   dnaScore: 0, dnaLevel: "Seed", consistencyScore: 0, disciplineScore: 0, intelligenceScore: 0,
+  graduated: false, graduatedAt: null, graduate: async () => {}, isGraduationEligible: false,
   unlockedSections: { missions: false, rewards: false, ranks: false, vault: false },
   addXP: () => {}, completeMission: () => {}, doCheckIn: () => {}, setLocalProfile: () => {},
   refetch: () => {},
@@ -436,6 +448,46 @@ export function FDFProvider({ children }: { children: React.ReactNode }) {
     setLocal(prev => ({ ...prev, ...profile }));
   }, [setLocal]);
 
+  // ── Graduation action ─────────────────────────────────────────────────────
+  const graduate = useCallback(async () => {
+    if (!supabaseUser) return;
+    const session = await supabase.auth.getSession();
+    const accessToken = session.data.session?.access_token;
+    if (!accessToken) return;
+    try {
+      const dnaScore = computeDNAScore(local.xp, local.streak_days);
+      const { level } = getLevelInfo(local.xp);
+      // Call server to verify eligibility and mark graduated
+      const result = await fetch("/api/trpc/supabaseAuth.graduate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          json: {
+            accessToken,
+            dnaScore,
+            level,
+            disciplineScore: local.discipline_score,
+            consistencyScore: local.consistency_score,
+            intelligenceScore: local.intelligence_score,
+          }
+        }),
+        credentials: "include",
+      });
+      if (!result.ok) throw new Error("Graduation failed");
+      // Update local state
+      setLocal(prev => ({
+        ...prev,
+        graduated: true,
+        graduated_at: new Date().toISOString(),
+      }));
+      // Redirect to Vault
+      window.location.href = "https://vault.crypdawgs.com";
+    } catch (e) {
+      console.error("[FDF] Graduation error:", e);
+      throw e;
+    }
+  }, [supabaseUser, local, setLocal]);
+
   const refetch = useCallback(() => {
     refetchProfile();
     refetchMissions();
@@ -477,11 +529,37 @@ export function FDFProvider({ children }: { children: React.ReactNode }) {
   const disciplineScore  = local.discipline_score;
   const intelligenceScore = local.intelligence_score;
 
+  // Graduation derived values
+  const graduated       = local.graduated;
+  const graduatedAt     = local.graduated_at;
+  // Eligibility: DNA >= 500, missions >= 5, streak >= 3
+  const isGraduationEligible = dnaScore >= 500 && missionsCompleted >= 5 && streak >= 3;
+
+  // Also sync graduated state from Supabase on login
+  useEffect(() => {
+    if (!supabaseUser) return;
+    supabase
+      .from("fdf_users")
+      .select("graduated, graduated_at")
+      .eq("auth_user_id", supabaseUser.id)
+      .single()
+      .then(({ data }) => {
+        if (data?.graduated) {
+          setLocal(prev => ({
+            ...prev,
+            graduated: true,
+            graduated_at: data.graduated_at ?? null,
+          }));
+        }
+      });
+  }, [supabaseUser]);
+
   const value: FDFContextValue = {
     xp, gems, streak, missionsCompleted,
     lastCheckin, rankId, level, levelPct,
     dawgClass, dob, isEnrolled, isLoading, yearTrack,
     dnaScore, dnaLevel, consistencyScore, disciplineScore, intelligenceScore,
+    graduated, graduatedAt, graduate, isGraduationEligible,
     unlockedSections,
     addXP, completeMission, doCheckIn, setLocalProfile,
     refetch,

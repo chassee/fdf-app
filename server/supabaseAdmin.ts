@@ -33,6 +33,13 @@ export interface FDFUserProfile {
   last_checkin: string | null;
   dob: string | null;
   dawg_class: string | null;
+  dna_score: number;
+  discipline_score: number;
+  consistency_score: number;
+  intelligence_score: number;
+  approval_status: string;
+  graduated: boolean;
+  graduated_at: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -71,7 +78,7 @@ export async function createFDFProfile(profile: {
 
 export async function updateFDFProfile(
   authUserId: string,
-  updates: Partial<Pick<FDFUserProfile, "xp" | "level" | "rank" | "streak_days" | "gems" | "vault_progress" | "completed_missions" | "last_checkin" | "dob" | "dawg_class">>
+  updates: Partial<Pick<FDFUserProfile, "xp" | "level" | "rank" | "streak_days" | "gems" | "vault_progress" | "completed_missions" | "last_checkin" | "dob" | "dawg_class" | "dna_score" | "discipline_score" | "consistency_score" | "intelligence_score" | "graduated" | "graduated_at">>
 ): Promise<FDFUserProfile> {
   const { data, error } = await supabaseAdmin
     .from("fdf_users")
