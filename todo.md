@@ -359,5 +359,57 @@
 ### Tests + Deploy
 - [x] Update vitest tests for new XP/rank/unlock logic
 - [x] TypeScript clean
+- [x] Save checkpoint
+- [ ] Publish site
+
+## Supabase Real Auth System
+
+### Setup
+- [ ] Install @supabase/supabase-js on client + server
+- [ ] Add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY secrets
+- [ ] Create Supabase client singleton (client/src/lib/supabase.ts)
+- [ ] Create server-side Supabase admin client (server/supabase.ts)
+
+### Database
+- [ ] Create users table in Supabase (id, email, name, age, xp, level, rank, streak_days, vault_progress, created_at)
+- [ ] Enable Row Level Security on users table
+- [ ] Add RLS policy: users can only read/write their own row
+
+### Auth Procedures (tRPC)
+- [ ] auth.signUp procedure (name, age, email, password)
+- [ ] auth.signIn procedure (email, password)
+- [ ] auth.signOut procedure
+- [ ] auth.getSession procedure (returns current user + profile)
+
+### Sign Up Screen (/signup)
+- [ ] Premium form: Name, Age, Email, Password
+- [ ] Validation: age 13-17, valid email, password min 8 chars
+- [ ] Loading state + error display
+- [ ] Redirect to home on success
+
+### Sign In Screen (/signin)
+- [ ] Premium form: Email, Password
+- [ ] Loading state + error display
+- [ ] Redirect to home on success
+- [ ] "Don't have an account? Sign Up" link
+
+### Session Handling
+- [ ] On app load: check Supabase session → hydrate FDFContext
+- [ ] On login: store session, fetch user profile, update FDFContext
+- [ ] On logout: clear session + FDFContext
+
+### Route Protection
+- [ ] Unauthenticated users see locked screens on all tabs
+- [ ] Authenticated users get full access based on XP unlock gates
+- [ ] Redirect to /signin from protected routes
+
+### XP Sync
+- [ ] On mission complete: update xp + level + rank in Supabase users table
+- [ ] On daily check-in: update streak_days in Supabase
+- [ ] On app load: pull latest xp/streak from Supabase (source of truth)
+
+### Tests + Deploy
+- [ ] Add vitest tests for signUp, signIn, getSession procedures
+- [ ] TypeScript clean
 - [ ] Save checkpoint
 - [ ] Publish site

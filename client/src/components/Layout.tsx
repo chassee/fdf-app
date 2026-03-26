@@ -6,9 +6,12 @@ import {
   Trophy,
   Gift,
   GraduationCap,
-  Users,
+  LogOut,
 } from "lucide-react";
 import { useLocation, Link } from "wouter";
+import { useFDF } from "@/contexts/FDFContext";
+import { supabase } from "@/lib/supabase";
+import { useState, useEffect } from "react";
 
 const NAV_TABS = [
   { icon: Home,          label: "Home",     path: "/" },
@@ -20,14 +23,35 @@ const NAV_TABS = [
 
 export default function Layout({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated: isManusAuth } = useAuth();
+  const { xp, gems } = useFDF();
+
+  // Supabase auth state
+  const [supabaseUser, setSupabaseUser] = useState<{ id: string; email?: string } | null>(null);
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session) setSupabaseUser({ id: session.user.id, email: session.user.email });
+    });
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_e, session) => {
+      setSupabaseUser(session ? { id: session.user.id, email: session.user.email } : null);
+    });
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const isAuthenticated = isManusAuth || !!supabaseUser;
 
   const { data: profile } = trpc.fdf.getProfile.useQuery(undefined, {
-    enabled: isAuthenticated,
+    enabled: isManusAuth, // only for Manus OAuth users
   });
 
-  const gems = profile?.progress?.gemsTotal ?? 0;
-  const xp   = profile?.progress?.xpTotal ?? 0;
+  // Display name: Manus user name, or Supabase email prefix
+  const displayName = user?.name ?? (supabaseUser?.email ? supabaseUser.email.split("@")[0] : null);
+
+  async function handleSignOut() {
+    await supabase.auth.signOut();
+    localStorage.removeItem("fdf-supabase-session");
+    window.location.href = "/";
+  }
 
   return (
     <div style={{ minHeight: "100dvh", background: "var(--bg-main)" }}>
@@ -95,7 +119,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
           {/* Right: Stats */}
           <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-            {isAuthenticated && profile?.fdfUser && (
+            {isAuthenticated && (
               <>
                 <div className="stat-chip" style={{ fontSize: "0.7rem", padding: "4px 10px" }}>
                   <span style={{ opacity: 0.65, fontSize: "0.65rem" }}>XP</span>
@@ -115,24 +139,36 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                 </div>
               </>
             )}
-            {/* Avatar */}
-            <div
-              style={{
-                width: 30,
-                height: 30,
-                borderRadius: "50%",
-                background: "linear-gradient(135deg, var(--primary-light), var(--accent-light))",
-                border: "2px solid rgba(91,140,255,0.25)",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                fontSize: "0.65rem",
-                fontWeight: 700,
-                color: "var(--primary)",
-              }}
-            >
-              {user?.name ? user.name.slice(0, 2).toUpperCase() : "?"}
-            </div>
+            {/* Avatar / Sign-out */}
+            {isAuthenticated ? (
+              <button
+                onClick={handleSignOut}
+                title="Sign out"
+                style={{
+                  width: 30, height: 30, borderRadius: "50%",
+                  background: "linear-gradient(135deg, var(--primary-light), var(--accent-light))",
+                  border: "2px solid rgba(91,140,255,0.25)",
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  fontSize: "0.65rem", fontWeight: 700, color: "var(--primary)",
+                  cursor: "pointer",
+                }}
+              >
+                {displayName ? displayName.slice(0, 2).toUpperCase() : <LogOut size={12} />}
+              </button>
+            ) : (
+              <Link href="/signin" style={{ textDecoration: "none" }}>
+                <div
+                  style={{
+                    padding: "5px 12px", borderRadius: 99,
+                    background: "linear-gradient(135deg, var(--primary), var(--accent))",
+                    color: "white", fontSize: "0.72rem", fontWeight: 700,
+                    cursor: "pointer",
+                  }}
+                >
+                  Sign In
+                </div>
+              </Link>
+            )}
           </div>
         </div>
 

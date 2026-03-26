@@ -5,6 +5,19 @@ import { publicProcedure, protectedProcedure, router } from "./_core/trpc";
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 import * as db from "./db";
+import { supabaseAdmin, getFDFProfile, createFDFProfile, updateFDFProfile, verifySupabaseToken } from "./supabaseAdmin";
+
+// Rank computation (mirrored from client FDFContext)
+function computeRank(xp: number): string {
+  if (xp >= 1000) return "Elite";
+  if (xp >= 500)  return "Operator";
+  if (xp >= 250)  return "Builder";
+  if (xp >= 100)  return "Starter";
+  return "Rookie";
+}
+function computeLevel(xp: number): number {
+  return Math.max(1, Math.floor(xp / 100) + 1);
+}
 
 export const appRouter = router({
     // if you need to use socket.io, read and register route in server/_core/index.ts, all api should start with '/api/' so that the gateway can route correctly
@@ -321,6 +334,122 @@ export const appRouter = router({
 
       return { success: true, streak: newStreak, gemsEarned: gemsReward };
     }),
+  }),
+
+  // ── Supabase Auth Router ─────────────────────────────────────────────────
+  supabaseAuth: router({
+    // Sign Up: create Supabase auth user + fdf_users profile
+    signUp: publicProcedure
+      .input(z.object({
+        name: z.string().min(1).max(50),
+        age: z.number().int().min(13).max(17),
+        email: z.string().email(),
+        password: z.string().min(8),
+      }))
+      .mutation(async ({ input }) => {
+        // Create Supabase auth user
+        const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
+          email: input.email,
+          password: input.password,
+          email_confirm: true, // auto-confirm for smooth UX
+        });
+        if (authError || !authData.user) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: authError?.message ?? "Failed to create account",
+          });
+        }
+        // Create fdf_users profile
+        try {
+          await createFDFProfile({
+            auth_user_id: authData.user.id,
+            email: input.email,
+            name: input.name,
+            age: input.age,
+          });
+        } catch (e: any) {
+          // Rollback auth user if profile creation fails
+          await supabaseAdmin.auth.admin.deleteUser(authData.user.id);
+          throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: e.message });
+        }
+        return { success: true, userId: authData.user.id };
+      }),
+
+    // Sign In: verify credentials, return session token
+    signIn: publicProcedure
+      .input(z.object({
+        email: z.string().email(),
+        password: z.string().min(1),
+      }))
+      .mutation(async ({ input }) => {
+        const { data, error } = await supabaseAdmin.auth.signInWithPassword({
+          email: input.email,
+          password: input.password,
+        });
+        if (error || !data.session) {
+          throw new TRPCError({
+            code: "UNAUTHORIZED",
+            message: error?.message ?? "Invalid credentials",
+          });
+        }
+        const profile = await getFDFProfile(data.user.id);
+        return {
+          accessToken: data.session.access_token,
+          refreshToken: data.session.refresh_token,
+          expiresAt: data.session.expires_at,
+          user: {
+            id: data.user.id,
+            email: data.user.email ?? "",
+          },
+          profile,
+        };
+      }),
+
+    // Get profile by token
+    getProfile: publicProcedure
+      .input(z.object({ accessToken: z.string() }))
+      .query(async ({ input }) => {
+        const userId = await verifySupabaseToken(input.accessToken);
+        if (!userId) {
+          throw new TRPCError({ code: "UNAUTHORIZED", message: "Invalid or expired session" });
+        }
+        const profile = await getFDFProfile(userId);
+        if (!profile) {
+          throw new TRPCError({ code: "NOT_FOUND", message: "Profile not found" });
+        }
+        return profile;
+      }),
+
+    // Sync XP, streak, missions to Supabase
+    syncProgress: publicProcedure
+      .input(z.object({
+        accessToken: z.string(),
+        xp: z.number().int().min(0),
+        gems: z.number().int().min(0),
+        streakDays: z.number().int().min(0),
+        completedMissions: z.array(z.number()),
+        lastCheckin: z.string().nullable(),
+        vaultProgress: z.number().int().min(0).max(100),
+      }))
+      .mutation(async ({ input }) => {
+        const userId = await verifySupabaseToken(input.accessToken);
+        if (!userId) {
+          throw new TRPCError({ code: "UNAUTHORIZED", message: "Invalid or expired session" });
+        }
+        const rank = computeRank(input.xp);
+        const level = computeLevel(input.xp);
+        const updated = await updateFDFProfile(userId, {
+          xp: input.xp,
+          gems: input.gems,
+          streak_days: input.streakDays,
+          completed_missions: input.completedMissions,
+          last_checkin: input.lastCheckin,
+          vault_progress: input.vaultProgress,
+          rank,
+          level,
+        });
+        return updated;
+      }),
   }),
 
   sponsors: router({

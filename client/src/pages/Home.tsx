@@ -159,12 +159,15 @@ export default function Home() {
           </div>
 
           <div style={{ display: "flex", flexDirection: "column", gap: 10, maxWidth: 320 }}>
-            <a href={getLoginUrl()} className="btn-primary" style={{ justifyContent: "center" }}>
-              Apply for Access
+            <Link href="/signup" className="btn-primary" style={{ justifyContent: "center" }}>
+              Create Free Account
               <ArrowRight size={16} />
-            </a>
-            <Link href="/parents" className="btn-secondary" style={{ justifyContent: "center" }}>
-              Parent Information
+            </Link>
+            <Link href="/signin" className="btn-secondary" style={{ justifyContent: "center" }}>
+              Sign In
+            </Link>
+            <Link href="/parents" style={{ textAlign: "center", fontSize: "0.8rem", color: "var(--text-muted)", textDecoration: "none", marginTop: 4 }}>
+              Parent Information →
             </Link>
           </div>
 

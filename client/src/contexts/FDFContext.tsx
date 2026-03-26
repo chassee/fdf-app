@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useMemo, useState, useEffect, useCallback } from "react";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
+import { supabase } from "@/lib/supabase";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // RANK SYSTEM
@@ -177,7 +178,33 @@ const FDFContext = createContext<FDFContextValue>({
 // ─────────────────────────────────────────────────────────────────────────────
 
 export function FDFProvider({ children }: { children: React.ReactNode }) {
-  const { isAuthenticated, user } = useAuth();
+  const { isAuthenticated: isManusAuth, user } = useAuth();
+
+  // Also check Supabase auth state
+  const [isSupabaseAuth, setIsSupabaseAuth] = useState(false);
+  const [supabaseUser, setSupabaseUser] = useState<{ id: string; email?: string; name?: string } | null>(null);
+
+  useEffect(() => {
+    // Restore from existing Supabase session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session) {
+        setIsSupabaseAuth(true);
+        setSupabaseUser({ id: session.user.id, email: session.user.email });
+      }
+    });
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session) {
+        setIsSupabaseAuth(true);
+        setSupabaseUser({ id: session.user.id, email: session.user.email });
+      } else {
+        setIsSupabaseAuth(false);
+        setSupabaseUser(null);
+      }
+    });
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const isAuthenticated = isManusAuth || isSupabaseAuth;
 
   // ── Local state ──────────────────────────────────────────────────────────
   const [local, setLocalRaw] = useState<LocalFDFState>(() => loadLocal());
@@ -205,7 +232,32 @@ export function FDFProvider({ children }: { children: React.ReactNode }) {
     enabled: isAuthenticated && !!profile?.fdfUser,
   });
 
-  // ── Sync backend → local state ───────────────────────────────────────────
+  // ── Sync Supabase profile → local state ────────────────────────────────────
+  useEffect(() => {
+    if (!supabaseUser) return;
+    // Fetch Supabase profile and hydrate local state
+    supabase
+      .from("fdf_users")
+      .select("*")
+      .eq("auth_user_id", supabaseUser.id)
+      .single()
+      .then(({ data }) => {
+        if (!data) return;
+        setLocal(prev => ({
+          ...prev,
+          name:               data.name ?? prev.name,
+          xp:                 Math.max(prev.xp, data.xp ?? 0),
+          gems:               Math.max(prev.gems, data.gems ?? 0),
+          streak_days:        Math.max(prev.streak_days, data.streak_days ?? 0),
+          last_checkin:       data.last_checkin ?? prev.last_checkin,
+          completed_missions: Array.from(new Set([...prev.completed_missions, ...(data.completed_missions ?? [])])),
+          dob:                data.dob ?? prev.dob,
+          dawg_class:         data.dawg_class ?? prev.dawg_class,
+        }));
+      });
+  }, [supabaseUser]);
+
+  // ── Sync Manus backend → local state ─────────────────────────────────────
   useEffect(() => {
     if (!profile?.fdfUser) return;
     const backendXp    = profile.progress?.xpTotal ?? 0;
@@ -237,22 +289,49 @@ export function FDFProvider({ children }: { children: React.ReactNode }) {
     }));
   }, [missionsData]);
 
+  // ── Supabase sync helper ─────────────────────────────────────────────────
+  const syncToSupabase = useCallback((updates: {
+    xp?: number; gems?: number; streak_days?: number;
+    completed_missions?: number[]; last_checkin?: string | null;
+    vault_progress?: number; rank?: string; level?: number;
+  }) => {
+    if (!supabaseUser) return;
+    // Fire-and-forget: update fdf_users row in Supabase
+    supabase
+      .from("fdf_users")
+      .update(updates)
+      .eq("auth_user_id", supabaseUser.id)
+      .then(({ error }) => {
+        if (error) console.warn("[FDF] Supabase sync failed:", error.message);
+      });
+  }, [supabaseUser]);
+
   // ── Actions ──────────────────────────────────────────────────────────────
 
   const addXP = useCallback((amount: number) => {
-    setLocal(prev => ({ ...prev, xp: prev.xp + amount }));
-  }, [setLocal]);
+    setLocal(prev => {
+      const newXp = prev.xp + amount;
+      const rank = computeRank(newXp);
+      const { level } = getLevelInfo(newXp);
+      syncToSupabase({ xp: newXp, rank: rank, level });
+      return { ...prev, xp: newXp };
+    });
+  }, [setLocal, syncToSupabase]);
 
   const completeMission = useCallback((missionId: number, xpReward: number, gemsReward: number) => {
-    setLocal(prev => ({
-      ...prev,
-      xp: prev.xp + xpReward,
-      gems: prev.gems + gemsReward,
-      completed_missions: prev.completed_missions.includes(missionId)
+    setLocal(prev => {
+      const newXp = prev.xp + xpReward;
+      const newGems = prev.gems + gemsReward;
+      const newMissions = prev.completed_missions.includes(missionId)
         ? prev.completed_missions
-        : [...prev.completed_missions, missionId],
-    }));
-  }, [setLocal]);
+        : [...prev.completed_missions, missionId];
+      const rank = computeRank(newXp);
+      const { level } = getLevelInfo(newXp);
+      const vault_progress = Math.min(100, Math.round((newXp / 500) * 100));
+      syncToSupabase({ xp: newXp, gems: newGems, completed_missions: newMissions, rank: rank, level, vault_progress });
+      return { ...prev, xp: newXp, gems: newGems, completed_missions: newMissions };
+    });
+  }, [setLocal, syncToSupabase]);
 
   const doCheckIn = useCallback(() => {
     const today = new Date().toISOString().split("T")[0];
@@ -262,15 +341,18 @@ export function FDFProvider({ children }: { children: React.ReactNode }) {
       yesterday.setDate(yesterday.getDate() - 1);
       const yStr = yesterday.toISOString().split("T")[0];
       const newStreak = prev.last_checkin === yStr ? prev.streak_days + 1 : 1;
+      const newXp = prev.xp + 5;
+      const newGems = prev.gems + 5;
+      syncToSupabase({ xp: newXp, gems: newGems, streak_days: newStreak, last_checkin: today });
       return {
         ...prev,
         last_checkin: today,
         streak_days: newStreak,
-        gems: prev.gems + 5,
-        xp: prev.xp + 5,
+        gems: newGems,
+        xp: newXp,
       };
     });
-  }, [setLocal]);
+  }, [setLocal, syncToSupabase]);
 
   const setLocalProfile = useCallback((profile: Partial<LocalFDFState>) => {
     setLocal(prev => ({ ...prev, ...profile }));
