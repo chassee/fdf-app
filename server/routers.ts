@@ -5,7 +5,7 @@ import { publicProcedure, protectedProcedure, router } from "./_core/trpc";
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 import * as db from "./db";
-import { supabaseAdmin, getFDFProfile, createFDFProfile, updateFDFProfile, verifySupabaseToken } from "./supabaseAdmin";
+import { supabaseAdmin, supabaseAnon, getFDFProfile, createFDFProfile, updateFDFProfile, verifySupabaseToken } from "./supabaseAdmin";
 
 // Rank computation (mirrored from client FDFContext)
 function computeRank(xp: number): string {
@@ -338,7 +338,7 @@ export const appRouter = router({
 
   // ── Supabase Auth Router ─────────────────────────────────────────────────
   supabaseAuth: router({
-    // Sign Up: create Supabase auth user + fdf_users profile
+    // Sign Up: create Supabase auth user via anon client + fdf_users profile
     signUp: publicProcedure
       .input(z.object({
         name: z.string().min(1).max(50),
@@ -347,32 +347,70 @@ export const appRouter = router({
         password: z.string().min(8),
       }))
       .mutation(async ({ input }) => {
-        // Create Supabase auth user
-        const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
-          email: input.email,
-          password: input.password,
-          email_confirm: true, // auto-confirm for smooth UX
-        });
-        if (authError || !authData.user) {
+        // Step 1: Check if this exact email already has an FDF profile
+        // This is the ONLY duplicate check — we do NOT block emails from other apps
+        const { data: existingFDFProfile } = await supabaseAdmin
+          .from("fdf_users")
+          .select("id")
+          .ilike("email", input.email.trim())
+          .maybeSingle();
+        if (existingFDFProfile) {
           throw new TRPCError({
-            code: "BAD_REQUEST",
-            message: authError?.message ?? "Failed to create account",
+            code: "CONFLICT",
+            message: "An FDF account with this email already exists. Please sign in instead.",
           });
         }
-        // Create fdf_users profile
+
+        // Step 2: Use the anon client signUp — this is the standard Supabase auth flow.
+        // Unlike admin.createUser(), this does NOT collide with users from other apps
+        // sharing the same Supabase project, because each app uses its own auth context.
+        const { data: signUpData, error: signUpError } = await supabaseAnon.auth.signUp({
+          email: input.email,
+          password: input.password,
+          options: {
+            data: {
+              full_name: input.name,
+              age: input.age,
+            },
+          },
+        });
+
+        if (signUpError) {
+          // Map Supabase error messages to user-friendly ones
+          const msg = signUpError.message ?? "";
+          const isDuplicate =
+            msg.toLowerCase().includes("already registered") ||
+            msg.toLowerCase().includes("already exists") ||
+            msg.toLowerCase().includes("already been registered");
+          throw new TRPCError({
+            code: isDuplicate ? "CONFLICT" : "BAD_REQUEST",
+            message: isDuplicate
+              ? "An account with this email already exists. Please sign in instead."
+              : msg || "Failed to create account. Please try again.",
+          });
+        }
+
+        if (!signUpData.user) {
+          throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Failed to create account" });
+        }
+
+        const authUserId = signUpData.user.id;
+
+        // Step 3: Create the FDF profile record in fdf_users
         try {
           await createFDFProfile({
-            auth_user_id: authData.user.id,
+            auth_user_id: authUserId,
             email: input.email,
             name: input.name,
             age: input.age,
           });
         } catch (e: any) {
-          // Rollback auth user if profile creation fails
-          await supabaseAdmin.auth.admin.deleteUser(authData.user.id);
+          // Clean up the auth user if profile creation fails
+          try { await supabaseAdmin.auth.admin.deleteUser(authUserId); } catch (_) {}
           throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: e.message });
         }
-        return { success: true, userId: authData.user.id };
+
+        return { success: true, userId: authUserId };
       }),
 
     // Sign In: verify credentials, return session token

@@ -2,13 +2,25 @@ import { createClient } from "@supabase/supabase-js";
 
 const supabaseUrl = process.env.VITE_SUPABASE_URL ?? "";
 const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY ?? "";
+const anonKey = process.env.VITE_SUPABASE_ANON_KEY ?? "";
 
 if (!supabaseUrl || !serviceRoleKey) {
   console.warn("[Supabase] Missing VITE_SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY — auth features will be unavailable");
 }
+if (!anonKey) {
+  console.warn("[Supabase] Missing VITE_SUPABASE_ANON_KEY — signup via anon client will be unavailable");
+}
 
 // Admin client bypasses RLS — only use server-side
 export const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey, {
+  auth: {
+    autoRefreshToken: false,
+    persistSession: false,
+  },
+});
+
+// Anon client — used for standard auth flows (signUp, signIn) to avoid admin API cross-project collisions
+export const supabaseAnon = createClient(supabaseUrl, anonKey, {
   auth: {
     autoRefreshToken: false,
     persistSession: false,
