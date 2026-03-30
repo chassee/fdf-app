@@ -1,275 +1,187 @@
 import { useState } from "react";
 import { Link, useLocation } from "wouter";
-import { trpc } from "@/lib/trpc";
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
-import { Eye, EyeOff, ArrowRight, CheckCircle2 } from "lucide-react";
+import { Eye, EyeOff, ArrowRight, Loader2 } from "lucide-react";
 
 export default function SignUp() {
   const [, setLocation] = useLocation();
-  const [form, setForm] = useState({ name: "", age: "", email: "", password: "" });
+  const [form, setForm] = useState({ email: "", password: "" });
   const [showPass, setShowPass] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [success, setSuccess] = useState(false);
-
-  const signUpMutation = trpc.supabaseAuth.signUp.useMutation({
-    onSuccess: async (data) => {
-      // Auto sign-in after signup
-      try {
-        const { data: signInData, error } = await supabase.auth.signInWithPassword({
-          email: form.email,
-          password: form.password,
-        });
-        if (error || !signInData.session) throw new Error(error?.message ?? "Sign-in failed");
-        // Store session
-        localStorage.setItem("fdf-supabase-session", JSON.stringify({
-          accessToken: signInData.session.access_token,
-          refreshToken: signInData.session.refresh_token,
-          expiresAt: signInData.session.expires_at,
-          userId: signInData.user.id,
-          email: signInData.user.email,
-        }));
-        setSuccess(true);
-        toast.success("Account created! Welcome to FDF 🎉");
-        // All FDF users are 13-17, so always require parent approval
-        const age = parseInt(form.age);
-        const redirectTo = age < 18 ? "/parent-approval" : "/";
-        setTimeout(() => setLocation(redirectTo), 1500);
-      } catch (e: any) {
-        toast.error(e.message);
-      }
-    },
-    onError: (err) => {
-      toast.error(err.message);
-    },
-  });
+  const [loading, setLoading] = useState(false);
 
   function validate() {
     const errs: Record<string, string> = {};
-    if (!form.name.trim()) errs.name = "Name is required";
-    const age = parseInt(form.age);
-    if (!form.age || isNaN(age) || age < 13 || age > 17) errs.age = "Age must be 13–17";
-    if (!form.email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) errs.email = "Valid email required";
+    if (!form.email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) errs.email = "Enter a valid email";
     if (!form.password || form.password.length < 8) errs.password = "Password must be at least 8 characters";
     setErrors(errs);
     return Object.keys(errs).length === 0;
   }
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!validate()) return;
-    signUpMutation.mutate({
-      name: form.name.trim(),
-      age: parseInt(form.age),
-      email: form.email.trim().toLowerCase(),
-      password: form.password,
-    });
+    if (!validate() || loading) return;
+    setLoading(true);
+    try {
+      const { data, error } = await supabase.auth.signUp({
+        email: form.email.trim().toLowerCase(),
+        password: form.password,
+        options: { emailRedirectTo: window.location.origin },
+      });
+      if (error) {
+        const msg = error.message ?? "";
+        const isDuplicate = msg.toLowerCase().includes("already registered") || msg.toLowerCase().includes("already exists");
+        throw new Error(isDuplicate ? "An account with this email already exists. Sign in instead." : msg || "Failed to create account.");
+      }
+      if (!data.user) throw new Error("Failed to create account. Please try again.");
+      toast.success("Account created! Let's set up your profile.");
+      setTimeout(() => setLocation("/onboarding/dob"), 800);
+    } catch (e: any) {
+      toast.error(e.message);
+    } finally {
+      setLoading(false);
+    }
   }
 
-  if (success) {
-    return (
-      <div style={{ minHeight: "100dvh", display: "flex", alignItems: "center", justifyContent: "center", padding: 24, background: "var(--bg-main)" }}>
-        <div style={{ textAlign: "center" }}>
-          <div style={{ width: 64, height: 64, borderRadius: "50%", background: "#dcfce7", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px" }}>
-            <CheckCircle2 size={32} style={{ color: "#16a34a" }} />
-          </div>
-          <h2 style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: "1.5rem", fontWeight: 800, color: "var(--text-main)", marginBottom: 8 }}>
-            Welcome to FDF
-          </h2>
-          <p style={{ fontSize: "0.875rem", color: "var(--text-sub)" }}>Setting up your dashboard…</p>
-        </div>
-      </div>
-    );
-  }
+  const isValid = form.email.length > 3 && form.password.length >= 8;
 
   return (
-    <div
-      style={{
-        minHeight: "100dvh",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        padding: 24,
-        background: "var(--bg-main)",
-      }}
-    >
-      <div style={{ width: "100%", maxWidth: 400 }}>
-
-        {/* Header */}
-        <div style={{ textAlign: "center", marginBottom: 32 }}>
-          <div
-            style={{
-              width: 52, height: 52, borderRadius: 14,
-              background: "linear-gradient(135deg, var(--primary), var(--accent))",
-              display: "flex", alignItems: "center", justifyContent: "center",
-              margin: "0 auto 16px",
-              boxShadow: "0 8px 24px rgba(91,140,255,0.3)",
-              fontSize: "1.5rem",
-            }}
-          >
-            🐾
-          </div>
-          <h1
-            style={{
-              fontFamily: "'Space Grotesk', sans-serif",
-              fontSize: "1.625rem", fontWeight: 800,
-              color: "var(--text-main)", letterSpacing: "-0.02em", marginBottom: 6,
-            }}
-          >
-            Join FDF
-          </h1>
-          <p style={{ fontSize: "0.875rem", color: "var(--text-sub)" }}>
-            Create your account to start building financial intelligence.
-          </p>
+    <div style={S.page}>
+      <div style={S.card}>
+        {/* Logo */}
+        <div style={S.logoRow}>
+          <div style={S.logoBadge}>FDF</div>
         </div>
 
-        {/* Form */}
-        <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+        {/* Header */}
+        <h1 style={S.title}>Create Account</h1>
+        <p style={S.subtitle}>Start your financial education journey</p>
 
-          {/* Name */}
-          <div>
-            <label style={{ display: "block", fontSize: "0.75rem", fontWeight: 700, color: "var(--text-main)", marginBottom: 6, letterSpacing: "0.04em", textTransform: "uppercase" }}>
-              Full Name
-            </label>
-            <input
-              type="text"
-              placeholder="Your name"
-              value={form.name}
-              onChange={e => setForm(p => ({ ...p, name: e.target.value }))}
-              style={{
-                width: "100%", padding: "12px 14px", borderRadius: 12,
-                border: errors.name ? "1.5px solid #ef4444" : "1.5px solid rgba(91,140,255,0.2)",
-                background: "rgba(255,255,255,0.9)", fontSize: "0.9375rem",
-                color: "var(--text-main)", outline: "none",
-                boxSizing: "border-box",
-                transition: "border-color 0.2s",
-              }}
-            />
-            {errors.name && <p style={{ fontSize: "0.72rem", color: "#ef4444", marginTop: 4 }}>{errors.name}</p>}
-          </div>
-
-          {/* Age */}
-          <div>
-            <label style={{ display: "block", fontSize: "0.75rem", fontWeight: 700, color: "var(--text-main)", marginBottom: 6, letterSpacing: "0.04em", textTransform: "uppercase" }}>
-              Age
-            </label>
-            <input
-              type="number"
-              placeholder="13–17"
-              min={13}
-              max={17}
-              value={form.age}
-              onChange={e => setForm(p => ({ ...p, age: e.target.value }))}
-              style={{
-                width: "100%", padding: "12px 14px", borderRadius: 12,
-                border: errors.age ? "1.5px solid #ef4444" : "1.5px solid rgba(91,140,255,0.2)",
-                background: "rgba(255,255,255,0.9)", fontSize: "0.9375rem",
-                color: "var(--text-main)", outline: "none",
-                boxSizing: "border-box",
-              }}
-            />
-            {errors.age && <p style={{ fontSize: "0.72rem", color: "#ef4444", marginTop: 4 }}>{errors.age}</p>}
-          </div>
-
+        <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
           {/* Email */}
           <div>
-            <label style={{ display: "block", fontSize: "0.75rem", fontWeight: 700, color: "var(--text-main)", marginBottom: 6, letterSpacing: "0.04em", textTransform: "uppercase" }}>
-              Email
-            </label>
+            <label style={S.label}>Email</label>
             <input
               type="email"
               placeholder="you@email.com"
               value={form.email}
               onChange={e => setForm(p => ({ ...p, email: e.target.value }))}
-              style={{
-                width: "100%", padding: "12px 14px", borderRadius: 12,
-                border: errors.email ? "1.5px solid #ef4444" : "1.5px solid rgba(91,140,255,0.2)",
-                background: "rgba(255,255,255,0.9)", fontSize: "0.9375rem",
-                color: "var(--text-main)", outline: "none",
-                boxSizing: "border-box",
-              }}
+              autoComplete="email"
+              style={{ ...S.input, borderColor: errors.email ? "#f87171" : "rgba(139,92,246,0.25)" }}
             />
-            {errors.email && <p style={{ fontSize: "0.72rem", color: "#ef4444", marginTop: 4 }}>{errors.email}</p>}
+            {errors.email && <p style={S.fieldError}>{errors.email}</p>}
           </div>
 
           {/* Password */}
           <div>
-            <label style={{ display: "block", fontSize: "0.75rem", fontWeight: 700, color: "var(--text-main)", marginBottom: 6, letterSpacing: "0.04em", textTransform: "uppercase" }}>
-              Password
-            </label>
+            <label style={S.label}>Password</label>
             <div style={{ position: "relative" }}>
               <input
                 type={showPass ? "text" : "password"}
                 placeholder="Min. 8 characters"
                 value={form.password}
                 onChange={e => setForm(p => ({ ...p, password: e.target.value }))}
-                style={{
-                  width: "100%", padding: "12px 44px 12px 14px", borderRadius: 12,
-                  border: errors.password ? "1.5px solid #ef4444" : "1.5px solid rgba(91,140,255,0.2)",
-                  background: "rgba(255,255,255,0.9)", fontSize: "0.9375rem",
-                  color: "var(--text-main)", outline: "none",
-                  boxSizing: "border-box",
-                }}
+                autoComplete="new-password"
+                style={{ ...S.input, paddingRight: 44, borderColor: errors.password ? "#f87171" : "rgba(139,92,246,0.25)" }}
               />
-              <button
-                type="button"
-                onClick={() => setShowPass(p => !p)}
-                style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", color: "var(--text-muted)", padding: 4 }}
-              >
+              <button type="button" onClick={() => setShowPass(p => !p)} style={S.eyeBtn}>
                 {showPass ? <EyeOff size={16} /> : <Eye size={16} />}
               </button>
             </div>
-            {errors.password && <p style={{ fontSize: "0.72rem", color: "#ef4444", marginTop: 4 }}>{errors.password}</p>}
+            {errors.password && <p style={S.fieldError}>{errors.password}</p>}
           </div>
 
           {/* Submit */}
           <button
             type="submit"
-            disabled={signUpMutation.isPending}
-            style={{
-              marginTop: 8,
-              width: "100%", padding: "14px 20px",
-              background: signUpMutation.isPending ? "rgba(91,140,255,0.5)" : "linear-gradient(135deg, var(--primary), var(--accent))",
-              color: "white", border: "none", borderRadius: 14,
-              fontSize: "0.9375rem", fontWeight: 700,
-              cursor: signUpMutation.isPending ? "not-allowed" : "pointer",
-              display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
-              boxShadow: "0 8px 24px rgba(91,140,255,0.3)",
-              transition: "all 0.2s",
-            }}
+            disabled={loading || !isValid}
+            style={{ ...S.submitBtn, opacity: loading || !isValid ? 0.6 : 1, cursor: loading || !isValid ? "not-allowed" : "pointer" }}
           >
-            {signUpMutation.isPending ? (
-              <>
-                <span style={{ width: 16, height: 16, border: "2px solid rgba(255,255,255,0.3)", borderTopColor: "white", borderRadius: "50%", display: "inline-block", animation: "spin 0.8s linear infinite" }} />
-                Creating account…
-              </>
+            {loading ? (
+              <><Loader2 size={18} style={{ animation: "spin 0.8s linear infinite" }} /> Creating account…</>
             ) : (
-              <>
-                Create Account
-                <ArrowRight size={16} />
-              </>
+              <>Continue <ArrowRight size={16} /></>
             )}
           </button>
         </form>
 
-        {/* Sign In link */}
-        <p style={{ textAlign: "center", marginTop: 24, fontSize: "0.875rem", color: "var(--text-sub)" }}>
+        <p style={S.switchText}>
           Already have an account?{" "}
-          <Link href="/signin" style={{ color: "var(--primary)", fontWeight: 700, textDecoration: "none" }}>
-            Sign In
-          </Link>
+          <Link href="/signin" style={S.link}>Sign In</Link>
         </p>
-
-        {/* Age note */}
-        <p style={{ textAlign: "center", marginTop: 12, fontSize: "0.72rem", color: "var(--text-muted)", lineHeight: 1.6 }}>
-          FDF is for ages 13–17 only. 100% free. Sponsor-funded.
-        </p>
+        <p style={S.footnote}>FDF is for ages 13–17 only. 100% free. Sponsor-funded.</p>
       </div>
 
       <style>{`
         @keyframes spin { to { transform: rotate(360deg); } }
-        input:focus { border-color: var(--primary) !important; box-shadow: 0 0 0 3px rgba(91,140,255,0.12); }
+        input:focus { outline: none; border-color: #8b5cf6 !important; box-shadow: 0 0 0 3px rgba(139,92,246,0.15); }
+        input::placeholder { color: rgba(255,255,255,0.3); }
       `}</style>
     </div>
   );
 }
+
+const S: Record<string, React.CSSProperties> = {
+  page: {
+    minHeight: "100dvh",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: "24px 20px",
+    background: "linear-gradient(160deg, #0f0c29 0%, #302b63 50%, #24243e 100%)",
+  },
+  card: {
+    width: "100%",
+    maxWidth: 440,
+    background: "rgba(255,255,255,0.06)",
+    backdropFilter: "blur(24px)",
+    WebkitBackdropFilter: "blur(24px)",
+    border: "1px solid rgba(255,255,255,0.12)",
+    borderRadius: 24,
+    padding: "36px 32px",
+    boxShadow: "0 24px 64px rgba(0,0,0,0.4)",
+  },
+  logoRow: { display: "flex", justifyContent: "center", marginBottom: 24 },
+  logoBadge: {
+    width: 52, height: 52, borderRadius: 14,
+    background: "linear-gradient(135deg, #8b5cf6, #6366f1)",
+    display: "flex", alignItems: "center", justifyContent: "center",
+    fontSize: "1rem", fontWeight: 900, color: "#fff", letterSpacing: "0.05em",
+    boxShadow: "0 8px 24px rgba(139,92,246,0.4)",
+  },
+  title: {
+    fontFamily: "'Space Grotesk', sans-serif",
+    fontSize: "1.625rem", fontWeight: 800, color: "#f8fafc",
+    textAlign: "center", marginBottom: 6, letterSpacing: "-0.03em",
+  },
+  subtitle: { fontSize: "0.875rem", color: "rgba(255,255,255,0.55)", textAlign: "center", marginBottom: 28 },
+  label: {
+    display: "block", fontSize: "0.72rem", fontWeight: 700,
+    color: "rgba(255,255,255,0.7)", marginBottom: 6,
+    letterSpacing: "0.06em", textTransform: "uppercase",
+  },
+  input: {
+    width: "100%", padding: "13px 14px", borderRadius: 12,
+    border: "1.5px solid rgba(139,92,246,0.25)",
+    background: "rgba(255,255,255,0.08)", fontSize: "0.9375rem",
+    color: "#f8fafc", boxSizing: "border-box", transition: "border-color 0.2s",
+  },
+  eyeBtn: {
+    position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)",
+    background: "none", border: "none", cursor: "pointer",
+    color: "rgba(255,255,255,0.45)", padding: 4, display: "flex", alignItems: "center",
+  },
+  fieldError: { fontSize: "0.72rem", color: "#f87171", marginTop: 4 },
+  submitBtn: {
+    marginTop: 8, width: "100%", height: 52,
+    background: "linear-gradient(135deg, #8b5cf6, #6366f1)",
+    color: "#fff", border: "none", borderRadius: 14,
+    fontSize: "0.9375rem", fontWeight: 700,
+    display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+    boxShadow: "0 8px 24px rgba(139,92,246,0.35)", transition: "all 0.2s",
+  },
+  switchText: { textAlign: "center", marginTop: 24, fontSize: "0.875rem", color: "rgba(255,255,255,0.5)" },
+  link: { color: "#a78bfa", fontWeight: 700, textDecoration: "none" },
+  footnote: { textAlign: "center", marginTop: 12, fontSize: "0.7rem", color: "rgba(255,255,255,0.3)", lineHeight: 1.6 },
+};

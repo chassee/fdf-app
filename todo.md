@@ -473,3 +473,32 @@
 - [ ] Every tab functional, no broken navigation, no placeholder text
 - [ ] TypeScript clean, all tests pass
 - [ ] Save checkpoint
+
+## Auth & Onboarding Production Fix (Pasted_content_94)
+
+### Auth Fixes
+- [x] Add emailRedirectTo: window.location.origin to signUp call (server-side dynamic)
+- [x] Replace manual localStorage session with supabase.auth.onAuthStateChange listener
+- [x] Remove any hardcoded manus.space URLs from auth flow
+- [x] Ensure session persists after signup/login
+
+### Onboarding Flow Rebuild
+- [x] New 4-step flow: Auth → DOB → Username → Dashboard
+- [x] If no profile → redirect to onboarding
+- [x] If onboarding_complete = true → go to dashboard
+- [x] DOB validation: ages 13–17 only (calculateAge helper)
+- [x] Save DOB to Supabase profile
+
+### Database
+- [x] Add username + onboarding_complete columns to fdf_users (profiles merged)
+- [x] Auto-create profile row on signup
+
+### UI Polish
+- [x] Max-width 480px centered container for mobile
+- [x] Desktop: centered card, not full-width stretch
+- [x] Soft gradient background (purple/blue) on all auth/onboarding screens
+- [x] Glass card effect (backdrop blur) on all forms
+- [x] Continue button: full-width, 52px height, gradient, disabled state
+- [x] Loading state on all submit buttons
+- [x] Smooth fade/slide transitions between onboarding steps
+- [x] Remove unnecessary text — keep each screen minimal

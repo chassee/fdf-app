@@ -488,6 +488,49 @@ export const appRouter = router({
         });
         return updated;
       }),
+    // Save DOB during onboarding step 2
+    saveDOB: publicProcedure
+      .input(z.object({
+        accessToken: z.string(),
+        dob: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Must be YYYY-MM-DD"),
+      }))
+      .mutation(async ({ input }) => {
+        const userId = await verifySupabaseToken(input.accessToken);
+        if (!userId) throw new TRPCError({ code: "UNAUTHORIZED", message: "Invalid session" });
+        // Validate age 13-17
+        const birth = new Date(input.dob);
+        const today = new Date();
+        let age = today.getFullYear() - birth.getFullYear();
+        const m = today.getMonth() - birth.getMonth();
+        if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) age--;
+        if (age < 13 || age > 17) {
+          throw new TRPCError({ code: "BAD_REQUEST", message: "FDF is for ages 13-17 only" });
+        }
+        await updateFDFProfile(userId, { dob: input.dob, age });
+        return { success: true, age };
+      }),
+    // Save username during onboarding step 3 and mark onboarding complete
+    saveUsername: publicProcedure
+      .input(z.object({
+        accessToken: z.string(),
+        username: z.string().min(2).max(30).regex(/^[a-zA-Z0-9_]+$/, "Letters, numbers and underscores only"),
+      }))
+      .mutation(async ({ input }) => {
+        const userId = await verifySupabaseToken(input.accessToken);
+        if (!userId) throw new TRPCError({ code: "UNAUTHORIZED", message: "Invalid session" });
+        // Check username uniqueness
+        const { data: existing } = await supabaseAdmin
+          .from("fdf_users")
+          .select("id")
+          .ilike("username", input.username)
+          .neq("auth_user_id", userId)
+          .maybeSingle();
+        if (existing) {
+          throw new TRPCError({ code: "CONFLICT", message: "Username already taken. Try another." });
+        }
+        await updateFDFProfile(userId, { username: input.username, onboarding_complete: true });
+        return { success: true };
+      }),
   }),
 
   // ── Parent Approval Router ─────────────────────────────────────────────
