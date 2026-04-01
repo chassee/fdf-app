@@ -502,3 +502,10 @@
 - [x] Loading state on all submit buttons
 - [x] Smooth fade/slide transitions between onboarding steps
 - [x] Remove unnecessary text — keep each screen minimal
+
+## Bug Fix: Manus OAuth Portal Popup
+
+- [x] Remove Manus OAuth redirect from FDFContext / main.tsx / App.tsx
+- [x] Ensure unauthenticated users land on /signup or /signin (not manus.im)
+- [x] Suppress UNAUTHED_ERR_MSG redirect in queryClient error handler
+- [x] Test: opening fdf.crypdawgs.com shows FDF SignIn screen, not Manus portal

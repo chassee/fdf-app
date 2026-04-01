@@ -1,6 +1,4 @@
-import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
-import { getLoginUrl } from "@/const";
 import { useState } from "react";
 import { Link } from "wouter";
 import { toast } from "sonner";
@@ -35,8 +33,7 @@ const TRAINING_PATH = [
 ];
 
 export default function Home() {
-  const { user, isAuthenticated } = useAuth();
-  const { xp, gems, streak, missionsCompleted, lastCheckin, rankId, level, levelPct, isEnrolled, isLoading, refetch, dnaScore, dnaLevel, disciplineScore, consistencyScore, intelligenceScore } = useFDF();
+  const { xp, gems, streak, missionsCompleted, lastCheckin, rankId, level, levelPct, isEnrolled, isLoading, refetch, dnaScore, dnaLevel, disciplineScore, consistencyScore, intelligenceScore, isAuthenticated } = useFDF();
 
   const [onboardStep, setOnboardStep] = useState<"dob" | "class" | null>(null);
   const [dob, setDob] = useState("");
@@ -365,7 +362,7 @@ export default function Home() {
               color: "var(--text-main)", letterSpacing: "-0.02em",
             }}
           >
-            {user?.name?.split(" ")[0] ?? "Dawg"}
+            {"Dawg"}
           </h1>
           {/* Rank badge */}
           <div

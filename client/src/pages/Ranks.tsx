@@ -1,5 +1,4 @@
-import { useAuth } from "@/_core/hooks/useAuth";
-import { getLoginUrl } from "@/const";
+import { Link } from "wouter";
 import { useState, useEffect } from "react";
 import { CheckCircle2, Lock, ArrowRight, Flame, Zap } from "lucide-react";
 import { useFDF, RANK_META, getLevelInfo, UNLOCK_XP, type RankId } from "@/contexts/FDFContext";
@@ -303,8 +302,7 @@ function RankCard({ rank, status, xp }: {
 
 // ── Main Component ────────────────────────────────────────────────────────────
 export default function Ranks() {
-  const { isAuthenticated } = useAuth();
-  const { xp, streak, rankId, isEnrolled, isLoading, unlockedSections } = useFDF();
+  const { isAuthenticated, xp, streak, rankId, isEnrolled, isLoading, unlockedSections } = useFDF();
 
   if (!isAuthenticated) {
     return (
@@ -317,10 +315,10 @@ export default function Ranks() {
           <p style={{ fontSize: "0.875rem", color: "var(--text-sub)", marginBottom: 24 }}>
             Sign in to view your rank progression.
           </p>
-          <a href={getLoginUrl()} className="btn-primary">
+          <Link href="/signin" className="btn-primary">
             Sign In to Continue
             <ArrowRight size={16} />
-          </a>
+          </Link>
         </div>
       </div>
     );

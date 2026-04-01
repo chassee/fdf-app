@@ -1,6 +1,5 @@
+import { Link } from "wouter";
 import { trpc } from "@/lib/trpc";
-import { useAuth } from "@/_core/hooks/useAuth";
-import { getLoginUrl } from "@/const";
 import { toast } from "sonner";
 import { useState } from "react";
 import { ArrowRight, CheckCircle2, Lock, ShieldCheck } from "lucide-react";
@@ -117,8 +116,7 @@ function ConfirmModal({
 
 // ── Main Component ────────────────────────────────────────────────────────────
 export default function Rewards() {
-  const { isAuthenticated } = useAuth();
-  const { gems, xp, isEnrolled, refetch, unlockedSections } = useFDF();
+  const { isAuthenticated, gems, xp, isEnrolled, refetch, unlockedSections } = useFDF();
 
   const { data: rewardsData, isLoading, refetch: refetchRewards } = trpc.fdf.getRewards.useQuery(undefined, {
     enabled: isAuthenticated && isEnrolled,
@@ -150,10 +148,10 @@ export default function Rewards() {
           <p style={{ fontSize: "0.875rem", color: "var(--text-sub)", marginBottom: 24 }}>
             Sign in to access the rewards shop.
           </p>
-          <a href={getLoginUrl()} className="btn-primary">
+          <Link href="/signin" className="btn-primary">
             Sign In to Continue
             <ArrowRight size={16} />
-          </a>
+          </Link>
         </div>
       </div>
     );

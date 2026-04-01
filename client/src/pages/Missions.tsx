@@ -1,6 +1,5 @@
+import { Link } from "wouter";
 import { trpc } from "@/lib/trpc";
-import { useAuth } from "@/_core/hooks/useAuth";
-import { getLoginUrl } from "@/const";
 import { toast } from "sonner";
 import { useState, useEffect, useRef } from "react";
 import { CheckCircle2, Lock, ArrowRight, Flame, Zap } from "lucide-react";
@@ -250,8 +249,7 @@ function XPPopAnimation({ amount, onDone }: { amount: number; onDone: () => void
 
 // ── Main Component ────────────────────────────────────────────────────────────
 export default function Missions() {
-  const { isAuthenticated } = useAuth();
-  const { xp, streak, lastCheckin, isEnrolled, refetch, completeMission: localCompleteMission, doCheckIn: localCheckIn, unlockedSections } = useFDF();
+  const { isAuthenticated, xp, streak, lastCheckin, isEnrolled, refetch, completeMission: localCompleteMission, doCheckIn: localCheckIn, unlockedSections } = useFDF();
 
   const { data: missionsData, isLoading, refetch: refetchMissions } = trpc.fdf.getMissions.useQuery(undefined, {
     enabled: isAuthenticated && isEnrolled,
@@ -306,10 +304,10 @@ export default function Missions() {
           <p style={{ fontSize: "0.875rem", color: "var(--text-sub)", marginBottom: 24 }}>
             Sign in to access your training missions.
           </p>
-          <a href={getLoginUrl()} className="btn-primary">
+          <Link href="/signin" className="btn-primary">
             Sign In to Continue
             <ArrowRight size={16} />
-          </a>
+          </Link>
         </div>
       </div>
     );

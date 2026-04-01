@@ -223,6 +223,9 @@ interface FDFContextValue {
   doCheckIn: () => void;
   setLocalProfile: (profile: Partial<LocalFDFState>) => void;
 
+  // Auth state (Supabase)
+  isAuthenticated: boolean;
+
   // Refetch backend
   refetch: () => void;
 }
@@ -234,6 +237,7 @@ const FDFContext = createContext<FDFContextValue>({
   dnaScore: 0, dnaLevel: "Seed", consistencyScore: 0, disciplineScore: 0, intelligenceScore: 0,
   graduated: false, graduatedAt: null, graduate: async () => {}, isGraduationEligible: false,
   unlockedSections: { missions: false, rewards: false, ranks: false, vault: false },
+  isAuthenticated: false,
   addXP: () => {}, completeMission: () => {}, doCheckIn: () => {}, setLocalProfile: () => {},
   refetch: () => {},
 });
@@ -561,6 +565,7 @@ export function FDFProvider({ children }: { children: React.ReactNode }) {
     dnaScore, dnaLevel, consistencyScore, disciplineScore, intelligenceScore,
     graduated, graduatedAt, graduate, isGraduationEligible,
     unlockedSections,
+    isAuthenticated,
     addXP, completeMission, doCheckIn, setLocalProfile,
     refetch,
   };

@@ -1,6 +1,5 @@
+import { Link } from "wouter";
 import { useState } from "react";
-import { useAuth } from "@/_core/hooks/useAuth";
-import { getLoginUrl } from "@/const";
 import { ArrowRight, CheckCircle2, Lock, Shield, ExternalLink } from "lucide-react";
 import { useFDF, UNLOCK_XP } from "@/contexts/FDFContext";
 
@@ -302,8 +301,8 @@ function GraduationReadyScreen({
 
 // ── Main Component ────────────────────────────────────────────────────────────
 export default function Graduation() {
-  const { isAuthenticated } = useAuth();
   const {
+    isAuthenticated,
     xp, streak, missionsCompleted, dnaScore, isLoading,
     unlockedSections, graduated, graduatedAt, graduate, isGraduationEligible,
     dob, isEnrolled,
@@ -324,10 +323,10 @@ export default function Graduation() {
           <p style={{ fontSize: "0.875rem", color: "var(--text-sub)", marginBottom: 24 }}>
             Sign in to view your path to Vault access.
           </p>
-          <a href={getLoginUrl()} className="btn-primary">
+          <Link href="/signin" className="btn-primary">
             Sign In to Continue
             <ArrowRight size={16} />
-          </a>
+          </Link>
         </div>
       </div>
     );
