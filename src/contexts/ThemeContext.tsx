@@ -1,64 +1,70 @@
-import React, { createContext, useContext, useEffect, useState } from "react";
+import { createContext, useContext, useEffect, useState } from "react";
 
-type Theme = "light" | "dark";
+export type ThemeId = "blue" | "purple" | "neon-green" | "orange" | "pink" | "dark";
 
-interface ThemeContextType {
-  theme: Theme;
+export interface ThemeOption {
+  id: ThemeId;
+  label: string;
+  emoji: string;
+  primary: string;
+  bg: string;
+}
+
+export const THEMES: ThemeOption[] = [
+  { id: "blue",       label: "Ocean",  emoji: "🌊", primary: "#5b8cff", bg: "#e8efff" },
+  { id: "purple",     label: "Galaxy", emoji: "🔮", primary: "#9333ea", bg: "#f3e8ff" },
+  { id: "neon-green", label: "Forest", emoji: "🌿", primary: "#16a34a", bg: "#dcfce7" },
+  { id: "orange",     label: "Blaze",  emoji: "🔥", primary: "#ea580c", bg: "#ffedd5" },
+  { id: "pink",       label: "Sakura", emoji: "🌸", primary: "#db2777", bg: "#fce7f3" },
+  { id: "dark",       label: "Night",  emoji: "🌙", primary: "#818cf8", bg: "#1a1a2e" },
+];
+
+interface ThemeContextValue {
+  theme: ThemeId;
+  setTheme: (id: ThemeId) => void;
+  themeOption: ThemeOption;
+  // Legacy compat
   toggleTheme?: () => void;
   switchable: boolean;
 }
 
-const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
+const ThemeContext = createContext<ThemeContextValue>({
+  theme: "blue",
+  setTheme: () => {},
+  themeOption: THEMES[0],
+  switchable: true,
+});
 
-interface ThemeProviderProps {
-  children: React.ReactNode;
-  defaultTheme?: Theme;
-  switchable?: boolean;
-}
-
-export function ThemeProvider({
-  children,
-  defaultTheme = "light",
-  switchable = false,
-}: ThemeProviderProps) {
-  const [theme, setTheme] = useState<Theme>(() => {
-    if (switchable) {
-      const stored = localStorage.getItem("theme");
-      return (stored as Theme) || defaultTheme;
-    }
-    return defaultTheme;
+export function ThemeProvider({ children }: { children: React.ReactNode }) {
+  const [theme, setThemeState] = useState<ThemeId>(() => {
+    try {
+      const saved = localStorage.getItem("fdf-theme");
+      if (saved && THEMES.find(t => t.id === saved)) return saved as ThemeId;
+    } catch {}
+    return "blue";
   });
 
   useEffect(() => {
-    const root = document.documentElement;
-    if (theme === "dark") {
-      root.classList.add("dark");
-    } else {
-      root.classList.remove("dark");
-    }
+    document.documentElement.setAttribute("data-theme", theme);
+    // Remove old dark class if present
+    document.documentElement.classList.remove("dark");
+    if (theme === "dark") document.documentElement.classList.add("dark");
+    try { localStorage.setItem("fdf-theme", theme); } catch {}
+  }, [theme]);
 
-    if (switchable) {
-      localStorage.setItem("theme", theme);
-    }
-  }, [theme, switchable]);
+  function setTheme(id: ThemeId) {
+    setThemeState(id);
+  }
 
-  const toggleTheme = switchable
-    ? () => {
-        setTheme(prev => (prev === "light" ? "dark" : "light"));
-      }
-    : undefined;
+  const themeOption = THEMES.find(t => t.id === theme) ?? THEMES[0];
 
   return (
-    <ThemeContext.Provider value={{ theme, toggleTheme, switchable }}>
+    <ThemeContext.Provider value={{ theme, setTheme, themeOption, switchable: true }}>
       {children}
     </ThemeContext.Provider>
   );
 }
 
 export function useTheme() {
-  const context = useContext(ThemeContext);
-  if (!context) {
-    throw new Error("useTheme must be used within ThemeProvider");
-  }
-  return context;
+  return useContext(ThemeContext);
 }

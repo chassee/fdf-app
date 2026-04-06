@@ -133,6 +133,13 @@ export default function SignIn() {
             {errors.password && <p style={S.fieldError}>{errors.password}</p>}
           </div>
 
+          {/* Forgot password */}
+          <div style={{ textAlign: "right", marginTop: -4 }}>
+            <Link href="/forgot-password" style={{ fontSize: "0.8rem", color: "#a78bfa", textDecoration: "none", fontWeight: 600 }}>
+              Forgot password?
+            </Link>
+          </div>
+
           {/* Submit */}
           <button
             type="submit"

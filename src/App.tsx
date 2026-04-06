@@ -13,6 +13,8 @@ import DNA from "@/pages/DNA";
 import Ranks from "@/pages/Ranks";
 import SignIn from "@/pages/SignIn";
 import SignUp from "@/pages/SignUp";
+import ForgotPassword from "@/pages/ForgotPassword";
+import ResetPassword from "@/pages/ResetPassword";
 import OnboardingDOB from "@/pages/OnboardingDOB";
 import OnboardingUsername from "@/pages/OnboardingUsername";
 import PendingApproval from "@/pages/PendingApproval";
@@ -34,6 +36,8 @@ function AppRoutes() {
       <Route path="/pending-approval" component={PendingApproval} />
       <Route path="/parent-approval" component={ParentApproval} />
       <Route path="/parents" component={Parents} />
+      <Route path="/forgot-password" component={ForgotPassword} />
+      <Route path="/reset-password" component={ResetPassword} />
 
       {/* Main app — wrapped in Layout */}
       <Route>

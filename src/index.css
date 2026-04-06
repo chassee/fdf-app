@@ -630,3 +630,286 @@ button:disabled {
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   DESKTOP RESPONSIVE LAYOUT
+   Mobile-first → tablet (768px) → desktop (1024px)
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ─── Desktop: wider page container ─────────────────────────── */
+@media (min-width: 768px) {
+  .page-container {
+    max-width: 720px;
+    padding: 24px 32px 100px;
+  }
+
+  .bottom-nav-inner {
+    max-width: 720px;
+  }
+
+  .top-bar .top-bar-inner {
+    max-width: 720px;
+  }
+
+  h1 { font-size: 2rem; }
+  h2 { font-size: 1.5rem; }
+  h3 { font-size: 1.25rem; }
+}
+
+@media (min-width: 1024px) {
+  /* On desktop: switch from bottom nav to left sidebar */
+  .bottom-nav {
+    display: none;
+  }
+
+  /* Sidebar layout wrapper */
+  .desktop-layout {
+    display: flex;
+    min-height: 100dvh;
+  }
+
+  /* Left sidebar */
+  .desktop-sidebar {
+    display: flex;
+    flex-direction: column;
+    width: 220px;
+    min-height: 100dvh;
+    position: fixed;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    z-index: 40;
+    background: rgba(255, 255, 255, 0.88);
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    border-right: 1px solid rgba(91, 140, 255, 0.10);
+    box-shadow: 2px 0 16px rgba(91, 140, 255, 0.06);
+    padding: 20px 12px;
+    gap: 4px;
+  }
+
+  /* Sidebar brand */
+  .desktop-sidebar-brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 12px 20px;
+    border-bottom: 1px solid rgba(91, 140, 255, 0.10);
+    margin-bottom: 8px;
+  }
+
+  /* Sidebar nav items */
+  .desktop-sidebar-nav {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    flex: 1;
+  }
+
+  .desktop-nav-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 14px;
+    border-radius: 12px;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--text-sub);
+    text-decoration: none;
+    transition: all 0.15s ease;
+    cursor: pointer;
+  }
+
+  .desktop-nav-item:hover {
+    background: rgba(91, 140, 255, 0.07);
+    color: var(--primary);
+  }
+
+  .desktop-nav-item.active {
+    background: var(--primary-light);
+    color: var(--primary);
+  }
+
+  /* Main content shifts right to account for sidebar */
+  .desktop-main-content {
+    margin-left: 220px;
+    flex: 1;
+  }
+
+  /* Top bar adapts for desktop */
+  .top-bar {
+    margin-left: 220px;
+  }
+
+  .top-bar .top-bar-inner {
+    max-width: 960px;
+    padding: 0 32px;
+  }
+
+  /* Page container wider on desktop */
+  .page-container {
+    max-width: 900px;
+    padding: 32px 40px 80px;
+    margin: 0 auto;
+  }
+
+  /* Better typography on desktop */
+  h1 { font-size: 2.25rem; }
+  h2 { font-size: 1.75rem; }
+  h3 { font-size: 1.375rem; }
+
+  /* Two-column grid for cards on desktop */
+  .desktop-grid-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+  }
+
+  .desktop-grid-3 {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   6-THEME COLOR SYSTEM
+   Themes: blue (default) | purple | neon-green | orange | pink | dark
+   Applied via data-theme attribute on <html> or <body>
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ─── Theme: Blue (default — already set in :root) ───────────── */
+[data-theme="blue"] {
+  --primary: #5b8cff;
+  --primary-dark: #3a6de8;
+  --primary-light: #e8efff;
+  --accent: #7b5cff;
+  --accent-light: #ede8ff;
+  --bg-main: linear-gradient(180deg, #f7f9ff 0%, #eef3ff 100%);
+  --bg-subtle: #f0f4ff;
+  --card-bg: rgba(255, 255, 255, 0.80);
+  --card-border: rgba(91, 140, 255, 0.12);
+  --card-shadow: 0 4px 24px rgba(91, 140, 255, 0.10), 0 1px 4px rgba(0,0,0,0.06);
+  --card-shadow-hover: 0 8px 32px rgba(91, 140, 255, 0.18), 0 2px 8px rgba(0,0,0,0.08);
+  --text-main: #0f172a;
+  --text-sub: #475569;
+  --text-muted: #94a3b8;
+  --grid-color: rgba(91, 140, 255, 0.06);
+}
+
+/* ─── Theme: Purple ──────────────────────────────────────────── */
+[data-theme="purple"] {
+  --primary: #9333ea;
+  --primary-dark: #7e22ce;
+  --primary-light: #f3e8ff;
+  --accent: #c026d3;
+  --accent-light: #fae8ff;
+  --bg-main: linear-gradient(180deg, #faf5ff 0%, #f3e8ff 100%);
+  --bg-subtle: #f5f0ff;
+  --card-bg: rgba(255, 255, 255, 0.82);
+  --card-border: rgba(147, 51, 234, 0.12);
+  --card-shadow: 0 4px 24px rgba(147, 51, 234, 0.10), 0 1px 4px rgba(0,0,0,0.06);
+  --card-shadow-hover: 0 8px 32px rgba(147, 51, 234, 0.18), 0 2px 8px rgba(0,0,0,0.08);
+  --text-main: #1a0533;
+  --text-sub: #5b3f7a;
+  --text-muted: #a78bca;
+  --grid-color: rgba(147, 51, 234, 0.05);
+}
+
+/* ─── Theme: Neon Green ──────────────────────────────────────── */
+[data-theme="neon-green"] {
+  --primary: #16a34a;
+  --primary-dark: #15803d;
+  --primary-light: #dcfce7;
+  --accent: #65a30d;
+  --accent-light: #ecfccb;
+  --bg-main: linear-gradient(180deg, #f0fdf4 0%, #dcfce7 100%);
+  --bg-subtle: #f0fdf4;
+  --card-bg: rgba(255, 255, 255, 0.82);
+  --card-border: rgba(22, 163, 74, 0.12);
+  --card-shadow: 0 4px 24px rgba(22, 163, 74, 0.10), 0 1px 4px rgba(0,0,0,0.06);
+  --card-shadow-hover: 0 8px 32px rgba(22, 163, 74, 0.18), 0 2px 8px rgba(0,0,0,0.08);
+  --text-main: #052e16;
+  --text-sub: #166534;
+  --text-muted: #4ade80;
+  --grid-color: rgba(22, 163, 74, 0.05);
+}
+
+/* ─── Theme: Orange ──────────────────────────────────────────── */
+[data-theme="orange"] {
+  --primary: #ea580c;
+  --primary-dark: #c2410c;
+  --primary-light: #fff7ed;
+  --accent: #d97706;
+  --accent-light: #fef3c7;
+  --bg-main: linear-gradient(180deg, #fff7ed 0%, #ffedd5 100%);
+  --bg-subtle: #fff7ed;
+  --card-bg: rgba(255, 255, 255, 0.82);
+  --card-border: rgba(234, 88, 12, 0.12);
+  --card-shadow: 0 4px 24px rgba(234, 88, 12, 0.10), 0 1px 4px rgba(0,0,0,0.06);
+  --card-shadow-hover: 0 8px 32px rgba(234, 88, 12, 0.18), 0 2px 8px rgba(0,0,0,0.08);
+  --text-main: #1c0a00;
+  --text-sub: #7c2d12;
+  --text-muted: #fb923c;
+  --grid-color: rgba(234, 88, 12, 0.05);
+}
+
+/* ─── Theme: Pink ────────────────────────────────────────────── */
+[data-theme="pink"] {
+  --primary: #db2777;
+  --primary-dark: #be185d;
+  --primary-light: #fce7f3;
+  --accent: #9d174d;
+  --accent-light: #fdf2f8;
+  --bg-main: linear-gradient(180deg, #fff0f6 0%, #fce7f3 100%);
+  --bg-subtle: #fff0f6;
+  --card-bg: rgba(255, 255, 255, 0.82);
+  --card-border: rgba(219, 39, 119, 0.12);
+  --card-shadow: 0 4px 24px rgba(219, 39, 119, 0.10), 0 1px 4px rgba(0,0,0,0.06);
+  --card-shadow-hover: 0 8px 32px rgba(219, 39, 119, 0.18), 0 2px 8px rgba(0,0,0,0.08);
+  --text-main: #1a0010;
+  --text-sub: #831843;
+  --text-muted: #f472b6;
+  --grid-color: rgba(219, 39, 119, 0.05);
+}
+
+/* ─── Theme: Dark Mode ───────────────────────────────────────── */
+[data-theme="dark"] {
+  --primary: #818cf8;
+  --primary-dark: #6366f1;
+  --primary-light: rgba(99, 102, 241, 0.15);
+  --accent: #a78bfa;
+  --accent-light: rgba(167, 139, 250, 0.15);
+  --bg-main: linear-gradient(180deg, #0f0f1a 0%, #1a1a2e 100%);
+  --bg-subtle: #1e1e30;
+  --card-bg: rgba(255, 255, 255, 0.05);
+  --card-border: rgba(129, 140, 248, 0.15);
+  --card-shadow: 0 4px 24px rgba(0, 0, 0, 0.4), 0 1px 4px rgba(0,0,0,0.3);
+  --card-shadow-hover: 0 8px 32px rgba(0, 0, 0, 0.5), 0 2px 8px rgba(0,0,0,0.3);
+  --text-main: #f1f5f9;
+  --text-sub: #94a3b8;
+  --text-muted: #475569;
+  --grid-color: rgba(129, 140, 248, 0.04);
+}
+
+/* Dark mode: invert nav backgrounds */
+[data-theme="dark"] .bottom-nav,
+[data-theme="dark"] .top-bar {
+  background: rgba(15, 15, 26, 0.92);
+  border-color: rgba(129, 140, 248, 0.12);
+}
+
+[data-theme="dark"] .desktop-sidebar {
+  background: rgba(15, 15, 26, 0.95);
+  border-color: rgba(129, 140, 248, 0.12);
+}
+
+[data-theme="dark"] body::before {
+  opacity: 0.6;
+}
+
+/* ─── Theme transition ───────────────────────────────────────── */
+body, .academy-card, .bottom-nav, .top-bar, .desktop-sidebar,
+.mission-card, .reward-card, .stat-chip, .btn-primary, .btn-secondary {
+  transition: background 0.3s ease, color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+}
