@@ -108,6 +108,7 @@ export interface LocalFDFState {
   gems: number;
   dawg_class: string | null;
   dob: string | null;
+  profile_complete: boolean;
   // DNA Score System
   dna_score: number;
   dna_level: DNALevel;
@@ -138,6 +139,7 @@ const DEFAULT_LOCAL_STATE: LocalFDFState = {
   gems: 0,
   dawg_class: null,
   dob: null,
+  profile_complete: false,
   dna_score: 0,
   dna_level: "Seed",
   consistency_score: 0,
@@ -199,6 +201,7 @@ interface FDFContextValue {
   isEnrolled: boolean;
   isLoading: boolean;
   yearTrack: number;
+  profileComplete: boolean;
 
   // DNA Score System
   dnaScore: number;
@@ -229,17 +232,20 @@ interface FDFContextValue {
   refetch: () => void;
 }
 
-const FDFContext = createContext<FDFContextValue>({
+const DEFAULT_CONTEXT_VALUE: FDFContextValue = {
   xp: 0, gems: 0, streak: 0, missionsCompleted: 0,
   lastCheckin: null, rankId: "rookie", level: 1, levelPct: 0,
   dawgClass: null, dob: null, isEnrolled: false, isLoading: false, yearTrack: 1,
+  profileComplete: false,
   dnaScore: 0, dnaLevel: "Seed", consistencyScore: 0, disciplineScore: 0, intelligenceScore: 0,
   graduated: false, graduatedAt: null, graduate: async () => {}, isGraduationEligible: false,
   unlockedSections: { missions: false, rewards: false, ranks: false, vault: false },
   isAuthenticated: false,
   addXP: () => {}, completeMission: () => {}, doCheckIn: () => {}, setLocalProfile: () => {},
   refetch: () => {},
-});
+};
+
+const FDFContext = createContext<FDFContextValue>(DEFAULT_CONTEXT_VALUE);
 
 // ─────────────────────────────────────────────────────────────────────────────
 // PROVIDER
@@ -313,6 +319,7 @@ export function FDFProvider({ children }: { children: React.ReactNode }) {
           completed_missions: Array.from(new Set([...prev.completed_missions, ...(data.completed_missions ?? [])])),
           dob:                data.dob ?? prev.dob,
           dawg_class:         data.dawg_class ?? prev.dawg_class,
+          profile_complete:   data.profile_complete ?? prev.profile_complete,
           graduated:          data.graduated ?? prev.graduated,
           graduated_at:       data.graduated_at ?? prev.graduated_at,
           dna_score:          data.dna_score ?? prev.dna_score,
@@ -530,6 +537,7 @@ export function FDFProvider({ children }: { children: React.ReactNode }) {
     xp, gems, streak, missionsCompleted,
     lastCheckin, rankId, level, levelPct,
     dawgClass, dob, isEnrolled: isEnrolled || local.dawg_class !== null, isLoading, yearTrack,
+    profileComplete: local.profile_complete,
     dnaScore, dnaLevel, consistencyScore, disciplineScore, intelligenceScore,
     graduated, graduatedAt, graduate, isGraduationEligible,
     unlockedSections,

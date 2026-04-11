@@ -47,7 +47,7 @@ export default function OnboardingDOB() {
     try {
       const { error: updateErr } = await supabase
         .from("fdf_users")
-        .update({ dob })
+        .update({ dob, profile_complete: true })
         .eq("auth_user_id", session.user.id);
       if (updateErr) throw updateErr;
       toast.success("Date of birth saved!");
@@ -81,7 +81,7 @@ export default function OnboardingDOB() {
         {/* Progress dots */}
         <div style={S.progressRow}>
           <div style={{ ...S.dot, background: "#8b5cf6" }} />
-          <div style={{ ...S.dot, background: "#8b5cf6" }} />
+          <div style={{ ...S.dot, background: "rgba(255,255,255,0.2)" }} />
           <div style={{ ...S.dot, background: "rgba(255,255,255,0.2)" }} />
         </div>
 

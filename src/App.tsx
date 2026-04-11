@@ -1,4 +1,5 @@
-import { Switch, Route } from "wouter";
+import { Switch, Route, useLocation } from "wouter";
+import { useFDF } from "@/contexts/FDFContext";
 import { Toaster } from "sonner";
 import { FDFProvider } from "@/contexts/FDFContext";
 import Layout from "@/components/Layout";
@@ -39,10 +40,10 @@ function AppRoutes() {
       <Route path="/forgot-password" component={ForgotPassword} />
       <Route path="/reset-password" component={ResetPassword} />
 
-      {/* Main app — wrapped in Layout */}
+      {/* Main app — wrapped in Layout with profile_complete guard */}
       <Route>
         {(params) => (
-          <Layout>
+          <ProtectedLayout>
             <Switch>
               <Route path="/" component={Home} />
               <Route path="/missions" component={Missions} />
@@ -53,11 +54,33 @@ function AppRoutes() {
               <Route path="/ranks" component={Ranks} />
               <Route component={NotFound} />
             </Switch>
-          </Layout>
+          </ProtectedLayout>
         )}
       </Route>
     </Switch>
   );
+}
+
+// Guard: if profile_complete = false, redirect to onboarding
+function ProtectedLayout({ children }: { children: React.ReactNode }) {
+  const { profileComplete, isAuthenticated, isLoading } = useFDF();
+  const [location, navigate] = useLocation();
+  
+  if (isLoading) {
+    return <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100vh" }}>Loading...</div>;
+  }
+  
+  if (!isAuthenticated) {
+    navigate("/signin");
+    return null;
+  }
+  
+  if (!profileComplete) {
+    navigate("/onboarding/dob");
+    return null;
+  }
+  
+  return <Layout>{children}</Layout>;
 }
 
 export default function App() {

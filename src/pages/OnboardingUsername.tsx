@@ -40,7 +40,7 @@ export default function OnboardingUsername() {
       if (existing) { setError("That username is already taken. Try another."); setIsPending(false); return; }
       const { error: updateErr } = await supabase
         .from("fdf_users")
-        .update({ username: trimmed, onboarding_complete: true })
+        .update({ username: trimmed })
         .eq("auth_user_id", session.user.id);
       if (updateErr) throw updateErr;
       toast.success("You're all set! Welcome to FDF 🎉");

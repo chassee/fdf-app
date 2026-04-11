@@ -4,11 +4,9 @@ import { Link } from "wouter";
 import { toast } from "sonner";
 import { useFDF, RANK_META, getLevelInfo, DNA_LEVEL_META } from "@/contexts/FDFContext";
 import {
-  ArrowRight,
   Target,
   Trophy,
   Zap,
-  CheckCircle2,
   Lock,
   ChevronRight,
   Shield,
@@ -16,6 +14,8 @@ import {
   Flame,
   BookOpen,
   TrendingUp,
+  ArrowRight,
+  CheckCircle2,
 } from "lucide-react";
 
 const DAWG_CLASSES = [
@@ -35,31 +35,7 @@ const TRAINING_PATH = [
 export default function Home() {
   const { xp, gems, streak, missionsCompleted, lastCheckin, rankId, level, levelPct, isEnrolled, isLoading, refetch, dnaScore, dnaLevel, disciplineScore, consistencyScore, intelligenceScore, isAuthenticated } = useFDF();
 
-  const [onboardStep, setOnboardStep] = useState<"dob" | "class" | null>(null);
-  const [dob, setDob] = useState("");
-  const [selectedClass, setSelectedClass] = useState<string>("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleOnboardSubmit = async () => {
-    if (!dob || !selectedClass) return;
-    setIsSubmitting(true);
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) { toast.error("Not signed in"); return; }
-      const { error } = await supabase
-        .from("fdf_users")
-        .update({ dob, dawg_class: selectedClass, onboarding_complete: true })
-        .eq("auth_user_id", session.user.id);
-      if (error) throw error;
-      toast.success("Welcome to FDF! Your training begins now.");
-      setOnboardStep(null);
-      refetch();
-    } catch (e: any) {
-      toast.error(e.message ?? "Onboarding failed");
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
 
   const handleCheckIn = async () => {
     try {
@@ -234,121 +210,7 @@ export default function Home() {
     );
   }
 
-  // ── Onboarding — Step 1: DOB ───────────────────────────────────────────────
-  if (!isEnrolled || onboardStep === "dob") {
-    return (
-      <div className="page-container animate-fade-in">
-        <div style={{ paddingTop: 32, paddingBottom: 16 }}>
-          <h2 style={{ fontSize: "1.375rem", fontWeight: 800, color: "var(--text-main)", letterSpacing: "-0.02em", marginBottom: 6 }}>
-            Set Up Your Profile
-          </h2>
-          <p style={{ fontSize: "0.875rem", color: "var(--text-sub)", marginBottom: 28 }}>
-            FDF is for ages 13–17. Enter your date of birth to continue.
-          </p>
 
-          <div className="academy-card" style={{ marginBottom: 16 }}>
-            <label
-              style={{
-                display: "block", fontSize: "0.75rem", fontWeight: 700,
-                color: "var(--text-muted)", letterSpacing: "0.06em",
-                textTransform: "uppercase", marginBottom: 8,
-              }}
-            >
-              Date of Birth
-            </label>
-            <input
-              type="date"
-              value={dob}
-              onChange={(e) => setDob(e.target.value)}
-              style={{
-                width: "100%", padding: "12px 14px", borderRadius: 12,
-                border: "1.5px solid rgba(91,140,255,0.2)",
-                background: "rgba(91,140,255,0.04)",
-                fontSize: "1rem", color: "var(--text-main)",
-                outline: "none", fontFamily: "inherit",
-              }}
-            />
-          </div>
-
-          <button
-            className="btn-primary"
-            style={{ width: "100%", justifyContent: "center" }}
-            disabled={!dob}
-            onClick={() => setOnboardStep("class")}
-          >
-            Continue
-            <ArrowRight size={16} />
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  // ── Onboarding — Step 2: Dawg Class ───────────────────────────────────────
-  if (onboardStep === "class") {
-    return (
-      <div className="page-container animate-fade-in">
-        <div style={{ paddingTop: 24, paddingBottom: 16 }}>
-          <h2 style={{ fontSize: "1.375rem", fontWeight: 800, color: "var(--text-main)", letterSpacing: "-0.02em", marginBottom: 6 }}>
-            Choose Your Dawg Class
-          </h2>
-          <p style={{ fontSize: "0.875rem", color: "var(--text-sub)", marginBottom: 24 }}>
-            Your class shapes your mission track. You can change it later.
-          </p>
-
-          <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 20 }}>
-            {DAWG_CLASSES.map((dc) => (
-              <button
-                key={dc.id}
-                onClick={() => setSelectedClass(dc.id)}
-                style={{
-                  display: "flex", alignItems: "center", gap: 14,
-                  padding: "14px 16px", borderRadius: 14,
-                  border: selectedClass === dc.id
-                    ? `2px solid ${dc.color}`
-                    : "1.5px solid rgba(91,140,255,0.12)",
-                  background: selectedClass === dc.id ? dc.bg : "rgba(255,255,255,0.8)",
-                  cursor: "pointer", textAlign: "left", width: "100%",
-                  transition: "all 0.15s ease",
-                  boxShadow: selectedClass === dc.id ? `0 4px 16px ${dc.color}25` : "none",
-                }}
-              >
-                <div
-                  style={{
-                    width: 42, height: 42, borderRadius: 11,
-                    background: dc.bg, display: "flex",
-                    alignItems: "center", justifyContent: "center",
-                    fontSize: "1.2rem", flexShrink: 0,
-                  }}
-                >
-                  {dc.icon}
-                </div>
-                <div style={{ flex: 1 }}>
-                  <p style={{ fontWeight: 700, fontSize: "0.9rem", color: "var(--text-main)", marginBottom: 2 }}>
-                    {dc.label}
-                  </p>
-                  <p style={{ fontSize: "0.775rem", color: "var(--text-sub)" }}>{dc.desc}</p>
-                </div>
-                {selectedClass === dc.id && (
-                  <CheckCircle2 size={18} style={{ color: dc.color, flexShrink: 0 }} />
-                )}
-              </button>
-            ))}
-          </div>
-
-          <button
-            className="btn-primary"
-            style={{ width: "100%", justifyContent: "center" }}
-            disabled={!selectedClass || isSubmitting}
-            onClick={handleOnboardSubmit}
-          >
-            {isSubmitting ? "Setting up…" : "Start Training"}
-            <ArrowRight size={16} />
-          </button>
-        </div>
-      </div>
-    );
-  }
 
   // ── Dashboard (enrolled) ───────────────────────────────────────────────────
   return (
