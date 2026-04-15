@@ -3,6 +3,7 @@ import { useFDF } from "@/contexts/FDFContext";
 import { Toaster } from "sonner";
 import { FDFProvider } from "@/contexts/FDFContext";
 import Layout from "@/components/Layout";
+import { useEffect } from "react";
 
 // Pages
 import Home from "@/pages/Home";
@@ -24,9 +25,42 @@ import Parents from "@/pages/Parents";
 import NotFound from "@/pages/NotFound";
 
 // Auth pages don't use the main Layout
-const AUTH_PATHS = ["/signin", "/signup", "/onboarding/dob", "/onboarding/username", "/pending-approval", "/parent-approval", "/parents"];
+const AUTH_PATHS = ["/signin", "/signup", "/onboarding/dob", "/onboarding/username", "/pending-approval", "/parent-approval", "/parents", "/forgot-password", "/reset-password"];
 
 function AppRoutes() {
+  const { isAuthenticated, profileComplete, isLoading } = useFDF();
+  const [location, navigate] = useLocation();
+
+  // Global auth guard: runs on every route change
+  useEffect(() => {
+    if (isLoading) return; // Wait for auth state to load
+
+    // If not authenticated, allow access to auth pages only
+    if (!isAuthenticated) {
+      if (!AUTH_PATHS.includes(location)) {
+        navigate("/signin");
+      }
+      return;
+    }
+
+    // If authenticated but profile not complete, force onboarding
+    if (!profileComplete) {
+      if (location !== "/onboarding/dob" && location !== "/onboarding/username") {
+        navigate("/onboarding/dob");
+      }
+      return;
+    }
+
+    // If profile complete, prevent access to onboarding routes
+    if (location === "/onboarding/dob" || location === "/onboarding/username") {
+      navigate("/");
+    }
+  }, [isAuthenticated, profileComplete, isLoading, location, navigate]);
+
+  if (isLoading) {
+    return <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100vh" }}>Loading...</div>;
+  }
+
   return (
     <Switch>
       {/* Auth / onboarding — no Layout wrapper */}
@@ -40,47 +74,19 @@ function AppRoutes() {
       <Route path="/forgot-password" component={ForgotPassword} />
       <Route path="/reset-password" component={ResetPassword} />
 
-      {/* Main app — wrapped in Layout with profile_complete guard */}
-      <Route>
-        {(params) => (
-          <ProtectedLayout>
-            <Switch>
-              <Route path="/" component={Home} />
-              <Route path="/missions" component={Missions} />
-              <Route path="/rewards" component={Rewards} />
-              <Route path="/leaderboard" component={Leaderboard} />
-              <Route path="/graduation" component={Graduation} />
-              <Route path="/dna" component={DNA} />
-              <Route path="/ranks" component={Ranks} />
-              <Route component={NotFound} />
-            </Switch>
-          </ProtectedLayout>
-        )}
-      </Route>
+      {/* Main app — wrapped in Layout */}
+      <Route path="/" component={() => <Layout><Home /></Layout>} />
+      <Route path="/missions" component={() => <Layout><Missions /></Layout>} />
+      <Route path="/rewards" component={() => <Layout><Rewards /></Layout>} />
+      <Route path="/leaderboard" component={() => <Layout><Leaderboard /></Layout>} />
+      <Route path="/graduation" component={() => <Layout><Graduation /></Layout>} />
+      <Route path="/dna" component={() => <Layout><DNA /></Layout>} />
+      <Route path="/ranks" component={() => <Layout><Ranks /></Layout>} />
+
+      {/* 404 */}
+      <Route component={NotFound} />
     </Switch>
   );
-}
-
-// Guard: if profile_complete = false, redirect to onboarding
-function ProtectedLayout({ children }: { children: React.ReactNode }) {
-  const { profileComplete, isAuthenticated, isLoading } = useFDF();
-  const [location, navigate] = useLocation();
-  
-  if (isLoading) {
-    return <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100vh" }}>Loading...</div>;
-  }
-  
-  if (!isAuthenticated) {
-    navigate("/signin");
-    return null;
-  }
-  
-  if (!profileComplete) {
-    navigate("/onboarding/dob");
-    return null;
-  }
-  
-  return <Layout>{children}</Layout>;
 }
 
 export default function App() {
