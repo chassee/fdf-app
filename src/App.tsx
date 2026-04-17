@@ -36,19 +36,19 @@ function AppRoutes() {
   useEffect(() => {
     if (isLoading) return; // Wait for auth state to load
 
-    // If not authenticated, show landing page or allow auth pages
+    // If not authenticated, allow landing/auth pages only
     if (!isAuthenticated) {
-      if (location === "/" || location === "/landing") {
-        return; // Allow landing page
+      // Allow unauthenticated users to see landing page and auth pages
+      if (location === "/" || location === "/landing" || AUTH_PATHS.includes(location)) {
+        return;
       }
-      if (!AUTH_PATHS.includes(location)) {
-        navigate("/signin");
-      }
+      // Redirect to landing page if trying to access protected routes
+      navigate("/");
       return;
     }
 
     // If authenticated but profile not complete, force onboarding
-    if (!profileComplete) {
+    if (isAuthenticated && !profileComplete) {
       if (location !== "/onboarding/dob" && location !== "/onboarding/username") {
         navigate("/onboarding/dob");
       }
@@ -57,7 +57,7 @@ function AppRoutes() {
 
     // If profile complete, prevent access to onboarding routes
     if (location === "/onboarding/dob" || location === "/onboarding/username") {
-      navigate("/");
+      navigate("/home");
     }
   }, [isAuthenticated, profileComplete, isLoading, location, navigate]);
 
