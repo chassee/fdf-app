@@ -23,9 +23,10 @@ import PendingApproval from "@/pages/PendingApproval";
 import ParentApproval from "@/pages/ParentApproval";
 import Parents from "@/pages/Parents";
 import NotFound from "@/pages/NotFound";
+import Landing from "@/pages/Landing";
 
 // Auth pages don't use the main Layout
-const AUTH_PATHS = ["/signin", "/signup", "/onboarding/dob", "/onboarding/username", "/pending-approval", "/parent-approval", "/parents", "/forgot-password", "/reset-password"];
+const AUTH_PATHS = ["/signin", "/signup", "/onboarding/dob", "/onboarding/username", "/pending-approval", "/parent-approval", "/parents", "/forgot-password", "/reset-password", "/"];
 
 function AppRoutes() {
   const { isAuthenticated, profileComplete, isLoading } = useFDF();
@@ -35,8 +36,11 @@ function AppRoutes() {
   useEffect(() => {
     if (isLoading) return; // Wait for auth state to load
 
-    // If not authenticated, allow access to auth pages only
+    // If not authenticated, show landing page or allow auth pages
     if (!isAuthenticated) {
+      if (location === "/" || location === "/landing") {
+        return; // Allow landing page
+      }
       if (!AUTH_PATHS.includes(location)) {
         navigate("/signin");
       }
@@ -63,6 +67,10 @@ function AppRoutes() {
 
   return (
     <Switch>
+      {/* Landing page — shown to unauthenticated users */}
+      <Route path="/" component={Landing} />
+      <Route path="/landing" component={Landing} />
+
       {/* Auth / onboarding — no Layout wrapper */}
       <Route path="/signin" component={SignIn} />
       <Route path="/signup" component={SignUp} />
@@ -74,14 +82,16 @@ function AppRoutes() {
       <Route path="/forgot-password" component={ForgotPassword} />
       <Route path="/reset-password" component={ResetPassword} />
 
-      {/* Main app — wrapped in Layout */}
-      <Route path="/" component={() => <Layout><Home /></Layout>} />
+      {/* Main app — wrapped in Layout (authenticated users only) */}
+      <Route path="/home" component={() => <Layout><Home /></Layout>} />
+      <Route path="/train" component={() => <Layout><Missions /></Layout>} />
       <Route path="/missions" component={() => <Layout><Missions /></Layout>} />
       <Route path="/rewards" component={() => <Layout><Rewards /></Layout>} />
       <Route path="/leaderboard" component={() => <Layout><Leaderboard /></Layout>} />
       <Route path="/graduation" component={() => <Layout><Graduation /></Layout>} />
       <Route path="/dna" component={() => <Layout><DNA /></Layout>} />
       <Route path="/ranks" component={() => <Layout><Ranks /></Layout>} />
+      <Route path="/vault" component={() => <Layout><Graduation /></Layout>} />
 
       {/* 404 */}
       <Route component={NotFound} />
