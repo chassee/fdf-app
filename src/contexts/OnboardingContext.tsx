@@ -78,14 +78,14 @@ export function OnboardingProvider({ children }: { children: React.ReactNode }) 
         if (profileData) {
           setProfile(profileData);
         } else {
-          // Create default profile if doesn't exist
-          // ONLY insert minimum required fields - everything else is nullable
+          // Create default profile if doesn't exist using upsert
+          // This prevents duplicate key errors if profile already exists
           const { data: newProfile, error: createError } = await supabase
             .from("fdf_users")
-            .insert({
+            .upsert({
               auth_user_id: session.user.id,
               onboarding_complete: false,
-            })
+            }, { onConflict: 'auth_user_id' })
             .select()
             .single();
 
