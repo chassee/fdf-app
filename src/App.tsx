@@ -1,4 +1,3 @@
-import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/NotFound";
 import { Route, Switch, useLocation } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
@@ -8,8 +7,7 @@ import Layout from "./components/Layout";
 import { ExternalLink } from "lucide-react";
 import { CelebrationOverlay } from "./components/CelebrationOverlay";
 import { Toaster } from "sonner";
-import { useEffect, useState } from "react";
-import { supabase } from "@/lib/supabase";
+import { OnboardingProvider, useOnboarding } from "./contexts/OnboardingContext";
 
 // Pages
 import Home from "./pages/Home";
@@ -83,68 +81,14 @@ function GraduatedGuard({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
-// ── Profile Guard: enforce onboarding flow ────────────────────────────────────
-function ProfileGuard({ children }: { children: React.ReactNode }) {
-  const { isAuthenticated, isLoading: isFDFLoading } = useFDF();
+// ── Onboarding Guard: SINGLE SOURCE OF TRUTH ──────────────────────────────────
+// Uses onboarding_complete flag only. No stacked conditions.
+function OnboardingGuard({ children }: { children: React.ReactNode }) {
   const [location, navigate] = useLocation();
-  const [profile, setProfile] = useState<{ profile_complete: boolean } | null>(null);
-  const [isProfileLoading, setIsProfileLoading] = useState(true);
+  const { isAuthenticated, onboardingComplete, isLoading, error } = useOnboarding();
 
-  // Load profile data on auth state change
-  useEffect(() => {
-    setIsProfileLoading(true);
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
-      if (!session) {
-        setProfile(null);
-        setIsProfileLoading(false);
-        return;
-      }
-
-      // Fetch user profile from fdf_users
-      const { data, error } = await supabase
-        .from("fdf_users")
-        .select("profile_complete")
-        .eq("auth_user_id", session.user.id)
-        .maybeSingle();
-
-      if (error) {
-        console.warn("[ProfileGuard] Error fetching profile:", error);
-        setProfile(null);
-      } else {
-        setProfile(data || { profile_complete: false });
-      }
-      setIsProfileLoading(false);
-    });
-
-    // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      if (!session) {
-        setProfile(null);
-        setIsProfileLoading(false);
-        return;
-      }
-
-      setIsProfileLoading(true);
-      const { data, error } = await supabase
-        .from("fdf_users")
-        .select("profile_complete")
-        .eq("auth_user_id", session.user.id)
-        .maybeSingle();
-
-      if (error) {
-        console.warn("[ProfileGuard] Error fetching profile:", error);
-        setProfile(null);
-      } else {
-        setProfile(data || { profile_complete: false });
-      }
-      setIsProfileLoading(false);
-    });
-
-    return () => subscription.unsubscribe();
-  }, []);
-
-  // CRITICAL: Block ALL redirects until profile is loaded
-  if (isProfileLoading || isFDFLoading) {
+  // Show loading screen while fetching
+  if (isLoading) {
     return (
       <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100dvh", background: "#f8f9fa" }}>
         <div style={{ textAlign: "center" }}>
@@ -156,25 +100,51 @@ function ProfileGuard({ children }: { children: React.ReactNode }) {
     );
   }
 
-  // Redirect logic: only run after profile is loaded
-  if (isAuthenticated && profile) {
-    // If authenticated but profile not complete, force onboarding
-    if (!profile.profile_complete && !location.startsWith("/onboarding")) {
+  // Show error screen if profile fetch failed
+  if (error && isAuthenticated) {
+    return (
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100dvh", background: "#f8f9fa" }}>
+        <div style={{ textAlign: "center", padding: "20px" }}>
+          <p style={{ color: "#dc2626", fontSize: "0.875rem", marginBottom: "16px" }}>Error loading profile: {error}</p>
+          <button
+            onClick={() => window.location.reload()}
+            style={{ padding: "8px 16px", background: "#3b82f6", color: "#fff", border: "none", borderRadius: "6px", cursor: "pointer" }}
+          >
+            Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // ROUTING LOGIC: SINGLE SOURCE OF TRUTH
+  // If authenticated but onboarding NOT complete → force onboarding
+  if (isAuthenticated && !onboardingComplete) {
+    if (!location.startsWith("/onboarding")) {
       navigate("/onboarding/dob");
       return null;
     }
+    // Allow onboarding pages
+    return <>{children}</>;
+  }
 
-    // If profile complete and on onboarding route, redirect to home
-    if (profile.profile_complete && location.startsWith("/onboarding")) {
+  // If authenticated AND onboarding complete → block onboarding pages
+  if (isAuthenticated && onboardingComplete) {
+    if (location.startsWith("/onboarding")) {
       navigate("/");
       return null;
     }
+    // Allow all other pages
+    return <>{children}</>;
   }
 
-  // If not authenticated and trying to access protected routes, redirect to signin
-  if (!isAuthenticated && !AUTH_ROUTES.includes(location) && location !== "/") {
-    navigate("/signin");
-    return null;
+  // If NOT authenticated → allow auth pages, block protected pages
+  if (!isAuthenticated) {
+    if (!AUTH_ROUTES.includes(location) && location !== "/") {
+      navigate("/signin");
+      return null;
+    }
+    return <>{children}</>;
   }
 
   return <>{children}</>;
@@ -217,19 +187,18 @@ function Router() {
 function App() {
   return (
     <ErrorBoundary>
-      {/* Light theme — premium academy interface */}
-      <ThemeProvider defaultTheme="light">
-        <TooltipProvider>
-          <Toaster />
+      <ThemeProvider>
+        <Toaster />
+        <OnboardingProvider>
           <FDFProvider>
             <CelebrationOverlay />
             <GraduatedGuard>
-              <ProfileGuard>
+              <OnboardingGuard>
                 <Router />
-              </ProfileGuard>
+              </OnboardingGuard>
             </GraduatedGuard>
           </FDFProvider>
-        </TooltipProvider>
+        </OnboardingProvider>
       </ThemeProvider>
     </ErrorBoundary>
   );

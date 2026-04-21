@@ -1,23 +1,20 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useLocation } from "wouter";
 import { supabase } from "@/lib/supabase";
+import { useOnboarding } from "@/contexts/OnboardingContext";
 import { toast } from "sonner";
 import { ArrowRight, Loader2, AtSign, CheckCircle2 } from "lucide-react";
 
 export default function OnboardingUsername() {
   const [, setLocation] = useLocation();
-  const [username, setUsername] = useState("");
+  const { user, profile, refetch } = useOnboarding();
+  const [username, setUsername] = useState(profile?.username || "");
   const [error, setError] = useState("");
-  const [accessToken, setAccessToken] = useState<string | null>(null);
-
-  useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (!session) { setLocation("/signin"); return; }
-      setAccessToken(session.access_token);
-    });
-  }, [setLocation]);
-
   const [isPending, setIsPending] = useState(false);
+
+  if (!user || !profile) {
+    return <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100dvh" }}>Loading...</div>;
+  }
 
   async function handleContinue(e: React.FormEvent) {
     e.preventDefault();
@@ -27,29 +24,30 @@ export default function OnboardingUsername() {
     if (trimmed.length < 2) { setError("Username must be at least 2 characters"); return; }
     if (trimmed.length > 30) { setError("Username must be 30 characters or less"); return; }
     if (!/^[a-zA-Z0-9_]+$/.test(trimmed)) { setError("Only letters, numbers and underscores allowed"); return; }
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) { toast.error("Session expired. Please sign in again."); setLocation("/signin"); return; }
+
     setIsPending(true);
     try {
-      // Check username uniqueness
       const { data: existing } = await supabase
         .from("fdf_users")
         .select("id")
         .eq("username", trimmed)
         .maybeSingle();
       if (existing) { setError("That username is already taken. Try another."); setIsPending(false); return; }
+
       const { error: updateErr } = await supabase
         .from("fdf_users")
-        .update({ username: trimmed })
-        .eq("auth_user_id", session.user.id);
+        .update({ username: trimmed, onboarding_complete: true })
+        .eq("id", profile.id);
       if (updateErr) throw updateErr;
+
+      await refetch();
+
       toast.success("You're all set! Welcome to FDF 🎉");
       setTimeout(() => setLocation("/"), 800);
     } catch (e: any) {
       const msg = e.message ?? "Failed to save username";
       setError(msg);
       toast.error(msg);
-    } finally {
       setIsPending(false);
     }
   }
@@ -59,14 +57,12 @@ export default function OnboardingUsername() {
   return (
     <div style={S.page}>
       <div style={S.card}>
-        {/* Progress dots */}
         <div style={S.progressRow}>
           <div style={{ ...S.dot, background: "#8b5cf6" }} />
           <div style={{ ...S.dot, background: "#8b5cf6" }} />
           <div style={{ ...S.dot, background: "#8b5cf6" }} />
         </div>
 
-        {/* Icon */}
         <div style={S.iconWrap}>
           <AtSign size={28} color="#a78bfa" />
         </div>
