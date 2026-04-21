@@ -24,6 +24,10 @@ import OnboardingDOB from "./pages/OnboardingDOB";
 import OnboardingUsername from "./pages/OnboardingUsername";
 import DNA from "./pages/DNA";
 import Leaderboard from "./pages/Leaderboard";
+import Privacy from "./pages/Privacy";
+import Terms from "./pages/Terms";
+import ChildSafety from "./pages/ChildSafety";
+import Contact from "./pages/Contact";
 
 // Full-screen routes (no bottom nav / layout chrome)
 const AUTH_ROUTES = ["/signup", "/signin", "/parent-approval", "/pending-approval", "/onboarding/dob", "/onboarding/username"];
@@ -176,6 +180,10 @@ function Router() {
         <Route path="/ranks" component={Ranks} />
         <Route path="/graduation" component={Graduation} />
         <Route path="/parents" component={Parents} />
+        <Route path="/privacy" component={Privacy} />
+        <Route path="/terms" component={Terms} />
+        <Route path="/child-safety" component={ChildSafety} />
+        <Route path="/contact" component={Contact} />
         <Route path="/dna" component={DNA} />
         <Route path="/leaderboard" component={Leaderboard} />
         <Route component={NotFound} />
