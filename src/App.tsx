@@ -11,6 +11,7 @@ import { OnboardingProvider, useOnboarding } from "./contexts/OnboardingContext"
 
 // Pages
 import Home from "./pages/Home";
+import Landing from "./pages/Landing";
 import Missions from "./pages/Missions";
 import Rewards from "./pages/Rewards";
 import Ranks from "./pages/Ranks";
@@ -31,6 +32,9 @@ import Contact from "./pages/Contact";
 
 // Full-screen routes (no bottom nav / layout chrome)
 const AUTH_ROUTES = ["/signup", "/signin", "/parent-approval", "/pending-approval", "/onboarding/dob", "/onboarding/username"];
+
+// Public routes (visible to everyone, no layout)
+const PUBLIC_ROUTES = ["/", "/privacy", "/terms", "/child-safety", "/parents", "/contact"];
 
 // ── Graduated Guard: block all app access if user has graduated ──────────────
 function GraduatedGuard({ children }: { children: React.ReactNode }) {
@@ -142,10 +146,12 @@ function OnboardingGuard({ children }: { children: React.ReactNode }) {
     return <>{children}</>;
   }
 
-  // If NOT authenticated → allow auth pages, block protected pages
+  // If NOT authenticated → allow auth pages and public pages, block protected pages
   if (!isAuthenticated) {
-    if (!AUTH_ROUTES.includes(location) && location !== "/") {
-      navigate("/signin");
+    const isAuthRoute = AUTH_ROUTES.includes(location);
+    const isPublicRoute = PUBLIC_ROUTES.includes(location);
+    if (!isAuthRoute && !isPublicRoute) {
+      navigate("/");
       return null;
     }
     return <>{children}</>;
@@ -156,8 +162,11 @@ function OnboardingGuard({ children }: { children: React.ReactNode }) {
 
 function Router() {
   const [location] = useLocation();
+  const { isAuthenticated } = useOnboarding();
   const isAuthRoute = AUTH_ROUTES.includes(location);
+  const isPublicRoute = PUBLIC_ROUTES.includes(location);
 
+  // Auth routes (signup, signin, onboarding) - no layout
   if (isAuthRoute) {
     return (
       <Switch>
@@ -171,6 +180,21 @@ function Router() {
     );
   }
 
+  // Public routes (landing, legal pages) - no layout, visible to everyone
+  if (isPublicRoute && !isAuthenticated) {
+    return (
+      <Switch>
+        <Route path="/" component={Landing} />
+        <Route path="/privacy" component={Privacy} />
+        <Route path="/terms" component={Terms} />
+        <Route path="/child-safety" component={ChildSafety} />
+        <Route path="/parents" component={Parents} />
+        <Route path="/contact" component={Contact} />
+      </Switch>
+    );
+  }
+
+  // App routes (authenticated only) - with layout
   return (
     <Layout>
       <Switch>
@@ -179,10 +203,10 @@ function Router() {
         <Route path="/rewards" component={Rewards} />
         <Route path="/ranks" component={Ranks} />
         <Route path="/graduation" component={Graduation} />
-        <Route path="/parents" component={Parents} />
         <Route path="/privacy" component={Privacy} />
         <Route path="/terms" component={Terms} />
         <Route path="/child-safety" component={ChildSafety} />
+        <Route path="/parents" component={Parents} />
         <Route path="/contact" component={Contact} />
         <Route path="/dna" component={DNA} />
         <Route path="/leaderboard" component={Leaderboard} />

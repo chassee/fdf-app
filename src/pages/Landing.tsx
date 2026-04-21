@@ -1,10 +1,8 @@
-import { Link, useLocation } from "wouter";
+import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
-import { Zap, Trophy, TrendingUp, Lock, Sparkles } from "lucide-react";
+import { ChevronRight, Zap, Trophy, TrendingUp, Users, Shield, Sparkles } from "lucide-react";
 
 export default function Landing() {
-  const [, navigate] = useLocation();
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
       {/* Header */}
@@ -20,12 +18,14 @@ export default function Landing() {
             </div>
           </div>
           <div className="flex items-center gap-3">
-            <button className="w-10 h-10 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center text-gray-600">
-              🌐
-            </button>
             <Link href="/signin">
-              <Button className="bg-blue-600 hover:bg-blue-700 text-white">
+              <Button variant="ghost" className="text-gray-700 hover:text-gray-900">
                 Sign In
+              </Button>
+            </Link>
+            <Link href="/signup">
+              <Button className="bg-blue-600 hover:bg-blue-700 text-white">
+                Sign Up
               </Button>
             </Link>
           </div>
@@ -33,177 +33,261 @@ export default function Landing() {
       </header>
 
       {/* Hero Section */}
-      <section className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-20">
-        {/* Badge */}
-        <div className="flex justify-center mb-8">
-          <div className="inline-flex items-center gap-2 bg-blue-100 text-blue-700 px-4 py-2 rounded-full text-sm font-semibold">
+      <section className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-20 text-center">
+        <div className="mb-6 inline-block">
+          <span className="inline-flex items-center gap-2 bg-blue-100 text-blue-700 px-4 py-2 rounded-full text-sm font-semibold">
             <Sparkles size={16} />
-            FREE • AGES 13-17 • SPONSOR-FUNDED
-          </div>
+            For Ages 13–17
+          </span>
         </div>
+        
+        <h1 className="text-5xl sm:text-6xl font-bold text-gray-900 mb-6 leading-tight">
+          Build Real Financial <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-600">Intelligence</span>
+        </h1>
+        
+        <p className="text-xl text-gray-600 mb-8 max-w-2xl mx-auto leading-relaxed">
+          Start early. Learn real money skills through missions, earn XP, climb ranks, and unlock the Vault. 100% free, sponsor-funded, and designed for teens.
+        </p>
 
-        {/* Main Heading */}
-        <div className="text-center mb-8">
-          <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-gray-900 mb-4">
-            Future Dawgs <span className="text-blue-600">Foundation</span>
-          </h1>
-          <p className="text-lg sm:text-xl text-gray-600 max-w-2xl mx-auto">
-            Start early. Build real financial intelligence.
-          </p>
-        </div>
-
-        {/* Feature Pills */}
-        <div className="flex flex-col sm:flex-row justify-center gap-4 mb-12">
-          <div className="flex items-center gap-2 text-green-600 font-semibold">
-            <span className="text-2xl">✓</span> 100% Free
-          </div>
-          <div className="flex items-center gap-2 text-green-600 font-semibold">
-            <span className="text-2xl">✓</span> Ages 13-17
-          </div>
-          <div className="flex items-center gap-2 text-green-600 font-semibold">
-            <span className="text-2xl">✓</span> Sponsor-Funded
-          </div>
-        </div>
-
-        {/* CTA Buttons */}
-        <div className="flex flex-col sm:flex-row gap-4 justify-center mb-16">
+        <div className="flex flex-col sm:flex-row gap-4 justify-center mb-12">
           <Link href="/signup">
-            <Button className="w-full sm:w-auto bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white text-lg px-8 py-6 rounded-lg font-semibold">
-              Create Free Account →
+            <Button size="lg" className="bg-blue-600 hover:bg-blue-700 text-white text-lg px-8 py-6 h-auto">
+              Create Free Account
+              <ChevronRight size={20} />
             </Button>
           </Link>
-          <Link href="/signin">
-            <Button variant="outline" className="w-full sm:w-auto border-2 border-blue-200 text-blue-600 hover:bg-blue-50 text-lg px-8 py-6 rounded-lg font-semibold">
-              Sign In
-            </Button>
-          </Link>
-        </div>
-
-        {/* Secondary CTA */}
-        <div className="text-center mb-12">
           <Link href="/parents">
-            <button className="text-blue-600 hover:text-blue-700 font-semibold text-lg">
-              Parent Information →
-            </button>
+            <Button size="lg" variant="outline" className="text-gray-700 border-gray-300 hover:bg-gray-50 text-lg px-8 py-6 h-auto">
+              Parent Information
+            </Button>
           </Link>
         </div>
 
-        {/* Trust Indicators */}
-        <div className="text-center text-gray-600 text-sm">
-          <p>🛡️ No purchases • No ads • 100% Free</p>
+        <div className="grid grid-cols-3 gap-4 text-sm text-gray-600 max-w-md mx-auto">
+          <div>✓ 100% Free</div>
+          <div>✓ No Ads</div>
+          <div>✓ Safe & Secure</div>
         </div>
       </section>
 
-      {/* What You'll Build Section */}
-      <section className="bg-white py-16 sm:py-24">
+      {/* Features Section */}
+      <section className="bg-white py-20 border-t border-gray-200">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-          <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-12 text-center">
-            What You'll Build
-          </h2>
+          <h2 className="text-4xl font-bold text-gray-900 mb-4 text-center">What You'll Build</h2>
+          <p className="text-center text-gray-600 mb-16 max-w-2xl mx-auto">
+            FDF teaches real financial skills through interactive missions, gamified learning, and community challenges.
+          </p>
 
-          <div className="grid md:grid-cols-2 gap-6">
-            {/* Card 1 */}
-            <div className="bg-gradient-to-br from-yellow-50 to-yellow-100 rounded-2xl p-8 border border-yellow-200">
-              <div className="w-16 h-16 bg-yellow-300 rounded-2xl flex items-center justify-center text-3xl mb-4">
+          <div className="grid md:grid-cols-3 gap-8">
+            {/* Real Money Skills */}
+            <div className="bg-gradient-to-br from-yellow-50 to-yellow-100 rounded-xl p-8 border border-yellow-200">
+              <div className="w-14 h-14 bg-yellow-400 rounded-lg flex items-center justify-center mb-4 text-2xl">
                 💡
               </div>
-              <h3 className="text-2xl font-bold text-gray-900 mb-2">
-                Real Money Skills
-              </h3>
+              <h3 className="text-xl font-bold text-gray-900 mb-3">Real Money Skills</h3>
               <p className="text-gray-700">
-                Saving, investing, building income — not theory.
+                Saving, investing, building income — not theory. Learn from real-world scenarios and practical challenges.
               </p>
             </div>
 
-            {/* Card 2 */}
-            <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-2xl p-8 border border-purple-200">
-              <div className="w-16 h-16 bg-purple-300 rounded-2xl flex items-center justify-center text-3xl mb-4">
+            {/* XP & Rank System */}
+            <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl p-8 border border-purple-200">
+              <div className="w-14 h-14 bg-purple-400 rounded-lg flex items-center justify-center mb-4 text-2xl">
                 🏆
               </div>
-              <h3 className="text-2xl font-bold text-gray-900 mb-2">
-                XP & Rank System
-              </h3>
+              <h3 className="text-xl font-bold text-gray-900 mb-3">XP & Rank System</h3>
               <p className="text-gray-700">
-                Complete missions, earn XP, climb the ranks.
+                Complete missions, earn XP, climb ranks. Track your progress and unlock new challenges as you level up.
               </p>
             </div>
 
-            {/* Card 3 */}
-            <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-2xl p-8 border border-blue-200">
-              <div className="w-16 h-16 bg-blue-300 rounded-2xl flex items-center justify-center text-3xl mb-4">
-                🧬
+            {/* The Vault */}
+            <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-8 border border-blue-200">
+              <div className="w-14 h-14 bg-blue-400 rounded-lg flex items-center justify-center mb-4 text-2xl">
+                🔐
               </div>
-              <h3 className="text-2xl font-bold text-gray-900 mb-2">
-                DNA Challenges
-              </h3>
+              <h3 className="text-xl font-bold text-gray-900 mb-3">Unlock the Vault</h3>
               <p className="text-gray-700">
-                Unlock your financial DNA through real-world challenges.
-              </p>
-            </div>
-
-            {/* Card 4 */}
-            <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-2xl p-8 border border-green-200">
-              <div className="w-16 h-16 bg-green-300 rounded-2xl flex items-center justify-center text-3xl mb-4">
-                🎓
-              </div>
-              <h3 className="text-2xl font-bold text-gray-900 mb-2">
-                Graduation Vault
-              </h3>
-              <p className="text-gray-700">
-                Graduate at 18 with real financial skills and rewards.
+                Graduate from FDF and unlock the Vault — advanced training for teens ready to take control of their financial future.
               </p>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Bottom CTA */}
-      <section className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-24 text-center">
-        <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-6">
-          Ready to start building?
-        </h2>
-        <p className="text-lg text-gray-600 mb-8 max-w-2xl mx-auto">
-          Join thousands of young people learning real financial skills.
-        </p>
-        <Link href="/signup">
-          <Button className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white text-lg px-8 py-6 rounded-lg font-semibold">
-            Create Free Account →
-          </Button>
-        </Link>
+      {/* How It Works */}
+      <section className="py-20">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+          <h2 className="text-4xl font-bold text-gray-900 mb-16 text-center">How It Works</h2>
+
+          <div className="space-y-8">
+            {/* Step 1 */}
+            <div className="flex gap-8 items-start">
+              <div className="flex-shrink-0">
+                <div className="flex items-center justify-center h-12 w-12 rounded-md bg-blue-600 text-white font-bold text-lg">
+                  1
+                </div>
+              </div>
+              <div>
+                <h3 className="text-xl font-bold text-gray-900 mb-2">Sign Up (Ages 13–17)</h3>
+                <p className="text-gray-600">
+                  Create your account and verify your age. We keep your data safe and never share it.
+                </p>
+              </div>
+            </div>
+
+            {/* Step 2 */}
+            <div className="flex gap-8 items-start">
+              <div className="flex-shrink-0">
+                <div className="flex items-center justify-center h-12 w-12 rounded-md bg-blue-600 text-white font-bold text-lg">
+                  2
+                </div>
+              </div>
+              <div>
+                <h3 className="text-xl font-bold text-gray-900 mb-2">Complete Missions</h3>
+                <p className="text-gray-600">
+                  Start with Mission 1: Daily Check-In. Each mission teaches real financial concepts and skills.
+                </p>
+              </div>
+            </div>
+
+            {/* Step 3 */}
+            <div className="flex gap-8 items-start">
+              <div className="flex-shrink-0">
+                <div className="flex items-center justify-center h-12 w-12 rounded-md bg-blue-600 text-white font-bold text-lg">
+                  3
+                </div>
+              </div>
+              <div>
+                <h3 className="text-xl font-bold text-gray-900 mb-2">Earn XP & Climb Ranks</h3>
+                <p className="text-gray-600">
+                  Earn XP for completing missions, build your Financial DNA score, and unlock new ranks.
+                </p>
+              </div>
+            </div>
+
+            {/* Step 4 */}
+            <div className="flex gap-8 items-start">
+              <div className="flex-shrink-0">
+                <div className="flex items-center justify-center h-12 w-12 rounded-md bg-blue-600 text-white font-bold text-lg">
+                  4
+                </div>
+              </div>
+              <div>
+                <h3 className="text-xl font-bold text-gray-900 mb-2">Graduate & Unlock the Vault</h3>
+                <p className="text-gray-600">
+                  Complete the Foundation and graduate. Unlock the Vault for advanced training and continued growth.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Trust & Safety */}
+      <section className="bg-gradient-to-br from-green-50 to-emerald-50 py-20 border-t border-gray-200">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+          <h2 className="text-4xl font-bold text-gray-900 mb-16 text-center">Safe & Secure</h2>
+
+          <div className="grid md:grid-cols-3 gap-8">
+            <div className="text-center">
+              <Shield className="w-12 h-12 text-green-600 mx-auto mb-4" />
+              <h3 className="text-lg font-bold text-gray-900 mb-2">Age Verification</h3>
+              <p className="text-gray-600">
+                We verify ages 13–17 only. Under 13? We don't allow access.
+              </p>
+            </div>
+
+            <div className="text-center">
+              <Users className="w-12 h-12 text-green-600 mx-auto mb-4" />
+              <h3 className="text-lg font-bold text-gray-900 mb-2">No Social Features</h3>
+              <p className="text-gray-600">
+                No public profiles, no messaging, no social pressure. Just learning.
+              </p>
+            </div>
+
+            <div className="text-center">
+              <Zap className="w-12 h-12 text-green-600 mx-auto mb-4" />
+              <h3 className="text-lg font-bold text-gray-900 mb-2">Minimal Data</h3>
+              <p className="text-gray-600">
+                We collect only what's necessary. Your privacy is protected.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* CTA Section */}
+      <section className="py-20">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          <h2 className="text-4xl font-bold text-gray-900 mb-6">Ready to Build Your Financial Future?</h2>
+          <p className="text-xl text-gray-600 mb-8">
+            Start your journey today. It's free, safe, and designed just for you.
+          </p>
+          <Link href="/signup">
+            <Button size="lg" className="bg-blue-600 hover:bg-blue-700 text-white text-lg px-8 py-6 h-auto">
+              Create Free Account
+              <ChevronRight size={20} />
+            </Button>
+          </Link>
+        </div>
       </section>
 
       {/* Footer */}
-      <footer className="bg-gray-900 text-gray-300 py-8">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 text-center text-sm">
-          <p>© 2026 Future Dawgs Foundation. All rights reserved.</p>
+      <footer className="bg-gray-900 text-gray-300 py-12 border-t border-gray-800">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid md:grid-cols-4 gap-8 mb-8">
+            {/* Brand */}
+            <div>
+              <div className="flex items-center gap-2 mb-4">
+                <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center text-white font-bold text-sm">
+                  FDF
+                </div>
+                <div>
+                  <div className="font-bold text-white text-sm">Future Dawgs</div>
+                  <div className="text-xs text-gray-500">Foundation</div>
+                </div>
+              </div>
+              <p className="text-sm text-gray-400">
+                Building financial intelligence for teens.
+              </p>
+            </div>
+
+            {/* Product */}
+            <div>
+              <h4 className="font-bold text-white mb-4">Product</h4>
+              <ul className="space-y-2 text-sm">
+                <li><Link href="/"><span className="hover:text-white cursor-pointer">Home</span></Link></li>
+                <li><Link href="/parents"><span className="hover:text-white cursor-pointer">Parent Info</span></Link></li>
+                <li><a href="https://vault.crypdawgs.com" target="_blank" rel="noopener noreferrer" className="hover:text-white">The Vault</a></li>
+              </ul>
+            </div>
+
+            {/* Legal */}
+            <div>
+              <h4 className="font-bold text-white mb-4">Legal</h4>
+              <ul className="space-y-2 text-sm">
+                <li><Link href="/privacy"><span className="hover:text-white cursor-pointer">Privacy Policy</span></Link></li>
+                <li><Link href="/terms"><span className="hover:text-white cursor-pointer">Terms of Use</span></Link></li>
+                <li><Link href="/child-safety"><span className="hover:text-white cursor-pointer">Child Safety</span></Link></li>
+              </ul>
+            </div>
+
+            {/* Support */}
+            <div>
+              <h4 className="font-bold text-white mb-4">Support</h4>
+              <ul className="space-y-2 text-sm">
+                <li><Link href="/contact"><span className="hover:text-white cursor-pointer">Contact Us</span></Link></li>
+                <li><a href="mailto:admin@crypdawgs.com" className="hover:text-white">admin@crypdawgs.com</a></li>
+              </ul>
+            </div>
+          </div>
+
+          <div className="border-t border-gray-800 pt-8 text-center text-sm text-gray-400">
+            <p>© 2024 Future Dawgs Foundation. All rights reserved.</p>
+          </div>
         </div>
       </footer>
-
-      {/* Bottom Nav (Mobile) */}
-      <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 md:hidden">
-        <div className="flex justify-around items-center py-3">
-          <button className="flex flex-col items-center gap-1 text-blue-600 font-semibold text-xs">
-            <span className="text-xl">🏠</span>
-            Home
-          </button>
-          <button className="flex flex-col items-center gap-1 text-gray-500 hover:text-gray-700 text-xs">
-            <span className="text-xl">🎯</span>
-            Train
-          </button>
-          <button className="flex flex-col items-center gap-1 text-gray-500 hover:text-gray-700 text-xs">
-            <span className="text-xl">🧬</span>
-            DNA
-          </button>
-          <button className="flex flex-col items-center gap-1 text-gray-500 hover:text-gray-700 text-xs">
-            <span className="text-xl">📊</span>
-            Ranks
-          </button>
-          <button className="flex flex-col items-center gap-1 text-gray-500 hover:text-gray-700 text-xs">
-            <span className="text-xl">🏆</span>
-            Vault
-          </button>
-        </div>
-      </nav>
     </div>
   );
 }
