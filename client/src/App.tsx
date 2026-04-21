@@ -1,4 +1,3 @@
-import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/NotFound";
 import { Route, Switch, useLocation } from "wouter";
@@ -8,6 +7,9 @@ import { FDFProvider, useFDF } from "./contexts/FDFContext";
 import Layout from "./components/Layout";
 import { ExternalLink } from "lucide-react";
 import { CelebrationOverlay } from "./components/CelebrationOverlay";
+import { Toaster } from "sonner";
+import { useEffect, useState } from "react";
+import { supabase } from "@/lib/supabase";
 
 // Pages
 import Home from "./pages/Home";
@@ -81,6 +83,103 @@ function GraduatedGuard({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
+// ── Profile Guard: enforce onboarding flow ────────────────────────────────────
+function ProfileGuard({ children }: { children: React.ReactNode }) {
+  const { isAuthenticated, isLoading: isFDFLoading } = useFDF();
+  const [location, navigate] = useLocation();
+  const [profile, setProfile] = useState<{ profile_complete: boolean } | null>(null);
+  const [isProfileLoading, setIsProfileLoading] = useState(true);
+
+  // Load profile data on auth state change
+  useEffect(() => {
+    setIsProfileLoading(true);
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
+      if (!session) {
+        setProfile(null);
+        setIsProfileLoading(false);
+        return;
+      }
+
+      // Fetch user profile from fdf_users
+      const { data, error } = await supabase
+        .from("fdf_users")
+        .select("profile_complete")
+        .eq("auth_user_id", session.user.id)
+        .maybeSingle();
+
+      if (error) {
+        console.warn("[ProfileGuard] Error fetching profile:", error);
+        setProfile(null);
+      } else {
+        setProfile(data || { profile_complete: false });
+      }
+      setIsProfileLoading(false);
+    });
+
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
+      if (!session) {
+        setProfile(null);
+        setIsProfileLoading(false);
+        return;
+      }
+
+      setIsProfileLoading(true);
+      const { data, error } = await supabase
+        .from("fdf_users")
+        .select("profile_complete")
+        .eq("auth_user_id", session.user.id)
+        .maybeSingle();
+
+      if (error) {
+        console.warn("[ProfileGuard] Error fetching profile:", error);
+        setProfile(null);
+      } else {
+        setProfile(data || { profile_complete: false });
+      }
+      setIsProfileLoading(false);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  // CRITICAL: Block ALL redirects until profile is loaded
+  if (isProfileLoading || isFDFLoading) {
+    return (
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100dvh", background: "#f8f9fa" }}>
+        <div style={{ textAlign: "center" }}>
+          <div style={{ width: 40, height: 40, borderRadius: "50%", border: "3px solid #e5e7eb", borderTopColor: "#3b82f6", animation: "spin 0.8s linear infinite", margin: "0 auto 16px" }} />
+          <p style={{ color: "#6b7280", fontSize: "0.875rem" }}>Loading...</p>
+        </div>
+        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+      </div>
+    );
+  }
+
+  // Redirect logic: only run after profile is loaded
+  if (isAuthenticated && profile) {
+    // If authenticated but profile not complete, force onboarding
+    if (!profile.profile_complete && !location.startsWith("/onboarding")) {
+      navigate("/onboarding/dob");
+      return null;
+    }
+
+    // If profile complete and on onboarding route, redirect to home
+    if (profile.profile_complete && location.startsWith("/onboarding")) {
+      navigate("/");
+      return null;
+    }
+  }
+
+  // If not authenticated and trying to access protected routes, redirect to signin
+  if (!isAuthenticated && !AUTH_ROUTES.includes(location) && location !== "/") {
+    navigate("/signin");
+    return null;
+  }
+
+  return <>{children}</>;
+}
+
 function Router() {
   const [location] = useLocation();
   const isAuthRoute = AUTH_ROUTES.includes(location);
@@ -125,7 +224,9 @@ function App() {
           <FDFProvider>
             <CelebrationOverlay />
             <GraduatedGuard>
-              <Router />
+              <ProfileGuard>
+                <Router />
+              </ProfileGuard>
             </GraduatedGuard>
           </FDFProvider>
         </TooltipProvider>

@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import { supabase } from "@/lib/supabase";
-import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 import { ArrowRight, Loader2, Calendar } from "lucide-react";
 
@@ -18,41 +17,64 @@ export default function OnboardingDOB() {
   const [, setLocation] = useLocation();
   const [dob, setDob] = useState("");
   const [error, setError] = useState("");
-  const [accessToken, setAccessToken] = useState<string | null>(null);
+  const [isPending, setIsPending] = useState(false);
 
-  // Get session token from Supabase native session
+  // Verify user is authenticated
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (!session) {
         setLocation("/signin");
-        return;
       }
-      setAccessToken(session.access_token);
     });
   }, [setLocation]);
 
-  const saveDOBMutation = trpc.supabaseAuth.saveDOB.useMutation({
-    onSuccess: () => {
-      toast.success("Date of birth saved!");
-      setLocation("/onboarding/username");
-    },
-    onError: (err) => {
-      setError(err.message);
-      toast.error(err.message);
-    },
-  });
-
-  function handleContinue(e: React.FormEvent) {
+  async function handleContinue(e: React.FormEvent) {
     e.preventDefault();
     setError("");
-    if (!dob) { setError("Please enter your date of birth"); return; }
+
+    if (!dob) {
+      setError("Please enter your date of birth");
+      return;
+    }
+
     const age = calculateAge(dob);
     if (age < 13 || age > 17) {
       setError("FDF is for ages 13–17 only.");
       return;
     }
-    if (!accessToken) { toast.error("Session expired. Please sign in again."); setLocation("/signin"); return; }
-    saveDOBMutation.mutate({ accessToken, dob });
+
+    setIsPending(true);
+
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        toast.error("Session expired. Please sign in again.");
+        setLocation("/signin");
+        return;
+      }
+
+      // CRITICAL: Update profile_complete BEFORE redirect
+      const { error: updateErr } = await supabase
+        .from("fdf_users")
+        .update({ dob, profile_complete: true })
+        .eq("auth_user_id", session.user.id);
+
+      if (updateErr) {
+        throw updateErr;
+      }
+
+      toast.success("Date of birth saved!");
+      
+      // Small delay to ensure state settles before redirect
+      setTimeout(() => {
+        setLocation("/onboarding/username");
+      }, 100);
+    } catch (err: any) {
+      const msg = err.message ?? "Failed to save date of birth";
+      setError(msg);
+      toast.error(msg);
+      setIsPending(false);
+    }
   }
 
   // Max date: must be at least 13 years old
@@ -112,10 +134,10 @@ export default function OnboardingDOB() {
 
           <button
             type="submit"
-            disabled={saveDOBMutation.isPending || !isValid}
-            style={{ ...S.submitBtn, opacity: saveDOBMutation.isPending || !isValid ? 0.6 : 1, cursor: saveDOBMutation.isPending || !isValid ? "not-allowed" : "pointer" }}
+            disabled={isPending || !isValid}
+            style={{ ...S.submitBtn, opacity: isPending || !isValid ? 0.6 : 1, cursor: isPending || !isValid ? "not-allowed" : "pointer" }}
           >
-            {saveDOBMutation.isPending ? (
+            {isPending ? (
               <><Loader2 size={18} style={{ animation: "spin 0.8s linear infinite" }} /> Saving…</>
             ) : (
               <>Continue <ArrowRight size={16} /></>
