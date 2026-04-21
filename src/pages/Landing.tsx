@@ -37,7 +37,7 @@ export default function Landing() {
         <div className="mb-6 inline-block">
           <span className="inline-flex items-center gap-2 bg-blue-100 text-blue-700 px-4 py-2 rounded-full text-sm font-semibold">
             <Sparkles size={16} />
-            For Ages 13–17
+            Multi-Year Progression Platform
           </span>
         </div>
         
@@ -46,7 +46,7 @@ export default function Landing() {
         </h1>
         
         <p className="text-xl text-gray-600 mb-8 max-w-2xl mx-auto leading-relaxed">
-          Start early. Learn real money skills through missions, earn XP, climb ranks, and unlock the Vault. 100% free, sponsor-funded, and designed for teens.
+          FDF is a multi-year progression system designed for ages 13–17. Complete missions, earn XP, level up through three tiers, and build real financial and entrepreneurial skills over time.
         </p>
 
         <div className="flex flex-col sm:flex-row gap-4 justify-center mb-12">
@@ -70,114 +70,144 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* Features Section */}
+      {/* Progression Path */}
       <section className="bg-white py-20 border-t border-gray-200">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-          <h2 className="text-4xl font-bold text-gray-900 mb-4 text-center">What You'll Build</h2>
+          <h2 className="text-4xl font-bold text-gray-900 mb-4 text-center">Your Progression Path</h2>
           <p className="text-center text-gray-600 mb-16 max-w-2xl mx-auto">
-            FDF teaches real financial skills through interactive missions, gamified learning, and community challenges.
+            FDF is structured as a multi-year journey with three distinct tiers. Progress through levels, unlock new missions, and build mastery.
           </p>
 
           <div className="grid md:grid-cols-3 gap-8">
-            {/* Real Money Skills */}
-            <div className="bg-gradient-to-br from-yellow-50 to-yellow-100 rounded-xl p-8 border border-yellow-200">
-              <div className="w-14 h-14 bg-yellow-400 rounded-lg flex items-center justify-center mb-4 text-2xl">
-                💡
-              </div>
-              <h3 className="text-xl font-bold text-gray-900 mb-3">Real Money Skills</h3>
-              <p className="text-gray-700">
-                Saving, investing, building income — not theory. Learn from real-world scenarios and practical challenges.
-              </p>
-            </div>
-
-            {/* XP & Rank System */}
-            <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl p-8 border border-purple-200">
-              <div className="w-14 h-14 bg-purple-400 rounded-lg flex items-center justify-center mb-4 text-2xl">
-                🏆
-              </div>
-              <h3 className="text-xl font-bold text-gray-900 mb-3">XP & Rank System</h3>
-              <p className="text-gray-700">
-                Complete missions, earn XP, climb ranks. Track your progress and unlock new challenges as you level up.
-              </p>
-            </div>
-
-            {/* The Vault */}
+            {/* Foundation Tier */}
             <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-8 border border-blue-200">
               <div className="w-14 h-14 bg-blue-400 rounded-lg flex items-center justify-center mb-4 text-2xl">
-                🔐
+                🏗️
               </div>
-              <h3 className="text-xl font-bold text-gray-900 mb-3">Unlock the Vault</h3>
-              <p className="text-gray-700">
-                Graduate from FDF and unlock the Vault — advanced training for teens ready to take control of their financial future.
+              <h3 className="text-2xl font-bold text-gray-900 mb-2">Foundation Tier</h3>
+              <p className="text-gray-700 mb-4">Levels 1–10 (Ages 13–14)</p>
+              <p className="text-gray-700 mb-4">
+                Master the fundamentals: saving, budgeting, goal-setting, and basic financial awareness.
               </p>
+              <ul className="text-sm text-gray-700 space-y-2">
+                <li>✓ Financial Basics</li>
+                <li>✓ Saving & Budgeting</li>
+                <li>✓ Goal Setting</li>
+                <li>✓ Money Awareness</li>
+              </ul>
+            </div>
+
+            {/* Builder Tier */}
+            <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl p-8 border border-purple-200">
+              <div className="w-14 h-14 bg-purple-400 rounded-lg flex items-center justify-center mb-4 text-2xl">
+                🚀
+              </div>
+              <h3 className="text-2xl font-bold text-gray-900 mb-2">Builder Tier</h3>
+              <p className="text-gray-700 mb-4">Levels 11–25 (Ages 14–16)</p>
+              <p className="text-gray-700 mb-4">
+                Build your first business: ideation, market research, MVP creation, and sales fundamentals.
+              </p>
+              <ul className="text-sm text-gray-700 space-y-2">
+                <li>✓ Entrepreneurship</li>
+                <li>✓ Product Development</li>
+                <li>✓ Customer Acquisition</li>
+                <li>✓ Business Growth</li>
+              </ul>
+            </div>
+
+            {/* Operator Tier */}
+            <div className="bg-gradient-to-br from-orange-50 to-orange-100 rounded-xl p-8 border border-orange-200">
+              <div className="w-14 h-14 bg-orange-400 rounded-lg flex items-center justify-center mb-4 text-2xl">
+                ⚙️
+              </div>
+              <h3 className="text-2xl font-bold text-gray-900 mb-2">Operator Tier</h3>
+              <p className="text-gray-700 mb-4">Levels 26–50 (Ages 16–17)</p>
+              <p className="text-gray-700 mb-4">
+                Master operations: scaling, systems thinking, team leadership, and advanced strategy.
+              </p>
+              <ul className="text-sm text-gray-700 space-y-2">
+                <li>✓ Systems Thinking</li>
+                <li>✓ Team Leadership</li>
+                <li>✓ Strategic Planning</li>
+                <li>✓ Vault Access</li>
+              </ul>
             </div>
           </div>
         </div>
       </section>
 
-      {/* How It Works */}
+      {/* Starter Missions */}
       <section className="py-20">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-          <h2 className="text-4xl font-bold text-gray-900 mb-16 text-center">How It Works</h2>
+          <h2 className="text-4xl font-bold text-gray-900 mb-4 text-center">Starter Missions</h2>
+          <p className="text-center text-gray-600 mb-16 max-w-2xl mx-auto">
+            Begin your journey with these Foundation Tier missions. Available immediately after onboarding.
+          </p>
 
-          <div className="space-y-8">
-            {/* Step 1 */}
-            <div className="flex gap-8 items-start">
-              <div className="flex-shrink-0">
-                <div className="flex items-center justify-center h-12 w-12 rounded-md bg-blue-600 text-white font-bold text-lg">
-                  1
-                </div>
-              </div>
-              <div>
-                <h3 className="text-xl font-bold text-gray-900 mb-2">Sign Up (Ages 13–17)</h3>
-                <p className="text-gray-600">
-                  Create your account and verify your age. We keep your data safe and never share it.
-                </p>
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {/* Mission 1 */}
+            <div className="bg-white rounded-xl p-6 border border-gray-200 hover:shadow-lg transition-shadow">
+              <div className="text-4xl mb-3">📅</div>
+              <h3 className="text-lg font-bold text-gray-900 mb-2">Daily Check-In</h3>
+              <p className="text-gray-600 text-sm mb-4">Start your day by checking in. Build a consistent financial habit.</p>
+              <div className="flex items-center gap-2 text-sm">
+                <Zap size={14} className="text-yellow-500" />
+                <span className="font-semibold">+50 XP</span>
               </div>
             </div>
 
-            {/* Step 2 */}
-            <div className="flex gap-8 items-start">
-              <div className="flex-shrink-0">
-                <div className="flex items-center justify-center h-12 w-12 rounded-md bg-blue-600 text-white font-bold text-lg">
-                  2
-                </div>
-              </div>
-              <div>
-                <h3 className="text-xl font-bold text-gray-900 mb-2">Complete Missions</h3>
-                <p className="text-gray-600">
-                  Start with Mission 1: Daily Check-In. Each mission teaches real financial concepts and skills.
-                </p>
+            {/* Mission 2 */}
+            <div className="bg-white rounded-xl p-6 border border-gray-200 hover:shadow-lg transition-shadow">
+              <div className="text-4xl mb-3">💰</div>
+              <h3 className="text-lg font-bold text-gray-900 mb-2">Saving Basics</h3>
+              <p className="text-gray-600 text-sm mb-4">Learn the fundamentals of saving money and compound growth.</p>
+              <div className="flex items-center gap-2 text-sm">
+                <Zap size={14} className="text-yellow-500" />
+                <span className="font-semibold">+100 XP</span>
               </div>
             </div>
 
-            {/* Step 3 */}
-            <div className="flex gap-8 items-start">
-              <div className="flex-shrink-0">
-                <div className="flex items-center justify-center h-12 w-12 rounded-md bg-blue-600 text-white font-bold text-lg">
-                  3
-                </div>
-              </div>
-              <div>
-                <h3 className="text-xl font-bold text-gray-900 mb-2">Earn XP & Climb Ranks</h3>
-                <p className="text-gray-600">
-                  Earn XP for completing missions, build your Financial DNA score, and unlock new ranks.
-                </p>
+            {/* Mission 3 */}
+            <div className="bg-white rounded-xl p-6 border border-gray-200 hover:shadow-lg transition-shadow">
+              <div className="text-4xl mb-3">🎯</div>
+              <h3 className="text-lg font-bold text-gray-900 mb-2">Set Your First Goal</h3>
+              <p className="text-gray-600 text-sm mb-4">Define a financial goal for the next 3 months.</p>
+              <div className="flex items-center gap-2 text-sm">
+                <Zap size={14} className="text-yellow-500" />
+                <span className="font-semibold">+100 XP</span>
               </div>
             </div>
 
-            {/* Step 4 */}
-            <div className="flex gap-8 items-start">
-              <div className="flex-shrink-0">
-                <div className="flex items-center justify-center h-12 w-12 rounded-md bg-blue-600 text-white font-bold text-lg">
-                  4
-                </div>
+            {/* Mission 4 */}
+            <div className="bg-white rounded-xl p-6 border border-gray-200 hover:shadow-lg transition-shadow">
+              <div className="text-4xl mb-3">🛠️</div>
+              <h3 className="text-lg font-bold text-gray-900 mb-2">Identify a Skill</h3>
+              <p className="text-gray-600 text-sm mb-4">Think about a skill you have. How could you monetize it?</p>
+              <div className="flex items-center gap-2 text-sm">
+                <Zap size={14} className="text-yellow-500" />
+                <span className="font-semibold">+75 XP</span>
               </div>
-              <div>
-                <h3 className="text-xl font-bold text-gray-900 mb-2">Graduate & Unlock the Vault</h3>
-                <p className="text-gray-600">
-                  Complete the Foundation and graduate. Unlock the Vault for advanced training and continued growth.
-                </p>
+            </div>
+
+            {/* Mission 5 */}
+            <div className="bg-white rounded-xl p-6 border border-gray-200 hover:shadow-lg transition-shadow">
+              <div className="text-4xl mb-3">📊</div>
+              <h3 className="text-lg font-bold text-gray-900 mb-2">Money Awareness</h3>
+              <p className="text-gray-600 text-sm mb-4">Track your spending for one day. Where does your money go?</p>
+              <div className="flex items-center gap-2 text-sm">
+                <Zap size={14} className="text-yellow-500" />
+                <span className="font-semibold">+75 XP</span>
+              </div>
+            </div>
+
+            {/* Mission 6 */}
+            <div className="bg-white rounded-xl p-6 border border-gray-200 hover:shadow-lg transition-shadow">
+              <div className="text-4xl mb-3">📋</div>
+              <h3 className="text-lg font-bold text-gray-900 mb-2">Create Your Budget</h3>
+              <p className="text-gray-600 text-sm mb-4">Build a simple budget for the next month.</p>
+              <div className="flex items-center gap-2 text-sm">
+                <Zap size={14} className="text-yellow-500" />
+                <span className="font-semibold">+150 XP</span>
               </div>
             </div>
           </div>
@@ -220,9 +250,9 @@ export default function Landing() {
       {/* CTA Section */}
       <section className="py-20">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="text-4xl font-bold text-gray-900 mb-6">Ready to Build Your Financial Future?</h2>
+          <h2 className="text-4xl font-bold text-gray-900 mb-6">Ready to Start Your Journey?</h2>
           <p className="text-xl text-gray-600 mb-8">
-            Start your journey today. It's free, safe, and designed just for you.
+            Join thousands of teens building real financial and entrepreneurial skills.
           </p>
           <Link href="/signup">
             <Button size="lg" className="bg-blue-600 hover:bg-blue-700 text-white text-lg px-8 py-6 h-auto">
@@ -249,7 +279,7 @@ export default function Landing() {
                 </div>
               </div>
               <p className="text-sm text-gray-400">
-                Building financial intelligence for teens.
+                Multi-year progression platform for ages 13–17.
               </p>
             </div>
 
