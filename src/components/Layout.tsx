@@ -1,294 +1,119 @@
-import {
-  Home,
-  Target,
-  Trophy,
-  Gift,
-  GraduationCap,
-  LogOut,
-  Dna,
-  BarChart3,
-} from "lucide-react";
-import { useLocation, Link } from "wouter";
-import { useFDF } from "@/contexts/FDFContext";
-import { supabase } from "@/lib/supabase";
-import { useState, useEffect } from "react";
-import ThemeSwitcher from "@/components/ThemeSwitcher";
+import { useLocation } from "wouter";
+import { Link } from "wouter";
+import { Home, Zap, BarChart3, Trophy, Vault, Menu, X } from "lucide-react";
+import { useState } from "react";
 
-const NAV_TABS = [
-  { icon: Home,          label: "Home",    path: "/" },
-  { icon: Target,        label: "Train",   path: "/missions" },
-  { icon: Dna,           label: "DNA",     path: "/dna" },
-  { icon: BarChart3,     label: "Ranks",   path: "/leaderboard" },
-  { icon: GraduationCap, label: "Vault",   path: "/graduation" },
+const NAV_ITEMS = [
+  { href: "/", label: "Home", icon: Home },
+  { href: "/missions", label: "Missions", icon: Zap },
+  { href: "/dna", label: "DNA", icon: BarChart3 },
+  { href: "/leaderboard", label: "Ranks", icon: Trophy },
+  { href: "/vault", label: "Vault", icon: Vault },
 ];
 
-export default function Layout({ children }: { children: React.ReactNode }) {
+export function Layout({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
-  const { xp, gems, isAuthenticated } = useFDF();
-  const [displayName, setDisplayName] = useState<string | null>(null);
-  const [isDesktop, setIsDesktop] = useState(false);
-
-  useEffect(() => {
-    const mq = window.matchMedia("(min-width: 1024px)");
-    setIsDesktop(mq.matches);
-    const handler = (e: MediaQueryListEvent) => setIsDesktop(e.matches);
-    mq.addEventListener("change", handler);
-    return () => mq.removeEventListener("change", handler);
-  }, []);
-
-  useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session?.user?.email) setDisplayName(session.user.email.split("@")[0]);
-    });
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_e, session) => {
-      setDisplayName(session?.user?.email ? session.user.email.split("@")[0] : null);
-    });
-    return () => subscription.unsubscribe();
-  }, []);
-
-  async function handleSignOut() {
-    await supabase.auth.signOut();
-    localStorage.removeItem("fdf-supabase-session");
-    window.location.href = "/";
-  }
-
-  function isActive(path: string) {
-    return path === "/" ? location === "/" : location.startsWith(path);
-  }
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   return (
-    <div style={{ minHeight: "100dvh", background: "var(--bg-main)" }}>
+    <div className="min-h-screen bg-gray-50 pb-20 md:pb-0">
+      {/* Mobile Header */}
+      <div className="md:hidden fixed top-0 left-0 right-0 bg-white border-b border-gray-200 z-40 px-4 py-3 flex items-center justify-between">
+        <div className="font-bold text-gray-900">FDF</div>
+        <button 
+          onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+          className="p-2 hover:bg-gray-100 rounded-lg"
+        >
+          {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
+        </button>
+      </div>
 
-      {/* ── Desktop Sidebar (1024px+) ── */}
-      {isDesktop && (
-        <aside className="desktop-sidebar">
-          {/* Brand */}
-          <div className="desktop-sidebar-brand">
-            <div style={{
-              width: 34, height: 34, borderRadius: 10,
-              background: "linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%)",
-              display: "flex", alignItems: "center", justifyContent: "center",
-              fontSize: "0.65rem", fontWeight: 800, color: "white", letterSpacing: "-0.01em",
-              flexShrink: 0, boxShadow: "0 4px 12px rgba(91,140,255,0.3)",
-            }}>
-              FDF
-            </div>
-            <div style={{ lineHeight: 1.1 }}>
-              <div style={{
-                fontFamily: "'Space Grotesk', sans-serif",
-                fontWeight: 800, fontSize: "0.875rem",
-                color: "var(--text-main)", letterSpacing: "-0.02em",
-              }}>Future Dawgs</div>
-              <div style={{
-                fontSize: "0.6rem", fontWeight: 600,
-                color: "var(--text-muted)", letterSpacing: "0.06em", textTransform: "uppercase",
-              }}>Foundation</div>
+      {/* Mobile Menu */}
+      {mobileMenuOpen && (
+        <div className="md:hidden fixed top-16 left-0 right-0 bg-white border-b border-gray-200 z-30">
+          {NAV_ITEMS.map(({ href, label, icon: Icon }) => (
+            <Link key={href} href={href}>
+              <button
+                onClick={() => setMobileMenuOpen(false)}
+                className={`w-full text-left px-4 py-3 flex items-center gap-3 border-b border-gray-100 hover:bg-gray-50 ${
+                  location === href ? "bg-blue-50 text-blue-600 font-semibold" : "text-gray-700"
+                }`}
+              >
+                <Icon size={20} />
+                {label}
+              </button>
+            </Link>
+          ))}
+        </div>
+      )}
+
+      {/* Main Content */}
+      <div className="md:flex">
+        {/* Desktop Sidebar */}
+        <div className="hidden md:flex md:w-64 md:flex-col md:fixed md:inset-y-0 md:bg-white md:border-r md:border-gray-200">
+          <div className="p-6 border-b border-gray-200">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center text-white font-bold">
+                FDF
+              </div>
+              <div>
+                <div className="font-bold text-gray-900 text-sm">Future Dawgs</div>
+                <div className="text-xs text-gray-500">Foundation</div>
+              </div>
             </div>
           </div>
 
-          {/* Nav items */}
-          <nav className="desktop-sidebar-nav">
-            {NAV_TABS.map(({ path, label, icon: Icon }) => (
-              <Link
-                key={path}
-                href={path}
-                className={`desktop-nav-item${isActive(path) ? " active" : ""}`}
-                style={{ textDecoration: "none" }}
-              >
-                <Icon size={18} strokeWidth={isActive(path) ? 2.5 : 1.8} />
-                {label}
+          <nav className="flex-1 px-4 py-6 space-y-2">
+            {NAV_ITEMS.map(({ href, label, icon: Icon }) => (
+              <Link key={href} href={href}>
+                <button
+                  className={`w-full text-left px-4 py-3 rounded-lg flex items-center gap-3 transition-colors ${
+                    location === href
+                      ? "bg-blue-100 text-blue-600 font-semibold"
+                      : "text-gray-700 hover:bg-gray-100"
+                  }`}
+                >
+                  <Icon size={20} />
+                  {label}
+                </button>
               </Link>
             ))}
           </nav>
 
-          {/* Bottom: stats + sign out */}
-          <div style={{ borderTop: "1px solid var(--card-border)", paddingTop: 12, display: "flex", flexDirection: "column", gap: 8 }}>
-            {isAuthenticated && (
-              <div style={{ display: "flex", gap: 6, padding: "0 4px" }}>
-                <div className="stat-chip" style={{ fontSize: "0.7rem", padding: "4px 10px", flex: 1, justifyContent: "center" }}>
-                  <span style={{ opacity: 0.65, fontSize: "0.65rem" }}>XP</span>
-                  <span style={{ fontWeight: 700 }}>{xp.toLocaleString()}</span>
-                </div>
-                <div className="stat-chip" style={{
-                  fontSize: "0.7rem", padding: "4px 10px", flex: 1, justifyContent: "center",
-                  background: "var(--accent-light)", color: "var(--accent)",
-                }}>
-                  <span>💎</span>
-                  <span style={{ fontWeight: 700 }}>{gems}</span>
-                </div>
-              </div>
-            )}
-            {isAuthenticated ? (
-              <button
-                onClick={handleSignOut}
-                style={{
-                  display: "flex", alignItems: "center", gap: 10,
-                  padding: "8px 14px", borderRadius: 10,
-                  background: "none", border: "none", cursor: "pointer",
-                  color: "var(--text-muted)", fontSize: "0.875rem", fontWeight: 600,
-                  transition: "all 0.15s",
-                }}
-                onMouseEnter={e => (e.currentTarget.style.color = "var(--danger)")}
-                onMouseLeave={e => (e.currentTarget.style.color = "var(--text-muted)")}
-              >
-                <LogOut size={16} />
-                Sign Out
-              </button>
-            ) : (
-              <Link href="/signin" style={{ textDecoration: "none" }}>
-                <div style={{
-                  padding: "8px 14px", borderRadius: 10,
-                  background: "linear-gradient(135deg, var(--primary), var(--accent))",
-                  color: "white", fontSize: "0.8rem", fontWeight: 700,
-                  textAlign: "center",
-                }}>
-                  Sign In
-                </div>
-              </Link>
-            )}
-          </div>
-        </aside>
-      )}
-
-      {/* ── Top Bar ── */}
-      <header className="top-bar" style={isDesktop ? { marginLeft: 220 } : {}}>
-        <div
-          className="top-bar-inner"
-          style={{
-            maxWidth: isDesktop ? 960 : 480,
-            margin: "0 auto",
-            padding: isDesktop ? "0 32px" : "0 16px",
-            height: 56,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-          }}
-        >
-          {/* Brand (mobile only — desktop has sidebar) */}
-          {!isDesktop && (
-            <Link href="/">
-              <div style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", textDecoration: "none" }}>
-                <div style={{
-                  width: 30, height: 30, borderRadius: 9,
-                  background: "linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%)",
-                  display: "flex", alignItems: "center", justifyContent: "center",
-                  fontSize: "0.65rem", fontWeight: 800, color: "white",
-                  letterSpacing: "-0.01em", flexShrink: 0,
-                }}>
-                  FDF
-                </div>
-                <div style={{ display: "flex", flexDirection: "column", lineHeight: 1.1 }}>
-                  <span style={{
-                    fontFamily: "'Space Grotesk', sans-serif",
-                    fontWeight: 700, fontSize: "0.875rem",
-                    color: "var(--text-main)", letterSpacing: "-0.02em",
-                  }}>Future Dawgs</span>
-                  <span style={{
-                    fontSize: "0.6rem", fontWeight: 600,
-                    color: "var(--text-muted)", letterSpacing: "0.06em", textTransform: "uppercase",
-                  }}>Foundation</span>
-                </div>
-              </div>
-            </Link>
-          )}
-
-          {/* Desktop: page title area */}
-          {isDesktop && <div />}
-
-          {/* Right: Stats + Theme + Avatar */}
-          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            {isAuthenticated && (
-              <>
-                <div className="stat-chip" style={{ fontSize: "0.7rem", padding: "4px 10px" }}>
-                  <span style={{ opacity: 0.65, fontSize: "0.65rem" }}>XP</span>
-                  <span style={{ fontWeight: 700 }}>{xp.toLocaleString()}</span>
-                </div>
-                <div className="stat-chip" style={{
-                  fontSize: "0.7rem", padding: "4px 10px",
-                  background: "var(--accent-light)", color: "var(--accent)",
-                }}>
-                  <span>💎</span>
-                  <span style={{ fontWeight: 700 }}>{gems}</span>
-                </div>
-              </>
-            )}
-
-            {/* Theme switcher */}
-            <ThemeSwitcher />
-
-            {/* Avatar / Sign-out (mobile only — desktop has sidebar) */}
-            {!isDesktop && (
-              isAuthenticated ? (
-                <button
-                  onClick={handleSignOut}
-                  title="Sign out"
-                  style={{
-                    width: 30, height: 30, borderRadius: "50%",
-                    background: "linear-gradient(135deg, var(--primary-light), var(--accent-light))",
-                    border: "2px solid rgba(91,140,255,0.25)",
-                    display: "flex", alignItems: "center", justifyContent: "center",
-                    fontSize: "0.65rem", fontWeight: 700, color: "var(--primary)",
-                    cursor: "pointer",
-                  }}
-                >
-                  {displayName ? displayName.slice(0, 2).toUpperCase() : <LogOut size={12} />}
-                </button>
-              ) : (
-                <Link href="/signin" style={{ textDecoration: "none" }}>
-                  <div style={{
-                    padding: "5px 12px", borderRadius: 99,
-                    background: "linear-gradient(135deg, var(--primary), var(--accent))",
-                    color: "white", fontSize: "0.72rem", fontWeight: 700, cursor: "pointer",
-                  }}>
-                    Sign In
-                  </div>
-                </Link>
-              )
-            )}
+          <div className="p-4 border-t border-gray-200">
+            <button className="w-full px-4 py-2 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg">
+              Settings
+            </button>
           </div>
         </div>
-      </header>
 
-      {/* ── Main Content ── */}
-      <main style={{
-        paddingBottom: isDesktop ? 40 : 72,
-        marginLeft: isDesktop ? 220 : 0,
-      }}>
-        {children}
-      </main>
-
-      {/* ── Bottom Navigation (mobile/tablet only) ── */}
-      {!isDesktop && (
-        <nav className="bottom-nav">
-          <div className="bottom-nav-inner">
-            {NAV_TABS.map(({ path, label, icon: Icon }) => {
-              const active = isActive(path);
-              return (
-                <Link
-                  key={path}
-                  href={path}
-                  className={`nav-tab${active ? " active" : ""}`}
-                  style={{ textDecoration: "none" }}
-                >
-                  <div className="nav-icon-wrap">
-                    <Icon
-                      size={20}
-                      strokeWidth={active ? 2.5 : 1.8}
-                      style={{ color: active ? "var(--primary)" : "var(--text-muted)", transition: "color 0.15s ease" }}
-                    />
-                  </div>
-                  <span
-                    className="nav-tab-label"
-                    style={{ color: active ? "var(--primary)" : "var(--text-muted)", fontWeight: active ? 700 : 500 }}
-                  >
-                    {label}
-                  </span>
-                </Link>
-              );
-            })}
+        {/* Main Content Area */}
+        <div className="md:ml-64 w-full">
+          <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12 mt-16 md:mt-0">
+            {children}
           </div>
-        </nav>
-      )}
+        </div>
+      </div>
+
+      {/* Mobile Bottom Navigation */}
+      <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-40">
+        <div className="flex items-center justify-around">
+          {NAV_ITEMS.map(({ href, label, icon: Icon }) => (
+            <Link key={href} href={href}>
+              <button
+                className={`flex-1 flex flex-col items-center gap-1 py-3 px-2 text-xs font-medium transition-colors ${
+                  location === href
+                    ? "text-blue-600 bg-blue-50"
+                    : "text-gray-600 hover:bg-gray-50"
+                }`}
+              >
+                <Icon size={24} />
+                <span className="hidden sm:inline">{label}</span>
+              </button>
+            </Link>
+          ))}
+        </div>
+      </div>
     </div>
   );
 }

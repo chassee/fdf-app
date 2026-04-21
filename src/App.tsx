@@ -3,7 +3,7 @@ import { Route, Switch, useLocation } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import { FDFProvider, useFDF } from "./contexts/FDFContext";
-import Layout from "./components/Layout";
+import { Layout } from "./components/Layout";
 import { ExternalLink } from "lucide-react";
 import { CelebrationOverlay } from "./components/CelebrationOverlay";
 import { Toaster } from "sonner";
