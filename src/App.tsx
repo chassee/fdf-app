@@ -1,109 +1,238 @@
-import { Switch, Route, useLocation } from "wouter";
-import { useFDF } from "@/contexts/FDFContext";
+import { TooltipProvider } from "@/components/ui/tooltip";
+import NotFound from "@/pages/NotFound";
+import { Route, Switch, useLocation } from "wouter";
+import ErrorBoundary from "./components/ErrorBoundary";
+import { ThemeProvider } from "./contexts/ThemeContext";
+import { FDFProvider, useFDF } from "./contexts/FDFContext";
+import Layout from "./components/Layout";
+import { ExternalLink } from "lucide-react";
+import { CelebrationOverlay } from "./components/CelebrationOverlay";
 import { Toaster } from "sonner";
-import { FDFProvider } from "@/contexts/FDFContext";
-import Layout from "@/components/Layout";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
+import { supabase } from "@/lib/supabase";
 
 // Pages
-import Home from "@/pages/Home";
-import Missions from "@/pages/Missions";
-import Rewards from "@/pages/Rewards";
-import Leaderboard from "@/pages/Leaderboard";
-import Graduation from "@/pages/Graduation";
-import DNA from "@/pages/DNA";
-import Ranks from "@/pages/Ranks";
-import SignIn from "@/pages/SignIn";
-import SignUp from "@/pages/SignUp";
-import ForgotPassword from "@/pages/ForgotPassword";
-import ResetPassword from "@/pages/ResetPassword";
-import OnboardingDOB from "@/pages/OnboardingDOB";
-import OnboardingUsername from "@/pages/OnboardingUsername";
-import PendingApproval from "@/pages/PendingApproval";
-import ParentApproval from "@/pages/ParentApproval";
-import Parents from "@/pages/Parents";
-import NotFound from "@/pages/NotFound";
-import Landing from "@/pages/Landing";
+import Home from "./pages/Home";
+import Missions from "./pages/Missions";
+import Rewards from "./pages/Rewards";
+import Ranks from "./pages/Ranks";
+import Graduation from "./pages/Graduation";
+import Parents from "./pages/Parents";
+import SignUp from "./pages/SignUp";
+import SignIn from "./pages/SignIn";
+import ParentApproval from "./pages/ParentApproval";
+import PendingApproval from "./pages/PendingApproval";
+import OnboardingDOB from "./pages/OnboardingDOB";
+import OnboardingUsername from "./pages/OnboardingUsername";
+import DNA from "./pages/DNA";
+import Leaderboard from "./pages/Leaderboard";
 
-// Auth pages don't use the main Layout
-const AUTH_PATHS = ["/signin", "/signup", "/onboarding/dob", "/onboarding/username", "/pending-approval", "/parent-approval", "/parents", "/forgot-password", "/reset-password", "/"];
+// Full-screen routes (no bottom nav / layout chrome)
+const AUTH_ROUTES = ["/signup", "/signin", "/parent-approval", "/pending-approval", "/onboarding/dob", "/onboarding/username"];
 
-function AppRoutes() {
-  const { isAuthenticated, profileComplete, isLoading } = useFDF();
+// ── Graduated Guard: block all app access if user has graduated ──────────────
+function GraduatedGuard({ children }: { children: React.ReactNode }) {
+  const { graduated, graduatedAt } = useFDF();
+  const [location] = useLocation();
+
+  if (graduated && location !== "/graduation") {
+    const formattedDate = graduatedAt
+      ? new Date(graduatedAt).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })
+      : null;
+    return (
+      <div
+        style={{
+          minHeight: "100dvh",
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "center",
+          padding: "24px 20px",
+          background: "linear-gradient(160deg, #0f0f1a 0%, #1a1a2e 50%, #0f0f1a 100%)",
+          textAlign: "center",
+        }}
+      >
+        <div style={{ width: 80, height: 80, borderRadius: "50%", background: "linear-gradient(135deg, #f59e0b, #d97706)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "2rem", marginBottom: 20, boxShadow: "0 0 40px rgba(245,158,11,0.4)" }}>
+          🎓
+        </div>
+        <h1 style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: "1.625rem", fontWeight: 900, color: "#f8fafc", letterSpacing: "-0.03em", marginBottom: 8 }}>
+          Graduated
+        </h1>
+        {formattedDate && (
+          <p style={{ fontSize: "0.8125rem", color: "#94a3b8", marginBottom: 20 }}>Graduated on {formattedDate}</p>
+        )}
+        <p style={{ fontSize: "0.9375rem", color: "#cbd5e1", lineHeight: 1.7, maxWidth: 280, marginBottom: 6 }}>
+          You've moved beyond the Foundation.
+        </p>
+        <p style={{ fontSize: "0.875rem", color: "#64748b", lineHeight: 1.6, maxWidth: 260, marginBottom: 32 }}>
+          Your journey continues inside the Vault.
+        </p>
+        <a
+          href="https://vault.crypdawgs.com"
+          target="_blank"
+          rel="noopener noreferrer"
+          style={{ display: "inline-flex", alignItems: "center", gap: 8, background: "linear-gradient(135deg, #f59e0b, #d97706)", color: "#000", fontWeight: 800, fontSize: "0.9375rem", padding: "14px 28px", borderRadius: 14, textDecoration: "none", boxShadow: "0 4px 20px rgba(245,158,11,0.35)" }}
+        >
+          Go to Vault
+          <ExternalLink size={16} />
+        </a>
+      </div>
+    );
+  }
+
+  return <>{children}</>;
+}
+
+// ── Profile Guard: enforce onboarding flow ────────────────────────────────────
+function ProfileGuard({ children }: { children: React.ReactNode }) {
+  const { isAuthenticated, isLoading: isFDFLoading } = useFDF();
   const [location, navigate] = useLocation();
+  const [profile, setProfile] = useState<{ profile_complete: boolean } | null>(null);
+  const [isProfileLoading, setIsProfileLoading] = useState(true);
 
-  // Global auth guard: runs on every route change
+  // Load profile data on auth state change
   useEffect(() => {
-    if (isLoading) return; // Wait for auth state to load
-
-    // If not authenticated, allow landing/auth pages only
-    if (!isAuthenticated) {
-      // Allow unauthenticated users to see landing page and auth pages
-      if (location === "/" || location === "/landing" || AUTH_PATHS.includes(location)) {
+    setIsProfileLoading(true);
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
+      if (!session) {
+        setProfile(null);
+        setIsProfileLoading(false);
         return;
       }
-      // Redirect to landing page if trying to access protected routes
-      navigate("/");
-      return;
-    }
 
-    // If authenticated but profile not complete, force onboarding
-    if (isAuthenticated && !profileComplete) {
-      if (location !== "/onboarding/dob" && location !== "/onboarding/username") {
-        navigate("/onboarding/dob");
+      // Fetch user profile from fdf_users
+      const { data, error } = await supabase
+        .from("fdf_users")
+        .select("profile_complete")
+        .eq("auth_user_id", session.user.id)
+        .maybeSingle();
+
+      if (error) {
+        console.warn("[ProfileGuard] Error fetching profile:", error);
+        setProfile(null);
+      } else {
+        setProfile(data || { profile_complete: false });
       }
-      return;
+      setIsProfileLoading(false);
+    });
+
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
+      if (!session) {
+        setProfile(null);
+        setIsProfileLoading(false);
+        return;
+      }
+
+      setIsProfileLoading(true);
+      const { data, error } = await supabase
+        .from("fdf_users")
+        .select("profile_complete")
+        .eq("auth_user_id", session.user.id)
+        .maybeSingle();
+
+      if (error) {
+        console.warn("[ProfileGuard] Error fetching profile:", error);
+        setProfile(null);
+      } else {
+        setProfile(data || { profile_complete: false });
+      }
+      setIsProfileLoading(false);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  // CRITICAL: Block ALL redirects until profile is loaded
+  if (isProfileLoading || isFDFLoading) {
+    return (
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100dvh", background: "#f8f9fa" }}>
+        <div style={{ textAlign: "center" }}>
+          <div style={{ width: 40, height: 40, borderRadius: "50%", border: "3px solid #e5e7eb", borderTopColor: "#3b82f6", animation: "spin 0.8s linear infinite", margin: "0 auto 16px" }} />
+          <p style={{ color: "#6b7280", fontSize: "0.875rem" }}>Loading...</p>
+        </div>
+        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+      </div>
+    );
+  }
+
+  // Redirect logic: only run after profile is loaded
+  if (isAuthenticated && profile) {
+    // If authenticated but profile not complete, force onboarding
+    if (!profile.profile_complete && !location.startsWith("/onboarding")) {
+      navigate("/onboarding/dob");
+      return null;
     }
 
-    // If profile complete, prevent access to onboarding routes
-    if (location === "/onboarding/dob" || location === "/onboarding/username") {
-      navigate("/home");
+    // If profile complete and on onboarding route, redirect to home
+    if (profile.profile_complete && location.startsWith("/onboarding")) {
+      navigate("/");
+      return null;
     }
-  }, [isAuthenticated, profileComplete, isLoading, location, navigate]);
+  }
 
-  if (isLoading) {
-    return <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100vh" }}>Loading...</div>;
+  // If not authenticated and trying to access protected routes, redirect to signin
+  if (!isAuthenticated && !AUTH_ROUTES.includes(location) && location !== "/") {
+    navigate("/signin");
+    return null;
+  }
+
+  return <>{children}</>;
+}
+
+function Router() {
+  const [location] = useLocation();
+  const isAuthRoute = AUTH_ROUTES.includes(location);
+
+  if (isAuthRoute) {
+    return (
+      <Switch>
+        <Route path="/signup" component={SignUp} />
+        <Route path="/signin" component={SignIn} />
+        <Route path="/parent-approval" component={ParentApproval} />
+        <Route path="/pending-approval" component={PendingApproval} />
+        <Route path="/onboarding/dob" component={OnboardingDOB} />
+        <Route path="/onboarding/username" component={OnboardingUsername} />
+      </Switch>
+    );
   }
 
   return (
-    <Switch>
-      {/* Landing page — shown to unauthenticated users */}
-      <Route path="/" component={Landing} />
-      <Route path="/landing" component={Landing} />
-
-      {/* Auth / onboarding — no Layout wrapper */}
-      <Route path="/signin" component={SignIn} />
-      <Route path="/signup" component={SignUp} />
-      <Route path="/onboarding/dob" component={OnboardingDOB} />
-      <Route path="/onboarding/username" component={OnboardingUsername} />
-      <Route path="/pending-approval" component={PendingApproval} />
-      <Route path="/parent-approval" component={ParentApproval} />
-      <Route path="/parents" component={Parents} />
-      <Route path="/forgot-password" component={ForgotPassword} />
-      <Route path="/reset-password" component={ResetPassword} />
-
-      {/* Main app — wrapped in Layout (authenticated users only) */}
-      <Route path="/home" component={() => <Layout><Home /></Layout>} />
-      <Route path="/train" component={() => <Layout><Missions /></Layout>} />
-      <Route path="/missions" component={() => <Layout><Missions /></Layout>} />
-      <Route path="/rewards" component={() => <Layout><Rewards /></Layout>} />
-      <Route path="/leaderboard" component={() => <Layout><Leaderboard /></Layout>} />
-      <Route path="/graduation" component={() => <Layout><Graduation /></Layout>} />
-      <Route path="/dna" component={() => <Layout><DNA /></Layout>} />
-      <Route path="/ranks" component={() => <Layout><Ranks /></Layout>} />
-      <Route path="/vault" component={() => <Layout><Graduation /></Layout>} />
-
-      {/* 404 */}
-      <Route component={NotFound} />
-    </Switch>
+    <Layout>
+      <Switch>
+        <Route path="/" component={Home} />
+        <Route path="/missions" component={Missions} />
+        <Route path="/rewards" component={Rewards} />
+        <Route path="/ranks" component={Ranks} />
+        <Route path="/graduation" component={Graduation} />
+        <Route path="/parents" component={Parents} />
+        <Route path="/dna" component={DNA} />
+        <Route path="/leaderboard" component={Leaderboard} />
+        <Route component={NotFound} />
+      </Switch>
+    </Layout>
   );
 }
 
-export default function App() {
+function App() {
   return (
-    <FDFProvider>
-      <AppRoutes />
-      <Toaster position="top-center" richColors />
-    </FDFProvider>
+    <ErrorBoundary>
+      {/* Light theme — premium academy interface */}
+      <ThemeProvider defaultTheme="light">
+        <TooltipProvider>
+          <Toaster />
+          <FDFProvider>
+            <CelebrationOverlay />
+            <GraduatedGuard>
+              <ProfileGuard>
+                <Router />
+              </ProfileGuard>
+            </GraduatedGuard>
+          </FDFProvider>
+        </TooltipProvider>
+      </ThemeProvider>
+    </ErrorBoundary>
   );
 }
+
+export default App;

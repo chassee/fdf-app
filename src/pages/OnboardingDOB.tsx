@@ -17,46 +17,62 @@ export default function OnboardingDOB() {
   const [, setLocation] = useLocation();
   const [dob, setDob] = useState("");
   const [error, setError] = useState("");
-  const [accessToken, setAccessToken] = useState<string | null>(null);
+  const [isPending, setIsPending] = useState(false);
 
-  // Get session token from Supabase native session
+  // Verify user is authenticated
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (!session) {
         setLocation("/signin");
-        return;
       }
-      setAccessToken(session.access_token);
     });
   }, [setLocation]);
-
-  const [isPending, setIsPending] = useState(false);
 
   async function handleContinue(e: React.FormEvent) {
     e.preventDefault();
     setError("");
-    if (!dob) { setError("Please enter your date of birth"); return; }
+
+    if (!dob) {
+      setError("Please enter your date of birth");
+      return;
+    }
+
     const age = calculateAge(dob);
     if (age < 13 || age > 17) {
       setError("FDF is for ages 13–17 only.");
       return;
     }
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) { toast.error("Session expired. Please sign in again."); setLocation("/signin"); return; }
+
     setIsPending(true);
+
     try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        toast.error("Session expired. Please sign in again.");
+        setLocation("/signin");
+        return;
+      }
+
+      // CRITICAL: Update profile_complete BEFORE redirect
       const { error: updateErr } = await supabase
         .from("fdf_users")
         .update({ dob, profile_complete: true })
         .eq("auth_user_id", session.user.id);
-      if (updateErr) throw updateErr;
+
+      if (updateErr) {
+        throw updateErr;
+      }
+
       toast.success("Date of birth saved!");
-      setLocation("/onboarding/username");
-    } catch (e: any) {
-      const msg = e.message ?? "Failed to save date of birth";
+      
+      // Small delay to ensure state settles before redirect
+      setTimeout(() => {
+        setLocation("/onboarding/username");
+      }, 100);
+    } catch (err: any) {
+      const msg = err.message ?? "Failed to save date of birth";
       setError(msg);
       toast.error(msg);
-    } finally {
       setIsPending(false);
     }
   }
@@ -81,7 +97,7 @@ export default function OnboardingDOB() {
         {/* Progress dots */}
         <div style={S.progressRow}>
           <div style={{ ...S.dot, background: "#8b5cf6" }} />
-          <div style={{ ...S.dot, background: "rgba(255,255,255,0.2)" }} />
+          <div style={{ ...S.dot, background: "#8b5cf6" }} />
           <div style={{ ...S.dot, background: "rgba(255,255,255,0.2)" }} />
         </div>
 
