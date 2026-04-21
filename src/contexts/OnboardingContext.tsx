@@ -79,17 +79,22 @@ export function OnboardingProvider({ children }: { children: React.ReactNode }) 
           setProfile(profileData);
         } else {
           // Create default profile if doesn't exist
+          // Only insert required fields, name is nullable
           const { data: newProfile, error: createError } = await supabase
             .from("fdf_users")
             .insert({
               auth_user_id: session.user.id,
               email: session.user.email,
               onboarding_complete: false,
+              name: null,
+              username: null,
+              dob: null,
             })
             .select()
             .single();
 
           if (createError) {
+            console.error("[OnboardingContext] Profile creation error:", createError);
             throw createError;
           }
 
