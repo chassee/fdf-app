@@ -29,12 +29,14 @@ import Privacy from "./pages/Privacy";
 import Terms from "./pages/Terms";
 import ChildSafety from "./pages/ChildSafety";
 import Contact from "./pages/Contact";
+import ApprovalPending from "./pages/ApprovalPending";
+import Approve from "./pages/Approve";
 
 // Full-screen routes (no bottom nav / layout chrome)
-const AUTH_ROUTES = ["/signup", "/signin", "/parent-approval", "/pending-approval", "/onboarding/dob", "/onboarding/username"];
+const AUTH_ROUTES = ["/signup", "/signin", "/parent-approval", "/pending-approval", "/onboarding/dob", "/onboarding/username", "/approval-pending"];
 
 // Public routes (visible to everyone, no layout)
-const PUBLIC_ROUTES = ["/", "/privacy", "/terms", "/child-safety", "/parents", "/contact"];
+const PUBLIC_ROUTES = ["/", "/privacy", "/terms", "/child-safety", "/parents", "/contact", "/approve"];
 
 // ── Graduated Guard: block all app access if user has graduated ──────────────
 function GraduatedGuard({ children }: { children: React.ReactNode }) {
@@ -176,6 +178,7 @@ function Router() {
         <Route path="/pending-approval" component={PendingApproval} />
         <Route path="/onboarding/dob" component={OnboardingDOB} />
         <Route path="/onboarding/username" component={OnboardingUsername} />
+        <Route path="/approval-pending" component={ApprovalPending} />
       </Switch>
     );
   }
@@ -190,6 +193,7 @@ function Router() {
         <Route path="/child-safety" component={ChildSafety} />
         <Route path="/parents" component={Parents} />
         <Route path="/contact" component={Contact} />
+        <Route path="/approve" component={Approve} />
       </Switch>
     );
   }
