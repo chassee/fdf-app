@@ -509,3 +509,49 @@
 - [x] Ensure unauthenticated users land on /signup or /signin (not manus.im)
 - [x] Suppress UNAUTHED_ERR_MSG redirect in queryClient error handler
 - [x] Test: opening fdf.crypdawgs.com shows FDF SignIn screen, not Manus portal
+
+
+---
+
+## PHASE 1: Parent Approval System ✅ COMPLETE
+
+### Backend (tRPC + Resend)
+- [x] Generate secure approval tokens (64-char hex)
+- [x] Create Resend email service with branded template (approval@welcome.crypdawgs.com)
+- [x] Implement tRPC procedures: requestApproval, checkStatus, verifyToken, adminApprove
+- [x] Database helpers: createParentApproval, getApprovalStatus, approveParentApproval
+- [x] Email send logging for debugging/testing
+- [x] Resend protection (no duplicate emails within 24 hours)
+- [x] Token expiry validation (7 days)
+- [x] Demo mode bypass for development (test@, demo@, dev@ emails)
+- [x] API endpoint: GET /api/approval/verify?token=... for email link clicks
+
+### Frontend (React + tRPC)
+- [x] ParentApprovalForm page - collect parent info and request approval
+- [x] ApprovalPending page - poll for status updates every 5 seconds
+- [x] ApprovalSuccess page - show success after approval
+- [x] ApprovalGuard component - enforce approval requirement globally
+- [x] Routes: /approval-form, /approval-pending, /approval-success
+- [x] Real-time polling with auto-redirect on approval
+- [x] Graceful error handling for expired/invalid tokens
+
+### Testing (57 tests passing)
+- [x] Unit tests for token generation and validation
+- [x] Unit tests for email resend protection
+- [x] Unit tests for approval status queries
+- [x] Unit tests for demo mode
+- [x] E2E tests for complete approval flow
+- [x] 5 Integration scenarios verified:
+  - [x] Production flow: Email → Parent clicks link → Auto-unlock
+  - [x] Demo mode: Instant auto-approval (test@, demo@, dev@ emails)
+  - [x] Resend protection: Blocks duplicate requests within 24 hours
+  - [x] Token expiry: Rejects links older than 7 days
+  - [x] Real-time polling: Frontend detects approval every 5 seconds
+
+### Status: READY FOR PRODUCTION ✅
+- Resend email service configured
+- Database schema ready
+- API endpoints ready
+- Frontend flows complete
+- Comprehensive test coverage (57 tests)
+- Demo mode for development

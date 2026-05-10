@@ -22,13 +22,17 @@ import SignUp from "./pages/SignUp";
 import SignIn from "./pages/SignIn";
 import ParentApproval from "./pages/ParentApproval";
 import PendingApproval from "./pages/PendingApproval";
+import ParentApprovalForm from "./pages/ParentApprovalForm";
+import ApprovalPending from "./pages/ApprovalPending";
+import ApprovalSuccess from "./pages/ApprovalSuccess";
+import { ApprovalGuard } from "./components/ApprovalGuard";
 import OnboardingDOB from "./pages/OnboardingDOB";
 import OnboardingUsername from "./pages/OnboardingUsername";
 import DNA from "./pages/DNA";
 import Leaderboard from "./pages/Leaderboard";
 
 // Full-screen routes (no bottom nav / layout chrome)
-const AUTH_ROUTES = ["/signup", "/signin", "/parent-approval", "/pending-approval", "/onboarding/dob", "/onboarding/username"];
+const AUTH_ROUTES = ["/signup", "/signin", "/parent-approval", "/pending-approval", "/approval-form", "/approval-pending", "/approval-success", "/onboarding/dob", "/onboarding/username"];
 
 // ── Graduated Guard: block all app access if user has graduated ──────────────
 function GraduatedGuard({ children }: { children: React.ReactNode }) {
@@ -191,6 +195,9 @@ function Router() {
         <Route path="/signin" component={SignIn} />
         <Route path="/parent-approval" component={ParentApproval} />
         <Route path="/pending-approval" component={PendingApproval} />
+        <Route path="/approval-form" component={ParentApprovalForm} />
+        <Route path="/approval-pending" component={ApprovalPending} />
+        <Route path="/approval-success" component={ApprovalSuccess} />
         <Route path="/onboarding/dob" component={OnboardingDOB} />
         <Route path="/onboarding/username" component={OnboardingUsername} />
       </Switch>
@@ -225,7 +232,9 @@ function App() {
             <CelebrationOverlay />
             <GraduatedGuard>
               <ProfileGuard>
-                <Router />
+                <ApprovalGuard>
+                  <Router />
+                </ApprovalGuard>
               </ProfileGuard>
             </GraduatedGuard>
           </FDFProvider>

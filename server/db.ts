@@ -1,4 +1,4 @@
-import { eq, and, gte, lte } from "drizzle-orm";
+import { eq, and, lte, gte } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import {
   InsertUser,
@@ -10,6 +10,7 @@ import {
   rewards,
   userRewards,
   sponsorLeads,
+  parentApprovals,
   type FdfUser,
   type FdfProgress,
   type Mission,
@@ -19,6 +20,8 @@ import {
   type InsertMissionCompletion,
   type InsertUserReward,
   type InsertSponsorLead,
+  type ParentApproval,
+  type InsertParentApproval,
 } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
@@ -245,6 +248,54 @@ export async function unlockReward(data: InsertUserReward): Promise<void> {
   await db.insert(userRewards).values(data);
 }
 
+// Parent approval queries
+
+export async function createParentApproval(data: InsertParentApproval): Promise<ParentApproval> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const result = await db.insert(parentApprovals).values(data);
+  const approval = await db.select().from(parentApprovals).where(eq(parentApprovals.id, result[0].insertId)).limit(1);
+  return approval[0];
+}
+
+export async function getParentApprovalByToken(token: string): Promise<ParentApproval | undefined> {
+  const db = await getDb();
+  if (!db) return undefined;
+
+  const result = await db
+    .select()
+    .from(parentApprovals)
+    .where(eq(parentApprovals.approvalToken, token))
+    .limit(1);
+
+  return result[0];
+}
+
+export async function getParentApprovalByUserId(userId: number): Promise<ParentApproval | undefined> {
+  const db = await getDb();
+  if (!db) return undefined;
+
+  const result = await db
+    .select()
+    .from(parentApprovals)
+    .where(eq(parentApprovals.userId, userId))
+    .orderBy(parentApprovals.createdAt)
+    .limit(1);
+
+  return result[0];
+}
+
+export async function approveParentApproval(token: string): Promise<void> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  await db
+    .update(parentApprovals)
+    .set({ status: "approved", approvedAt: new Date() })
+    .where(eq(parentApprovals.approvalToken, token));
+}
+
 export async function createSponsorLead(data: InsertSponsorLead): Promise<void> {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
@@ -252,32 +303,30 @@ export async function createSponsorLead(data: InsertSponsorLead): Promise<void> 
   await db.insert(sponsorLeads).values(data);
 }
 
-// Helper: Calculate rank from XP
-export function calculateRank(xp: number): string {
-  if (xp >= 15000) return "Atlas Elite";
-  if (xp >= 9000) return "Vaultborn";
-  if (xp >= 5000) return "Operator";
-  if (xp >= 2500) return "Builder";
-  if (xp >= 1200) return "Runner";
-  if (xp >= 500) return "Rookie";
-  return "Pup";
-}
-
-// Helper: Calculate age from DOB
-export function calculateAge(dob: string): number {
-  const birthDate = new Date(dob);
+export function calculateAge(dobString: string): number {
+  const [year, month, day] = dobString.split('-').map(Number);
+  const dob = new Date(year, month - 1, day);
   const today = new Date();
-  let age = today.getFullYear() - birthDate.getFullYear();
-  const monthDiff = today.getMonth() - birthDate.getMonth();
-  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+  let age = today.getFullYear() - dob.getFullYear();
+  const monthDiff = today.getMonth() - dob.getMonth();
+  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < dob.getDate())) {
     age--;
   }
   return age;
 }
 
-// Helper: Calculate vault activation date (18th birthday)
-export function calculateVaultActivationDate(dob: string): string {
-  const birthDate = new Date(dob);
-  birthDate.setFullYear(birthDate.getFullYear() + 18);
-  return birthDate.toISOString().split('T')[0];
+export function calculateVaultActivationDate(dobString: string): string {
+  const [year, month, day] = dobString.split('-').map(Number);
+  const dob = new Date(year, month - 1, day);
+  const vaultDate = new Date(dob);
+  vaultDate.setFullYear(vaultDate.getFullYear() + 18);
+  return vaultDate.toISOString().split('T')[0];
+}
+
+export function calculateRank(xp: number): string {
+  if (xp >= 1000) return "Elite";
+  if (xp >= 500) return "Operator";
+  if (xp >= 250) return "Builder";
+  if (xp >= 100) return "Starter";
+  return "Rookie";
 }

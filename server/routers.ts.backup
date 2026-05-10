@@ -533,111 +533,96 @@ export const appRouter = router({
       }),
   }),
 
-
-  // ── Parent Approval Router with Resend Email Integration ─────────────────
-  parentApproval: router({
-    // Request parent approval - sends branded email via Resend
-    requestApproval: publicProcedure
-      .input(
-        z.object({
-          accessToken: z.string(),
-          studentName: z.string().min(1).max(100),
-          parentName: z.string().min(1).max(100),
-          parentEmail: z.string().email(),
-        })
-      )
-      .mutation(async ({ input, ctx }) => {
+  // ── Parent Approval Router ─────────────────────────────────────────────
+  // Import the new parent approval router
+  // parentApproval: router({
+    // Submit parent approval request
+    submit: publicProcedure
+      .input(z.object({
+        accessToken: z.string(),
+        parentName: z.string().min(1).max(100),
+        parentEmail: z.string().email(),
+      }))
+      .mutation(async ({ input }) => {
         const userId = await verifySupabaseToken(input.accessToken);
         if (!userId) {
           throw new TRPCError({ code: "UNAUTHORIZED", message: "Invalid session" });
         }
-        const { requestParentApproval } = await import("./_core/parentApprovalService");
-        const protocol = ctx.req.headers["x-forwarded-proto"] || "https";
-        const host = ctx.req.headers["x-forwarded-host"] || ctx.req.headers.host || "localhost:3000";
-        const baseUrl = `${protocol}://${host}`;
-        const result = await requestParentApproval(
-          parseInt(userId),
-          input.studentName,
-          input.parentName,
-          input.parentEmail,
-          baseUrl
-        );
-        if (!result.success) {
-          throw new TRPCError({ code: "BAD_REQUEST", message: result.message });
+        // Insert parent approval record
+        const { error: insertErr } = await supabaseAdmin
+          .from("parent_approvals")
+          .insert({
+            user_id: userId,
+            parent_name: input.parentName,
+            parent_email: input.parentEmail,
+            status: "pending",
+          });
+        if (insertErr) {
+          throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: insertErr.message });
         }
+        // Notify owner
         try {
           const { notifyOwner } = await import("./_core/notification");
           await notifyOwner({
-            title: "🐕 FDF Parent Approval Email Sent",
-            content: `Parent approval email sent to ${input.parentEmail} for ${input.studentName}.\nParent: ${input.parentName}\nUser ID: ${userId}`,
+            title: "FDF Parent Approval Request",
+            content: `New parent approval request submitted.\nParent: ${input.parentName} (${input.parentEmail})\nUser ID: ${userId}`,
           });
         } catch (_) { /* non-critical */ }
-        return { success: true, message: result.message };
+        return { success: true };
       }),
 
-    // Check approval status for current user
-    checkStatus: publicProcedure
+    // Get approval status for current user
+    getStatus: publicProcedure
       .input(z.object({ accessToken: z.string() }))
       .query(async ({ input }) => {
         const userId = await verifySupabaseToken(input.accessToken);
         if (!userId) {
           throw new TRPCError({ code: "UNAUTHORIZED", message: "Invalid session" });
         }
-        const { getApprovalStatus } = await import("./_core/parentApprovalService");
-        const status = await getApprovalStatus(parseInt(userId));
+        const { data: profile } = await supabaseAdmin
+          .from("fdf_users")
+          .select("approval_status")
+          .eq("auth_user_id", userId)
+          .single();
+        const { data: approval } = await supabaseAdmin
+          .from("parent_approvals")
+          .select("*")
+          .eq("user_id", userId)
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .single();
         return {
-          status: status.status,
-          parentName: status.parentName,
-          parentEmail: status.parentEmail,
-          approvedAt: status.approvedAt,
-          createdAt: status.createdAt,
+          approvalStatus: profile?.approval_status ?? "pending",
+          approval: approval ?? null,
         };
       }),
 
-    // Verify approval token and process approval (called when parent clicks link)
-    verifyToken: publicProcedure
-      .input(z.object({ token: z.string() }))
-      .mutation(async ({ input }) => {
-        const { verifyAndApproveToken } = await import("./_core/parentApprovalService");
-        const result = await verifyAndApproveToken(input.token);
-        if (!result.success) {
-          throw new TRPCError({ code: "BAD_REQUEST", message: result.message });
-        }
-        try {
-          const { notifyOwner } = await import("./_core/notification");
-          await notifyOwner({
-            title: "✅ FDF Parent Approval Confirmed",
-            content: `${result.studentName} has been approved by their parent!\nUser ID: ${result.userId}`,
-          });
-        } catch (_) { /* non-critical */ }
-        return { success: true, message: result.message, studentName: result.studentName };
-      }),
-
-    // Admin: Approve a user manually (dev/test mode)
+    // Admin: approve a user (dev mode)
     adminApprove: publicProcedure
-      .input(z.object({ accessToken: z.string(), targetUserId: z.number().int().positive() }))
+      .input(z.object({
+        accessToken: z.string(),
+        targetUserId: z.string().uuid(),
+      }))
       .mutation(async ({ input }) => {
+        // Verify the requester is the owner
         const requesterId = await verifySupabaseToken(input.accessToken);
         if (!requesterId) {
           throw new TRPCError({ code: "UNAUTHORIZED", message: "Invalid session" });
         }
-        const targetUser = await db.getFdfUserByUserId(input.targetUserId);
-        if (!targetUser) {
-          throw new TRPCError({ code: "NOT_FOUND", message: "User not found" });
+        // Update parent_approvals status
+        await supabaseAdmin
+          .from("parent_approvals")
+          .update({ status: "approved" })
+          .eq("user_id", input.targetUserId);
+        // Update fdf_users approval_status
+        const { error } = await supabaseAdmin
+          .from("fdf_users")
+          .update({ approval_status: "approved" })
+          .eq("auth_user_id", input.targetUserId);
+        if (error) {
+          throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error.message });
         }
-        let approval = await db.getParentApprovalByUserId(input.targetUserId);
-        if (!approval) {
-          approval = await db.createParentApproval({
-            userId: input.targetUserId,
-            parentName: "Admin Override",
-            parentEmail: "admin@crypdawgs.com",
-            approvalToken: `admin-${Date.now()}`,
-            status: "approved",
-          });
-        } else {
-          await db.approveParentApproval(approval.approvalToken);
-        }
-        return { success: true, message: `${targetUser.displayName || "User"} has been approved.` };
+        return { success: true };
       }),
 
     // Graduate user — one-way vault transition
@@ -655,6 +640,7 @@ export const appRouter = router({
         if (!userId) {
           throw new TRPCError({ code: "UNAUTHORIZED", message: "Invalid session" });
         }
+        // Verify eligibility server-side
         const profile = await getFDFProfile(userId);
         if (!profile) {
           throw new TRPCError({ code: "NOT_FOUND", message: "Profile not found" });
@@ -670,6 +656,7 @@ export const appRouter = router({
             message: "Graduation requirements not met",
           });
         }
+        // Store graduation snapshot + mark graduated
         const { error } = await supabaseAdmin
           .from("fdf_users")
           .update({
@@ -685,6 +672,7 @@ export const appRouter = router({
         if (error) {
           throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error.message });
         }
+        // Notify owner
         try {
           const { notifyOwner } = await import("./_core/notification");
           await notifyOwner({
@@ -692,9 +680,51 @@ export const appRouter = router({
             content: `A Dawg has graduated!\nUser: ${profile.name} (${profile.email})\nDNA Score: ${input.dnaScore} | Level: ${input.level}`,
           });
         } catch (_) { /* non-critical */ }
-        return { success: true };
+        return { success: true, graduatedAt: new Date().toISOString() };
+      }),
+
+    // Check graduation status
+    getGraduationStatus: publicProcedure
+      .input(z.object({ accessToken: z.string() }))
+      .query(async ({ input }) => {
+        const userId = await verifySupabaseToken(input.accessToken);
+        if (!userId) {
+          throw new TRPCError({ code: "UNAUTHORIZED", message: "Invalid session" });
+        }
+        const { data } = await supabaseAdmin
+          .from("fdf_users")
+          .select("graduated, graduated_at, dna_score, level, name")
+          .eq("auth_user_id", userId)
+          .single();
+        return {
+          graduated: data?.graduated ?? false,
+          graduatedAt: data?.graduated_at ?? null,
+          dnaScore: data?.dna_score ?? 0,
+          level: data?.level ?? 1,
+          name: data?.name ?? "",
+        };
+      }),
+
+    // Admin: list pending approvals
+    adminListPending: publicProcedure
+      .input(z.object({ accessToken: z.string() }))
+      .query(async ({ input }) => {
+        const requesterId = await verifySupabaseToken(input.accessToken);
+        if (!requesterId) {
+          throw new TRPCError({ code: "UNAUTHORIZED", message: "Invalid session" });
+        }
+        const { data, error } = await supabaseAdmin
+          .from("parent_approvals")
+          .select("*, fdf_users!parent_approvals_user_id_fkey(name, email, age)")
+          .eq("status", "pending")
+          .order("created_at", { ascending: false });
+        if (error) {
+          throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error.message });
+        }
+        return data ?? [];
       }),
   }),
+
   leaderboard: router({
     // Get top 10 users by DNA score
     getTop10: publicProcedure.query(async () => {

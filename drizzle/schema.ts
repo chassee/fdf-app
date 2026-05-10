@@ -124,6 +124,23 @@ export type UserReward = typeof userRewards.$inferSelect;
 export type InsertUserReward = typeof userRewards.$inferInsert;
 
 /**
+ * Parent approvals
+ */
+export const parentApprovals = mysqlTable("parent_approvals", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("user_id").notNull().references(() => users.id),
+  parentName: varchar("parent_name", { length: 255 }).notNull(),
+  parentEmail: varchar("parent_email", { length: 320 }).notNull(),
+  approvalToken: varchar("approval_token", { length: 255 }).notNull().unique(),
+  status: mysqlEnum("status", ["pending", "approved", "denied"]).notNull().default("pending"),
+  approvedAt: timestamp("approved_at"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export type ParentApproval = typeof parentApprovals.$inferSelect;
+export type InsertParentApproval = typeof parentApprovals.$inferInsert;
+
+/**
  * Sponsor leads
  */
 export const sponsorLeads = mysqlTable("sponsor_leads", {
