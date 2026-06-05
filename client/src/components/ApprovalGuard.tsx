@@ -20,6 +20,9 @@ export function ApprovalGuard({ children }: { children: React.ReactNode }) {
   const [approvalStatus, setApprovalStatus] = useState<"pending" | "approved" | "denied" | "not_requested" | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
+  // Admin bypass: admin@crypdawgs.com has full access
+  const isAdmin = user?.email === "admin@crypdawgs.com";
+
   // Query approval status
   const statusQuery = trpc.parentApproval.checkStatus.useQuery(
     { accessToken: user?.id.toString() || "" },
@@ -58,8 +61,13 @@ export function ApprovalGuard({ children }: { children: React.ReactNode }) {
     return <>{children}</>;
   }
 
-  // Still loading approval status
-  if (isLoading || isFDFLoading) {
+  // Admin bypass: skip all approval checks for admin@crypdawgs.com
+  if (isAdmin) {
+    return <>{children}</>;
+  }
+
+  // Still loading approval status (skip for admin)
+  if (!isAdmin && (isLoading || isFDFLoading)) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
         <Card className="max-w-md w-full p-8 bg-white/80 backdrop-blur text-center">

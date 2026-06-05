@@ -6,10 +6,11 @@ import { ThemeProvider } from "./contexts/ThemeContext";
 import { FDFProvider, useFDF } from "./contexts/FDFContext";
 import Layout from "./components/Layout";
 import { ExternalLink } from "lucide-react";
+import { useEffect, useState } from "react";
 import { CelebrationOverlay } from "./components/CelebrationOverlay";
 import { Toaster } from "sonner";
-import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
+
 
 // Pages
 import Home from "./pages/Home";
@@ -38,8 +39,19 @@ const AUTH_ROUTES = ["/signup", "/signin", "/parent-approval", "/pending-approva
 function GraduatedGuard({ children }: { children: React.ReactNode }) {
   const { graduated, graduatedAt } = useFDF();
   const [location] = useLocation();
+  const [userEmail, setUserEmail] = useState<string | null>(null);
 
-  if (graduated && location !== "/graduation") {
+  // Admin bypass: admin@crypdawgs.com can access all features
+  const isAdmin = userEmail === "admin@crypdawgs.com";
+
+  // Get user email from Supabase session
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUserEmail(session?.user.email || null);
+    });
+  }, []);
+
+  if (graduated && location !== "/graduation" && !isAdmin) {
     const formattedDate = graduatedAt
       ? new Date(graduatedAt).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })
       : null;
@@ -93,6 +105,10 @@ function ProfileGuard({ children }: { children: React.ReactNode }) {
   const [location, navigate] = useLocation();
   const [profile, setProfile] = useState<{ profile_complete: boolean } | null>(null);
   const [isProfileLoading, setIsProfileLoading] = useState(true);
+  const [userEmail, setUserEmail] = useState<string | null>(null);
+
+  // Admin bypass: admin@crypdawgs.com skips profile/onboarding requirements
+  const isAdmin = userEmail === "admin@crypdawgs.com";
 
   // Load profile data on auth state change
   useEffect(() => {
@@ -100,9 +116,13 @@ function ProfileGuard({ children }: { children: React.ReactNode }) {
     supabase.auth.getSession().then(async ({ data: { session } }) => {
       if (!session) {
         setProfile(null);
+        setUserEmail(null);
         setIsProfileLoading(false);
         return;
       }
+
+      // Store user email for admin check
+      setUserEmail(session.user.email || null);
 
       // Fetch user profile from fdf_users
       const { data, error } = await supabase
@@ -124,9 +144,13 @@ function ProfileGuard({ children }: { children: React.ReactNode }) {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
       if (!session) {
         setProfile(null);
+        setUserEmail(null);
         setIsProfileLoading(false);
         return;
       }
+
+      // Store user email for admin check
+      setUserEmail(session.user.email || null);
 
       setIsProfileLoading(true);
       const { data, error } = await supabase
@@ -158,6 +182,11 @@ function ProfileGuard({ children }: { children: React.ReactNode }) {
         <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
       </div>
     );
+  }
+
+  // Admin bypass: skip all profile/onboarding requirements
+  if (isAdmin) {
+    return <>{children}</>;
   }
 
   // Redirect logic: only run after profile is loaded
