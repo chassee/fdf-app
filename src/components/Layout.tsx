@@ -1,19 +1,26 @@
-import { useLocation } from "wouter";
-import { Link } from "wouter";
-import { Home, Zap, BarChart3, Trophy, Vault, Menu, X } from "lucide-react";
+import { Link, useLocation } from "wouter";
+import { Home, Zap, BarChart3, Trophy, Vault, Menu, X, LogOut } from "lucide-react";
 import { useState } from "react";
+import { supabase } from "@/lib/supabase";
+import { useOnboarding } from "@/contexts/OnboardingContext";
 
 const NAV_ITEMS = [
   { href: "/", label: "Home", icon: Home },
   { href: "/missions", label: "Missions", icon: Zap },
   { href: "/dna", label: "DNA", icon: BarChart3 },
   { href: "/leaderboard", label: "Ranks", icon: Trophy },
-  { href: "/vault", label: "Vault", icon: Vault },
+  { href: "/rewards", label: "Rewards", icon: Vault },
 ];
 
 export function Layout({ children }: { children: React.ReactNode }) {
-  const [location] = useLocation();
+  const [location, navigate] = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const { user } = useOnboarding();
+
+  const handleSignOut = async () => {
+    await supabase.auth.signOut();
+    navigate("/");
+  };
 
   return (
     <div className="min-h-screen bg-gray-50 pb-20 md:pb-0">
@@ -80,10 +87,19 @@ export function Layout({ children }: { children: React.ReactNode }) {
             ))}
           </nav>
 
-          <div className="p-4 border-t border-gray-200">
+          <div className="p-4 border-t border-gray-200 space-y-2">
             <button className="w-full px-4 py-2 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg">
               Settings
             </button>
+            {user && (
+              <button
+                onClick={handleSignOut}
+                className="w-full px-4 py-2 text-sm text-red-600 hover:text-red-700 hover:bg-red-50 rounded-lg flex items-center gap-2"
+              >
+                <LogOut size={16} />
+                Sign Out
+              </button>
+            )}
           </div>
         </div>
 

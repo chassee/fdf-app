@@ -93,9 +93,23 @@ function GraduatedGuard({ children }: { children: React.ReactNode }) {
 
 // ── Onboarding Guard: SINGLE SOURCE OF TRUTH ──────────────────────────────────
 // Uses onboarding_complete flag only. No stacked conditions.
+// Admin bypass: admin@crypdawgs.com skips all approval/onboarding
 function OnboardingGuard({ children }: { children: React.ReactNode }) {
   const [location, navigate] = useLocation();
-  const { isAuthenticated, onboardingComplete, isLoading, error } = useOnboarding();
+  const { isAuthenticated, onboardingComplete, isLoading, error, user } = useOnboarding();
+  
+  // Admin bypass check
+  const isAdmin = user?.email === "admin@crypdawgs.com";
+
+  // Admin bypass: skip all guards
+  if (isAdmin && isAuthenticated) {
+    // Admin can access everything except onboarding pages
+    if (location.startsWith("/onboarding")) {
+      navigate("/");
+      return null;
+    }
+    return <>{children}</>;
+  }
 
   // Show loading screen while fetching
   if (isLoading) {
@@ -129,7 +143,8 @@ function OnboardingGuard({ children }: { children: React.ReactNode }) {
 
   // ROUTING LOGIC: SINGLE SOURCE OF TRUTH
   // If authenticated but onboarding NOT complete → force onboarding
-  if (isAuthenticated && !onboardingComplete) {
+  // (skipped for admin)
+  if (isAuthenticated && !onboardingComplete && !isAdmin) {
     if (!location.startsWith("/onboarding")) {
       navigate("/onboarding/dob");
       return null;
@@ -139,7 +154,8 @@ function OnboardingGuard({ children }: { children: React.ReactNode }) {
   }
 
   // If authenticated AND onboarding complete → block onboarding pages
-  if (isAuthenticated && onboardingComplete) {
+  // (skipped for admin)
+  if (isAuthenticated && onboardingComplete && !isAdmin) {
     if (location.startsWith("/onboarding")) {
       navigate("/");
       return null;
@@ -149,7 +165,8 @@ function OnboardingGuard({ children }: { children: React.ReactNode }) {
   }
 
   // If NOT authenticated → allow auth pages and public pages, block protected pages
-  if (!isAuthenticated) {
+  // (skipped for admin)
+  if (!isAuthenticated && !isAdmin) {
     const isAuthRoute = AUTH_ROUTES.includes(location);
     const isPublicRoute = PUBLIC_ROUTES.includes(location);
     if (!isAuthRoute && !isPublicRoute) {
