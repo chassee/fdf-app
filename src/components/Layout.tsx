@@ -51,6 +51,18 @@ export function Layout({ children }: { children: React.ReactNode }) {
               </button>
             </Link>
           ))}
+          {user && (
+            <button
+              onClick={() => {
+                handleSignOut();
+                setMobileMenuOpen(false);
+              }}
+              className="w-full text-left px-4 py-3 flex items-center gap-3 border-t border-gray-100 text-red-600 hover:bg-red-50"
+            >
+              <LogOut size={20} />
+              Sign Out
+            </button>
+          )}
         </div>
       )}
 
