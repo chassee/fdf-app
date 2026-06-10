@@ -31,6 +31,7 @@ import ChildSafety from "./pages/ChildSafety";
 import Contact from "./pages/Contact";
 import ApprovalPending from "./pages/ApprovalPending";
 import Approve from "./pages/Approve";
+import MissionDetail from "./pages/MissionDetail";
 
 // Full-screen routes (no bottom nav / layout chrome)
 const AUTH_ROUTES = ["/signup", "/signin", "/parent-approval", "/pending-approval", "/onboarding/dob", "/onboarding/username", "/approval-pending"];
@@ -221,6 +222,7 @@ function Router() {
       <Switch>
         <Route path="/" component={Home} />
         <Route path="/missions" component={Missions} />
+        <Route path="/mission/:id" component={MissionDetail} />
         <Route path="/rewards" component={Rewards} />
         <Route path="/ranks" component={Ranks} />
         <Route path="/graduation" component={Graduation} />

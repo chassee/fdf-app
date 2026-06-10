@@ -30,13 +30,13 @@ export default function Home() {
   const isNewUser = xp === 0;
 
   return (
-    <div className="space-y-8 pb-8">
+    <div className="space-y-6 pb-20 px-4 md:px-0">
       {/* Hero Section */}
-      <section className="bg-gradient-to-br from-blue-600 via-purple-600 to-pink-600 text-white rounded-2xl p-8 shadow-lg">
-        <div className="flex items-start justify-between mb-4">
-          <div>
-            <h1 className="text-4xl font-bold mb-2">Welcome back, {username}! 👋</h1>
-            <p className="text-blue-100 text-lg">
+      <section className="bg-gradient-to-br from-blue-600 via-purple-600 to-pink-600 text-white rounded-2xl p-6 md:p-8 shadow-lg">
+        <div className="flex flex-col md:flex-row items-start justify-between gap-4 mb-4">
+          <div className="flex-1">
+            <h1 className="text-2xl md:text-4xl font-bold mb-2">Welcome back, {username}! 👋</h1>
+            <p className="text-blue-100 text-sm md:text-lg">
               {isNewUser 
                 ? "Your financial journey starts now. Complete your first mission!"
                 : "Keep building your financial DNA. You're crushing it!"}
@@ -52,12 +52,12 @@ export default function Home() {
       </section>
 
       {/* Level Progress Card */}
-      <section className="grid md:grid-cols-3 gap-4">
-        <Card className="p-6 bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200">
+      <section className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <Card className="p-4 md:p-6 bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200">
           <div className="flex items-center justify-between mb-3">
             <div>
-              <p className="text-sm text-blue-600 font-semibold">LEVEL</p>
-              <p className="text-4xl font-bold text-blue-900">{currentLevel.level}</p>
+              <p className="text-xs md:text-sm text-blue-600 font-semibold">LEVEL</p>
+              <p className="text-3xl md:text-4xl font-bold text-blue-900">{currentLevel.level}</p>
             </div>
             <Trophy className="text-blue-600" size={40} />
           </div>
