@@ -1,9 +1,0 @@
-{
-  "query": "\nSELECT table_name, column_name, data_type, is_nullable\nFROM information_schema.columns\nWHERE table_schema = 'public' AND table_name IN ('fdf_users', 'profiles')\nORDER BY table_name, ordinal_position;\n",
-  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user MBaHpir5nUVCP1b.4ce6746da029 --database QBuUDUmcHrhrT9QwgJVhYU --execute \nSELECT table_name, column_name, data_type, is_nullable\nFROM information_schema.columns\nWHERE table_schema = 'public' AND table_name IN ('fdf_users', 'profiles')\nORDER BY table_name, ordinal_position;\n",
-  "rows": [],
-  "messages": [],
-  "stdout": "",
-  "stderr": "",
-  "execution_time_ms": 443
-}
