@@ -2,7 +2,7 @@ import { useOnboarding } from "@/contexts/OnboardingContext";
 import { useFDF } from "@/contexts/FDFContext";
 import { getLevelByXP, getProgressToNextLevel, getXPToNextLevel } from "@/lib/levels";
 import { getAvailableMissions } from "@/lib/missions";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Zap, Trophy, Target, TrendingUp, Lock, ChevronRight, Flame } from "lucide-react";
@@ -10,6 +10,7 @@ import { Zap, Trophy, Target, TrendingUp, Lock, ChevronRight, Flame } from "luci
 export default function Home() {
   const { profile, isLoading } = useOnboarding();
   const { xp, gems } = useFDF();
+  const [, navigate] = useLocation();
 
   if (isLoading) {
     return (
@@ -132,7 +133,11 @@ export default function Home() {
                       <Zap size={14} />
                       +{mission.xpReward}
                     </span>
-                    <Button size="sm" className="bg-blue-600 hover:bg-blue-700">
+                    <Button 
+                      size="sm" 
+                      className="bg-blue-600 hover:bg-blue-700"
+                      onClick={() => navigate(`/mission/${mission.id}`)}
+                    >
                       Start
                     </Button>
                   </div>
