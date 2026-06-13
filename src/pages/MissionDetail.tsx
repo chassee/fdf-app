@@ -1,17 +1,21 @@
 import { useParams, useLocation } from "wouter";
 import { useFDF } from "@/contexts/FDFContext";
+import { useOnboarding } from "@/contexts/OnboardingContext";
 import { getMissionById } from "@/lib/missions";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { ChevronLeft, Zap, CheckCircle } from "lucide-react";
+import { ChevronLeft, Zap, CheckCircle, AlertCircle } from "lucide-react";
 import { useState } from "react";
 
 export default function MissionDetail() {
   const { id } = useParams<{ id: string }>();
   const [, navigate] = useLocation();
   const { addXP, completeMission } = useFDF();
+  const { profile } = useOnboarding();
   const [isCompleting, setIsCompleting] = useState(false);
   const [completed, setCompleted] = useState(false);
+  const [answers, setAnswers] = useState<Record<string, string>>({});
+  const [error, setError] = useState<string | null>(null);
 
   const mission = id ? getMissionById(id) : null;
 
@@ -26,10 +30,48 @@ export default function MissionDetail() {
     );
   }
 
+  const handleAnswerChange = (questionId: string, value: string) => {
+    setAnswers((prev) => ({
+      ...prev,
+      [questionId]: value,
+    }));
+  };
+
+  const allAnswersProvided = mission?.questions?.every(
+    (q: any) => answers[q.id]?.trim().length > 0
+  );
+
   const handleCompleteMission = async () => {
+    if (!allAnswersProvided) {
+      setError("Please answer all questions before completing the mission.");
+      return;
+    }
+
     setIsCompleting(true);
+    setError(null);
+
     try {
-      // Award XP
+      // Save mission completion with answers to localStorage
+      const completion = {
+        missionId: mission.id,
+        missionTitle: mission.title,
+        studentAnswers: answers,
+        xpEarned: mission.xpReward,
+        dnaCategory: mission.dnaCategory || "General",
+        completionDate: new Date().toISOString(),
+        level: 1, // Will be updated from FDFContext
+        totalXp: 0, // Will be updated from FDFContext
+      };
+
+      // Load existing completions
+      const existing = localStorage.getItem("mission_completions");
+      const completions = existing ? JSON.parse(existing) : [];
+      completions.push(completion);
+      localStorage.setItem("mission_completions", JSON.stringify(completions));
+
+      console.log("Mission completion saved:", completion);
+
+      // Award XP locally
       addXP(mission.xpReward);
       completeMission(parseInt(mission.id.replace("mission_", "")), mission.xpReward, 0);
       setCompleted(true);
@@ -38,8 +80,9 @@ export default function MissionDetail() {
       setTimeout(() => {
         navigate("/missions");
       }, 2000);
-    } catch (error) {
-      console.error("Error completing mission:", error);
+    } catch (err) {
+      console.error("Error completing mission:", err);
+      setError(err instanceof Error ? err.message : "Failed to complete mission");
     } finally {
       setIsCompleting(false);
     }
@@ -216,6 +259,39 @@ export default function MissionDetail() {
                 </div>
               )}
             </div>
+
+            {/* Answer Input Fields */}
+            <div className="mt-8 pt-8 border-t-2 border-gray-200">
+              <h3 className="text-lg font-bold text-gray-900 mb-4">📝 Your Answers</h3>
+              <div className="space-y-6">
+                {mission?.questions?.map((question: any, index: number) => (
+                  <div key={question.id} className="space-y-2">
+                    <label className="block text-sm font-semibold text-gray-900">
+                      {index + 1}. {question.text}
+                    </label>
+                    <textarea
+                      placeholder="Type your answer here..."
+                      value={answers[question.id] || ""}
+                      onChange={(e) => handleAnswerChange(question.id, e.target.value)}
+                      className="w-full min-h-24 p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent font-sans text-sm"
+                    />
+                    <p className="text-xs text-gray-500">
+                      {answers[question.id]?.length || 0} characters
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </Card>
+        )}
+
+        {/* Error Message */}
+        {!completed && error && (
+          <Card className="p-4 bg-red-50 border-red-200">
+            <div className="flex items-start gap-3">
+              <AlertCircle className="text-red-600 mt-0.5 shrink-0" size={20} />
+              <p className="text-red-700">{error}</p>
+            </div>
           </Card>
         )}
 
@@ -251,8 +327,9 @@ export default function MissionDetail() {
             </Button>
             <Button
               onClick={handleCompleteMission}
-              disabled={isCompleting}
-              className="flex-1 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
+              disabled={isCompleting || !allAnswersProvided}
+              className="flex-1 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              title={!allAnswersProvided ? "Please answer all questions first" : ""}
             >
               {isCompleting ? "Completing..." : "Complete Mission"}
             </Button>
