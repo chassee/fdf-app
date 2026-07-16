@@ -1,90 +1,107 @@
-import { useParams, useLocation } from "wouter";
-import { useFDF } from "@/contexts/FDFContext";
-import { useOnboarding } from "@/contexts/OnboardingContext";
-import { getMissionById } from "@/lib/missions";
-import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
-import { ChevronLeft, Zap, CheckCircle, AlertCircle } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from 'react';
+import { useParams, useLocation } from 'wouter';
+import { useOnboarding } from '@/_core/hooks/useOnboarding';
+import { getProgressionState, ProgressionState } from '@/lib/progression';
+import { getUserProgressionState, updateUserXp, saveMissionResponse } from '@/lib/supabaseClient';
+import { getActivitySchema, ActivityResponse } from '@/lib/activitySchema';
+import { MissionActivity } from '@/components/MissionActivity';
+import { getMissionById } from '@/lib/missions';
+import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
+import { ChevronLeft, Zap, CheckCircle, AlertCircle } from 'lucide-react';
+import { toast } from 'sonner';
 
 export default function MissionDetail() {
   const { id } = useParams<{ id: string }>();
   const [, navigate] = useLocation();
-  const { addXP, completeMission } = useFDF();
   const { profile } = useOnboarding();
-  const [isCompleting, setIsCompleting] = useState(false);
+
+  const [progression, setProgression] = useState<ProgressionState>(getProgressionState(0));
+  const [loadingProgression, setLoadingProgression] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
   const [completed, setCompleted] = useState(false);
-  const [answers, setAnswers] = useState<Record<string, string>>({});
   const [error, setError] = useState<string | null>(null);
 
   const mission = id ? getMissionById(id) : null;
+  const activitySchema = id ? getActivitySchema(id) : undefined;
+
+  // Fetch canonical progression state
+  useEffect(() => {
+    if (!profile?.id) return;
+
+    const fetchProgression = async () => {
+      setLoadingProgression(true);
+      const state = await getUserProgressionState(profile.id);
+      if (state) {
+        setProgression(state);
+      }
+      setLoadingProgression(false);
+    };
+
+    fetchProgression();
+  }, [profile?.id]);
+
+  if (loadingProgression) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <div className="w-12 h-12 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mx-auto mb-4" />
+          <p className="text-gray-600">Loading mission...</p>
+        </div>
+      </div>
+    );
+  }
 
   if (!mission) {
     return (
       <div className="p-4 text-center">
         <p className="text-red-600">Mission not found</p>
-        <Button onClick={() => navigate("/missions")} className="mt-4">
+        <Button onClick={() => navigate('/missions')} className="mt-4">
           Back to Missions
         </Button>
       </div>
     );
   }
 
-  const handleAnswerChange = (questionId: string, value: string) => {
-    setAnswers((prev) => ({
-      ...prev,
-      [questionId]: value,
-    }));
-  };
+  const handleActivitySubmit = async (responses: ActivityResponse[]) => {
+    if (!profile?.id) return;
 
-  const allAnswersProvided = mission?.questions?.every(
-    (q: any) => answers[q.id]?.trim().length > 0
-  );
-
-  const handleCompleteMission = async () => {
-    if (!allAnswersProvided) {
-      setError("Please answer all questions before completing the mission.");
-      return;
-    }
-
-    setIsCompleting(true);
+    setSubmitting(true);
     setError(null);
 
     try {
-      // Save mission completion with answers to localStorage
-      const completion = {
+      // Save mission response to database
+      await saveMissionResponse({
+        userId: profile.id,
         missionId: mission.id,
         missionTitle: mission.title,
-        studentAnswers: answers,
+        responses,
         xpEarned: mission.xpReward,
-        dnaCategory: mission.dnaCategory || "General",
-        completionDate: new Date().toISOString(),
-        level: 1, // Will be updated from FDFContext
-        totalXp: 0, // Will be updated from FDFContext
-      };
+        dnaCategory: mission.dnaCategory || 'General',
+        levelAtCompletion: progression.currentLevel,
+        totalXpAfterCompletion: progression.totalXp + mission.xpReward,
+      });
 
-      // Load existing completions
-      const existing = localStorage.getItem("mission_completions");
-      const completions = existing ? JSON.parse(existing) : [];
-      completions.push(completion);
-      localStorage.setItem("mission_completions", JSON.stringify(completions));
+      // Update user XP in canonical state
+      const newState = await updateUserXp(profile.id, mission.xpReward);
+      if (newState) {
+        setProgression(newState);
+      }
 
-      console.log("Mission completion saved:", completion);
-
-      // Award XP locally
-      addXP(mission.xpReward);
-      completeMission(parseInt(mission.id.replace("mission_", "")), mission.xpReward, 0);
       setCompleted(true);
+      toast.success(`🎉 Mission completed! +${mission.xpReward} XP earned`);
 
-      // Show success for 2 seconds then redirect
+      // Show completion screen for 2 seconds, then redirect
       setTimeout(() => {
-        navigate("/missions");
+        navigate('/missions');
       }, 2000);
     } catch (err) {
-      console.error("Error completing mission:", err);
-      setError(err instanceof Error ? err.message : "Failed to complete mission");
+      console.error('Error completing mission:', err);
+      const errorMsg = err instanceof Error ? err.message : 'Failed to complete mission';
+      setError(errorMsg);
+      toast.error(errorMsg);
     } finally {
-      setIsCompleting(false);
+      setSubmitting(false);
     }
   };
 
@@ -93,7 +110,7 @@ export default function MissionDetail() {
       {/* Header */}
       <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white p-6">
         <button
-          onClick={() => navigate("/missions")}
+          onClick={() => navigate('/missions')}
           className="flex items-center gap-2 mb-4 hover:opacity-80 transition"
         >
           <ChevronLeft size={20} />
@@ -103,7 +120,7 @@ export default function MissionDetail() {
           <div>
             <p className="text-blue-100 text-sm font-semibold mb-2">{mission.tier} Tier</p>
             <h1 className="text-4xl font-bold mb-2">{mission.title}</h1>
-            <p className="text-blue-100">{mission.description}</p>
+            <p className="text-blue-100">Level {progression.currentLevel} • {progression.totalXp} XP Total</p>
           </div>
           <div className="text-5xl">{mission.icon}</div>
         </div>
@@ -127,7 +144,7 @@ export default function MissionDetail() {
             <div className="text-center">
               <p className="text-gray-600 text-sm font-semibold">DIFFICULTY</p>
               <p className="text-2xl font-bold text-purple-600">
-                {mission.xpReward < 100 ? "Easy" : mission.xpReward < 200 ? "Medium" : "Hard"}
+                {mission.xpReward < 100 ? 'Easy' : mission.xpReward < 200 ? 'Medium' : 'Hard'}
               </p>
             </div>
           </div>
@@ -138,7 +155,7 @@ export default function MissionDetail() {
           <Card className="p-6 bg-white">
             <h2 className="text-2xl font-bold text-gray-900 mb-4">📚 Lesson</h2>
             <div className="space-y-4 text-gray-700 leading-relaxed">
-              {mission.id === "mission_1" && (
+              {mission.id === 'mission_1' && (
                 <>
                   <p>
                     <strong>Daily Check-In</strong> is the foundation of financial success. Just like athletes warm up before competition, you need to check in with your finances daily.
@@ -151,7 +168,7 @@ export default function MissionDetail() {
                   </p>
                 </>
               )}
-              {mission.id === "mission_2" && (
+              {mission.id === 'mission_2' && (
                 <>
                   <p>
                     <strong>Saving</strong> is the act of setting aside money for the future instead of spending it today. It sounds simple, but it's one of the most powerful financial skills you can develop.
@@ -164,7 +181,7 @@ export default function MissionDetail() {
                   </p>
                 </>
               )}
-              {mission.id === "mission_3" && (
+              {mission.id === 'mission_3' && (
                 <>
                   <p>
                     <strong>Goals</strong> give your money direction. Without a goal, saving feels pointless. With a goal, every dollar saved feels like progress.
@@ -177,7 +194,7 @@ export default function MissionDetail() {
                   </p>
                 </>
               )}
-              {!["mission_1", "mission_2", "mission_3"].includes(mission.id) && (
+              {!['mission_1', 'mission_2', 'mission_3'].includes(mission.id) && (
                 <>
                   <p>
                     <strong>{mission.title}</strong> is an important step in your financial journey.
@@ -192,96 +209,38 @@ export default function MissionDetail() {
           </Card>
         )}
 
-        {/* Activity */}
+        {/* Activity Section */}
         {!completed && (
           <Card className="p-6 bg-white">
             <h2 className="text-2xl font-bold text-gray-900 mb-4">✍️ Activity</h2>
-            <div className="space-y-4">
-              {mission.id === "mission_1" && (
-                <div>
-                  <p className="text-gray-700 mb-3">
-                    <strong>Your Task:</strong> Spend 2 minutes checking in with your finances right now.
-                  </p>
-                  <ul className="list-disc list-inside space-y-2 text-gray-700">
-                    <li>How much money do you have right now?</li>
-                    <li>Did you spend money today? On what?</li>
-                    <li>Did you save any money today?</li>
-                    <li>Are you on track with your goals?</li>
-                  </ul>
-                  <p className="text-gray-600 text-sm mt-3 italic">
-                    Write your answers down or just think about them. The goal is awareness.
-                  </p>
+            {activitySchema ? (
+              <MissionActivity
+                schema={activitySchema}
+                onSubmit={handleActivitySubmit}
+                isLoading={submitting}
+              />
+            ) : (
+              <div className="text-center py-8">
+                <p className="text-gray-600 mb-4">No interactive activity available for this mission.</p>
+                <p className="text-gray-500 text-sm mb-6">Please complete the lesson and click "Complete Mission" when ready.</p>
+                <div className="flex gap-3">
+                  <Button
+                    variant="outline"
+                    onClick={() => navigate('/missions')}
+                    className="flex-1"
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    onClick={() => handleActivitySubmit([])}
+                    disabled={submitting}
+                    className="flex-1 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
+                  >
+                    {submitting ? 'Completing...' : 'Complete Mission'}
+                  </Button>
                 </div>
-              )}
-              {mission.id === "mission_2" && (
-                <div>
-                  <p className="text-gray-700 mb-3">
-                    <strong>Your Task:</strong> Calculate compound growth.
-                  </p>
-                  <p className="text-gray-700 mb-3">
-                    If you save $10 per week for 1 year, and your savings earn 5% interest, how much will you have?
-                  </p>
-                  <ul className="list-disc list-inside space-y-2 text-gray-700 text-sm">
-                    <li>$10/week × 52 weeks = $520 saved</li>
-                    <li>$520 × 1.05 (5% interest) = $546</li>
-                    <li>You earned $26 just by saving and waiting!</li>
-                  </ul>
-                  <p className="text-gray-600 text-sm mt-3 italic">
-                    Now try with your own numbers. How much can you save per week?
-                  </p>
-                </div>
-              )}
-              {mission.id === "mission_3" && (
-                <div>
-                  <p className="text-gray-700 mb-3">
-                    <strong>Your Task:</strong> Define your first financial goal.
-                  </p>
-                  <p className="text-gray-700 mb-3">Write down:</p>
-                  <ul className="list-disc list-inside space-y-2 text-gray-700">
-                    <li>What do you want to save for?</li>
-                    <li>How much money do you need?</li>
-                    <li>When do you want to have it by?</li>
-                    <li>How much can you save per week?</li>
-                  </ul>
-                  <p className="text-gray-600 text-sm mt-3 italic">
-                    Example: "Save $100 for a new skateboard by August. I'll save $5 per week."
-                  </p>
-                </div>
-              )}
-              {!["mission_1", "mission_2", "mission_3"].includes(mission.id) && (
-                <div>
-                  <p className="text-gray-700 mb-3">
-                    <strong>Your Task:</strong> Complete the activity for this mission.
-                  </p>
-                  <p className="text-gray-700">
-                    Follow the instructions above and apply what you've learned. When you're done, click "Complete Mission" below.
-                  </p>
-                </div>
-              )}
-            </div>
-
-            {/* Answer Input Fields */}
-            <div className="mt-8 pt-8 border-t-2 border-gray-200">
-              <h3 className="text-lg font-bold text-gray-900 mb-4">📝 Your Answers</h3>
-              <div className="space-y-6">
-                {mission?.questions?.map((question: any, index: number) => (
-                  <div key={question.id} className="space-y-2">
-                    <label className="block text-sm font-semibold text-gray-900">
-                      {index + 1}. {question.text}
-                    </label>
-                    <textarea
-                      placeholder="Type your answer here..."
-                      value={answers[question.id] || ""}
-                      onChange={(e) => handleAnswerChange(question.id, e.target.value)}
-                      className="w-full min-h-24 p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent font-sans text-sm"
-                    />
-                    <p className="text-xs text-gray-500">
-                      {answers[question.id]?.length || 0} characters
-                    </p>
-                  </div>
-                ))}
               </div>
-            </div>
+            )}
           </Card>
         )}
 
@@ -307,33 +266,12 @@ export default function MissionDetail() {
               Great work! You're building real financial intelligence. Keep going!
             </p>
             <Button
-              onClick={() => navigate("/missions")}
+              onClick={() => navigate('/missions')}
               className="bg-green-600 hover:bg-green-700"
             >
               Back to Missions
             </Button>
           </Card>
-        )}
-
-        {/* Complete Button */}
-        {!completed && (
-          <div className="flex gap-3">
-            <Button
-              variant="outline"
-              onClick={() => navigate("/missions")}
-              className="flex-1"
-            >
-              Cancel
-            </Button>
-            <Button
-              onClick={handleCompleteMission}
-              disabled={isCompleting || !allAnswersProvided}
-              className="flex-1 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed"
-              title={!allAnswersProvided ? "Please answer all questions first" : ""}
-            >
-              {isCompleting ? "Completing..." : "Complete Mission"}
-            </Button>
-          </div>
         )}
       </div>
     </div>

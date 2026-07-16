@@ -1,22 +1,24 @@
-import { Link } from "wouter";
-import { supabase } from "@/lib/supabase";
-import { toast } from "sonner";
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
+import { useOnboarding } from "@/_core/hooks/useOnboarding";
+import { getProgressionState, ProgressionState } from "@/lib/progression";
+import { getUserProgressionState } from "@/lib/supabaseClient";
 import { ArrowRight, CheckCircle2, Lock, ShieldCheck } from "lucide-react";
-import { useFDF, UNLOCK_XP } from "@/contexts/FDFContext";
+import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
 
 // ── Static fallback rewards ───────────────────────────────────────────────────
 const STATIC_REWARDS = [
-  { id: 1,  name: "Builder Badge",     costGems: 100, type: "badge",   rarity: "common",    emoji: "🏗️", desc: "Awarded to builders who complete their first product mission." },
-  { id: 2,  name: "Creator Badge",     costGems: 100, type: "badge",   rarity: "common",    emoji: "🎨", desc: "For creators who launch their first digital project." },
-  { id: 3,  name: "Tech Badge",        costGems: 100, type: "badge",   rarity: "common",    emoji: "⚙️", desc: "Earned by tech dawgs who complete a code challenge." },
-  { id: 4,  name: "Money Badge",       costGems: 100, type: "badge",   rarity: "common",    emoji: "💰", desc: "For money dawgs who hit their first savings milestone." },
-  { id: 5,  name: "Streak Shield",     costGems: 150, type: "sticker", rarity: "uncommon",  emoji: "🔥", desc: "Protect a 7-day streak from breaking once." },
-  { id: 6,  name: "Atlas Dawg",        costGems: 250, type: "badge",   rarity: "rare",      emoji: "🌍", desc: "Reserved for dawgs who complete all 8 core missions." },
-  { id: 7,  name: "Vault Preview",     costGems: 300, type: "sticker", rarity: "rare",      emoji: "🔓", desc: "Early preview access to the Crypdawgs Vault interface." },
-  { id: 8,  name: "Elite Frame",       costGems: 200, type: "frame",   rarity: "uncommon",  emoji: "🖼️", desc: "A premium profile frame for Development-rank members." },
-  { id: 9,  name: "Founder's Mark",    costGems: 500, type: "badge",   rarity: "legendary", emoji: "⭐", desc: "Ultra-rare badge for the first 100 FDF graduates." },
-  { id: 10, name: "Diamond Paw",       costGems: 400, type: "sticker", rarity: "legendary", emoji: "💎", desc: "The rarest sticker in the FDF collection." },
+  { id: 1,  name: "Builder Badge",     costGems: 100, type: "badge",   rarity: "common",    emoji: "🏗️", desc: "Awarded to builders who complete their first product mission.", unlocksAtLevel: 1 },
+  { id: 2,  name: "Creator Badge",     costGems: 100, type: "badge",   rarity: "common",    emoji: "🎨", desc: "For creators who launch their first digital project.", unlocksAtLevel: 1 },
+  { id: 3,  name: "Tech Badge",        costGems: 100, type: "badge",   rarity: "common",    emoji: "⚙️", desc: "Earned by tech dawgs who complete a code challenge.", unlocksAtLevel: 1 },
+  { id: 4,  name: "Money Badge",       costGems: 100, type: "badge",   rarity: "common",    emoji: "💰", desc: "For money dawgs who hit their first savings milestone.", unlocksAtLevel: 1 },
+  { id: 5,  name: "Streak Shield",     costGems: 150, type: "sticker", rarity: "uncommon",  emoji: "🔥", desc: "Protect a 7-day streak from breaking once.", unlocksAtLevel: 2 },
+  { id: 6,  name: "Atlas Dawg",        costGems: 250, type: "badge",   rarity: "rare",      emoji: "🌍", desc: "Reserved for dawgs who complete all 8 core missions.", unlocksAtLevel: 3 },
+  { id: 7,  name: "Vault Preview",     costGems: 300, type: "sticker", rarity: "rare",      emoji: "🔓", desc: "Early preview access to the Crypdawgs Vault interface.", unlocksAtLevel: 4 },
+  { id: 8,  name: "Elite Frame",       costGems: 200, type: "frame",   rarity: "uncommon",  emoji: "🖼️", desc: "A premium profile frame for Development-rank members.", unlocksAtLevel: 3 },
+  { id: 9,  name: "Founder's Mark",    costGems: 500, type: "badge",   rarity: "legendary", emoji: "⭐", desc: "Ultra-rare badge for the first 100 FDF graduates.", unlocksAtLevel: 5 },
+  { id: 10, name: "Diamond Paw",       costGems: 400, type: "sticker", rarity: "legendary", emoji: "💎", desc: "The rarest sticker in the FDF collection.", unlocksAtLevel: 5 },
 ];
 
 const RARITY_CONFIG = {
@@ -60,432 +62,242 @@ function ConfirmModal({
           boxShadow: "0 24px 64px rgba(91,140,255,0.2)",
         }}
       >
-        <div
-          style={{
-            width: 64, height: 64, borderRadius: 18,
-            background: rarity.bg, border: `2px solid ${rarity.border}`,
-            display: "flex", alignItems: "center", justifyContent: "center",
-            fontSize: "2rem", margin: "0 auto 16px",
-          }}
-        >
-          {reward.emoji}
+        <div style={{ fontSize: 64, marginBottom: 16 }}>{reward.emoji}</div>
+        <h2 style={{ fontSize: 20, fontWeight: "bold", marginBottom: 8, color: "#0f172a" }}>{reward.name}</h2>
+        <p style={{ fontSize: 13, color: "#64748b", marginBottom: 16 }}>{reward.desc}</p>
+        <div style={{ display: "flex", gap: 8, marginBottom: 20 }}>
+          <div style={{ flex: 1, padding: 12, background: rarity.bg, borderRadius: 12, border: `1px solid ${rarity.border}` }}>
+            <p style={{ fontSize: 11, color: "#64748b", fontWeight: 600 }}>RARITY</p>
+            <p style={{ fontSize: 14, fontWeight: "bold", color: rarity.color }}>{rarity.label}</p>
+          </div>
+          <div style={{ flex: 1, padding: 12, background: "#f0fdf4", borderRadius: 12, border: "1px solid rgba(34,197,94,0.2)" }}>
+            <p style={{ fontSize: 11, color: "#64748b", fontWeight: 600 }}>COST</p>
+            <p style={{ fontSize: 14, fontWeight: "bold", color: "#22c55e" }}>{reward.costGems} 💎</p>
+          </div>
         </div>
-        <p style={{ fontFamily: "'Space Grotesk', sans-serif", fontWeight: 800, fontSize: "1.1rem", color: "#0f172a", marginBottom: 4 }}>
-          {reward.name}
-        </p>
-        <p style={{ fontSize: "0.78rem", color: "#64748b", lineHeight: 1.6, marginBottom: 18 }}>
-          {reward.desc}
-        </p>
-        <div
-          style={{
-            background: "#f8faff", borderRadius: 12, padding: "12px 16px",
-            marginBottom: 20, display: "flex", justifyContent: "space-between", alignItems: "center",
-          }}
-        >
-          <span style={{ fontSize: "0.8rem", color: "#64748b" }}>Cost</span>
-          <span style={{ fontWeight: 800, fontSize: "1rem", color: "#7c3aed" }}>
-            {reward.costGems} 💎
-          </span>
-        </div>
-        {!canAfford && (
-          <p style={{ fontSize: "0.78rem", color: "#ef4444", marginBottom: 14, fontWeight: 600 }}>
-            Not enough gems. You have {gems} 💎.
-          </p>
-        )}
-        <div style={{ display: "flex", gap: 10 }}>
+        <div style={{ display: "flex", gap: 12 }}>
           <button
             onClick={onCancel}
-            className="btn-secondary"
-            style={{ flex: 1, justifyContent: "center" }}
+            style={{
+              flex: 1, padding: "12px 16px", borderRadius: 10, border: "1px solid #e2e8f0",
+              background: "#f8fafc", color: "#334155", fontWeight: 600, cursor: "pointer",
+              fontSize: 14,
+            }}
           >
             Cancel
           </button>
           <button
             onClick={onConfirm}
-            className="btn-primary"
-            style={{ flex: 1, justifyContent: "center" }}
             disabled={!canAfford || loading}
+            style={{
+              flex: 1, padding: "12px 16px", borderRadius: 10, border: "none",
+              background: canAfford ? "#3b82f6" : "#cbd5e1", color: "white", fontWeight: 600,
+              cursor: canAfford && !loading ? "pointer" : "not-allowed", fontSize: 14,
+            }}
           >
-            {loading ? "…" : "Unlock"}
+            {loading ? "Processing..." : "Confirm"}
           </button>
         </div>
+        {!canAfford && (
+          <p style={{ fontSize: 12, color: "#ef4444", marginTop: 12 }}>
+            You need {reward.costGems - gems} more gems
+          </p>
+        )}
       </div>
     </div>
   );
 }
 
-// ── Main Component ────────────────────────────────────────────────────────────
 export default function Rewards() {
-  const { isAuthenticated, gems, xp, isEnrolled, refetch, unlockedSections } = useFDF();
+  const { user, isLoading } = useOnboarding();
+  const [progression, setProgression] = useState<ProgressionState>(getProgressionState(0));
+  const [loadingProgression, setLoadingProgression] = useState(true);
+  const [filter, setFilter] = useState<"all" | "badge" | "sticker" | "frame">("all");
+  const [confirmingReward, setConfirmingReward] = useState<typeof STATIC_REWARDS[number] | null>(null);
+  const [loading, setLoading] = useState(false);
 
-  const [rewardsData, setRewardsData] = useState<{ allRewards: any[]; userRewards: any[] } | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const [unlockingId, setUnlockingId] = useState<number | null>(null);
-  const [filter, setFilter] = useState<string>("all");
-  const [confirmReward, setConfirmReward] = useState<typeof STATIC_REWARDS[number] | null>(null);
-
-  const fetchRewards = async () => {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) return;
-    const [{ data: allRewards }, { data: userRewards }] = await Promise.all([
-      supabase.from("rewards").select("*").order("gems_cost", { ascending: true }),
-      supabase.from("user_rewards").select("*").eq("user_id", session.user.id),
-    ]);
-    setRewardsData({ allRewards: allRewards ?? [], userRewards: userRewards ?? [] });
-  };
-
+  // Fetch canonical progression state from user_state table
   useEffect(() => {
-    if (!isAuthenticated || !isEnrolled) return;
-    setIsLoading(true);
-    fetchRewards().finally(() => setIsLoading(false));
-  }, [isAuthenticated, isEnrolled]);
-
-  const unlockReward = {
-    mutate: async (vars: { rewardId: number }) => {
-      const reward = (rewardsData?.allRewards?.length ? rewardsData.allRewards : STATIC_REWARDS).find((r: any) => r.id === vars.rewardId);
-      if (!reward) return;
-      const cost = reward.gems_cost ?? reward.costGems ?? 0;
-      if (gems < cost) { toast.error("Not enough gems"); return; }
-      setUnlockingId(vars.rewardId);
-      try {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (!session) return;
-        await supabase.from("user_rewards").upsert({
-          user_id: session.user.id,
-          reward_id: vars.rewardId,
-          unlocked_at: new Date().toISOString(),
-        }, { onConflict: "user_id,reward_id" });
-        await supabase.from("fdf_users")
-          .update({ gems: gems - cost })
-          .eq("auth_user_id", session.user.id);
-        toast.success("Reward unlocked! 🎉");
-        refetch();
-        await fetchRewards();
-        setConfirmReward(null);
-      } catch (e: any) {
-        toast.error(e.message ?? "Failed to unlock reward");
-      } finally {
-        setUnlockingId(null);
+    if (!user?.id) return;
+    
+    const fetchProgression = async () => {
+      setLoadingProgression(true);
+      const state = await getUserProgressionState(user.id);
+      if (state) {
+        setProgression(state);
       }
-    },
-    isPending: unlockingId !== null,
+      setLoadingProgression(false);
+    };
+    
+    fetchProgression();
+  }, [user?.id]);
+
+  if (isLoading || loadingProgression) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <div className="w-12 h-12 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mx-auto mb-4" />
+          <p className="text-gray-600">Loading rewards...</p>
+        </div>
+      </div>
+    );
+  }
+
+  const handleRedeem = async (reward: typeof STATIC_REWARDS[number]) => {
+    // Check if user has enough gems (for now, just use a placeholder)
+    const userGems = 500; // TODO: Get from user_state
+    
+    if (userGems < reward.costGems) {
+      toast.error(`You need ${reward.costGems - userGems} more gems`);
+      return;
+    }
+    
+    setConfirmingReward(reward);
   };
 
-  if (!isAuthenticated) {
-    return (
-      <div className="page-container animate-fade-in">
-        <div style={{ paddingTop: 40, textAlign: "center" }}>
-          <div style={{ fontSize: "2.5rem", marginBottom: 16 }}>🎁</div>
-          <h2 style={{ fontSize: "1.25rem", fontWeight: 800, color: "var(--text-main)", marginBottom: 8 }}>
-            Rewards Locked
-          </h2>
-          <p style={{ fontSize: "0.875rem", color: "var(--text-sub)", marginBottom: 24 }}>
-            Sign in to access the rewards shop.
-          </p>
-          <Link href="/signin" className="btn-primary">
-            Sign In to Continue
-            <ArrowRight size={16} />
-          </Link>
-        </div>
-      </div>
-    );
-  }
+  const confirmRedeem = async () => {
+    if (!confirmingReward) return;
+    
+    setLoading(true);
+    try {
+      // TODO: Call API to redeem reward
+      toast.success(`Redeemed ${confirmingReward.name}!`);
+      setConfirmingReward(null);
+    } catch (err) {
+      toast.error("Failed to redeem reward");
+    } finally {
+      setLoading(false);
+    }
+  };
 
-  if (!isEnrolled) {
-    return (
-      <div className="page-container animate-fade-in">
-        <div style={{ paddingTop: 40, textAlign: "center" }}>
-          <div style={{ fontSize: "2.5rem", marginBottom: 16 }}>🔒</div>
-          <h2 style={{ fontSize: "1.25rem", fontWeight: 800, color: "var(--text-main)", marginBottom: 8 }}>
-            Complete Onboarding First
-          </h2>
-          <p style={{ fontSize: "0.875rem", color: "var(--text-sub)", marginBottom: 24 }}>
-            Set up your FDF profile on the Home page to access rewards.
-          </p>
-        </div>
-      </div>
-    );
-  }
+  const filteredRewards = STATIC_REWARDS.filter((r) => {
+    if (filter === "all") return true;
+    return r.type === filter;
+  });
 
-  // XP-based unlock gate
-  if (!unlockedSections.rewards) {
-    const needed = UNLOCK_XP.rewards - xp;
-    return (
-      <div className="page-container animate-fade-in">
-        <div style={{ paddingTop: 40, textAlign: "center" }}>
-          <div style={{ fontSize: "3rem", marginBottom: 16 }}>🎁</div>
-          <h2 style={{ fontSize: "1.25rem", fontWeight: 800, color: "var(--text-main)", marginBottom: 8 }}>
-            Rewards Locked
-          </h2>
-          <p style={{ fontSize: "0.875rem", color: "var(--text-sub)", marginBottom: 20, lineHeight: 1.6 }}>
-            Earn <strong>{needed} more XP</strong> by completing missions to unlock the Rewards Shop.
-          </p>
-          <div
-            style={{
-              background: "var(--primary-light)", borderRadius: 14, padding: "14px 18px",
-              display: "inline-flex", alignItems: "center", gap: 10, marginBottom: 24,
-            }}
-          >
-            <span style={{ fontSize: "1.1rem" }}>⚡</span>
-            <div style={{ textAlign: "left" }}>
-              <p style={{ fontSize: "0.72rem", fontWeight: 700, color: "var(--primary-dark)", textTransform: "uppercase", letterSpacing: "0.05em" }}>Your Progress</p>
-              <p style={{ fontSize: "0.875rem", fontWeight: 800, color: "var(--primary)" }}>{xp} / {UNLOCK_XP.rewards} XP</p>
+  const unlockedRewards = filteredRewards.filter((r) => r.unlocksAtLevel <= progression.currentLevel);
+  const lockedRewards = filteredRewards.filter((r) => r.unlocksAtLevel > progression.currentLevel);
+
+  return (
+    <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white pb-20">
+      {/* Header */}
+      <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white p-6 sticky top-0 z-10">
+        <h1 className="text-3xl font-bold mb-2">Rewards Shop</h1>
+        <p className="text-blue-100">Collect badges, stickers, and frames as you progress</p>
+      </div>
+
+      {/* Gems Info */}
+      <div className="p-6 bg-white border-b">
+        <Card className="p-4 bg-gradient-to-r from-yellow-50 to-amber-50 border-yellow-200">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-gray-600 font-semibold">YOUR GEMS</p>
+              <p className="text-3xl font-bold text-amber-600">500 💎</p>
+            </div>
+            <div className="text-right">
+              <p className="text-sm text-gray-600 font-semibold">LEVEL {progression.currentLevel}</p>
+              <p className="text-sm text-gray-700">Unlock more rewards by leveling up</p>
             </div>
           </div>
-          <div style={{ maxWidth: 240, margin: "0 auto" }}>
-            <div className="progress-track" style={{ height: 8 }}>
-              <div className="progress-fill" style={{ width: `${Math.min(100, (xp / UNLOCK_XP.rewards) * 100)}%`, transition: "width 0.8s ease" }} />
-            </div>
-          </div>
-        </div>
+        </Card>
       </div>
-    );
-  }
 
-  if (isLoading) {
-    return (
-      <div className="page-container">
-        <div style={{ paddingTop: 24, display: "flex", flexDirection: "column", gap: 10 }}>
-          {[1, 2, 3].map((i) => (
-            <div key={i} className="skeleton" style={{ height: 90, borderRadius: 18 }} />
+      {/* Filters */}
+      <div className="p-6 border-b">
+        <div className="flex gap-2 overflow-x-auto pb-2">
+          {TYPE_FILTERS.map((f) => (
+            <button
+              key={f.key}
+              onClick={() => setFilter(f.key as typeof filter)}
+              style={{
+                padding: "8px 16px",
+                borderRadius: 8,
+                border: "1px solid #e2e8f0",
+                background: filter === f.key ? "#3b82f6" : "#f8fafc",
+                color: filter === f.key ? "white" : "#334155",
+                fontWeight: 600,
+                cursor: "pointer",
+                fontSize: 14,
+                whiteSpace: "nowrap",
+              }}
+            >
+              {f.label}
+            </button>
           ))}
         </div>
       </div>
-    );
-  }
 
-  const allRewards = (rewardsData?.allRewards?.length ? rewardsData.allRewards : STATIC_REWARDS) as typeof STATIC_REWARDS;
-  const userRewards = rewardsData?.userRewards ?? [];
-  const unlockedIds = new Set((userRewards as any[]).map((ur) => ur.reward_id ?? ur.rewardId));
-
-  const filtered = filter === "all" ? allRewards : allRewards.filter(r => r.type === filter);
-
-  return (
-    <div className="page-container animate-fade-in">
-
-      {/* ── Header ── */}
-      <div style={{ paddingTop: 20, paddingBottom: 16 }}>
-        <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between" }}>
-          <div>
-            <h1
-              style={{
-                fontFamily: "'Space Grotesk', sans-serif",
-                fontSize: "1.5rem", fontWeight: 800,
-                color: "var(--text-main)", letterSpacing: "-0.02em", marginBottom: 4,
-              }}
-            >
-              Rewards
-            </h1>
-            <p style={{ fontSize: "0.875rem", color: "var(--text-sub)" }}>
-              Spend gems on badges, stickers, and frames.
-            </p>
-          </div>
-          {/* Gem balance */}
-          <div
-            style={{
-              display: "flex", alignItems: "center", gap: 6,
-              background: "linear-gradient(135deg, #ede8ff, #ddd6fe)",
-              borderRadius: 12, padding: "8px 14px",
-              border: "1.5px solid rgba(124,58,237,0.2)",
-            }}
-          >
-            <span style={{ fontSize: "1.1rem" }}>💎</span>
-            <div>
-              <p style={{ fontFamily: "'Space Grotesk', sans-serif", fontWeight: 800, fontSize: "1rem", color: "#7c3aed", lineHeight: 1 }}>
-                {gems}
-              </p>
-              <p style={{ fontSize: "0.6rem", fontWeight: 700, color: "#6d28d9", letterSpacing: "0.05em" }}>GEMS</p>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* ── Unlocked count ── */}
-      <div
-        className="academy-card"
-        style={{
-          marginBottom: 14,
-          display: "flex", alignItems: "center", gap: 12,
-          background: "linear-gradient(135deg, rgba(16,185,129,0.06), rgba(5,150,105,0.04))",
-          border: "1.5px solid rgba(16,185,129,0.2)",
-        }}
-      >
-        <div style={{ width: 40, height: 40, borderRadius: 11, background: "#dcfce7", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "1.2rem", flexShrink: 0 }}>
-          🏆
-        </div>
-        <div>
-          <p style={{ fontWeight: 700, fontSize: "0.9rem", color: "var(--text-main)" }}>
-            {unlockedIds.size} / {allRewards.length} Unlocked
-          </p>
-          <p style={{ fontSize: "0.75rem", color: "var(--text-sub)" }}>
-            Complete missions to earn more gems.
-          </p>
-        </div>
-      </div>
-
-      {/* ── Filter tabs ── */}
-      <div style={{ display: "flex", gap: 6, marginBottom: 14, overflowX: "auto", paddingBottom: 2 }}>
-        {TYPE_FILTERS.map((f) => (
-          <button
-            key={f.key}
-            onClick={() => setFilter(f.key)}
-            style={{
-              padding: "7px 14px", borderRadius: 99,
-              border: filter === f.key ? "none" : "1.5px solid rgba(91,140,255,0.15)",
-              background: filter === f.key
-                ? "linear-gradient(135deg, var(--primary), var(--accent))"
-                : "rgba(255,255,255,0.8)",
-              color: filter === f.key ? "white" : "var(--text-sub)",
-              fontWeight: 700, fontSize: "0.78rem", cursor: "pointer",
-              flexShrink: 0,
-              boxShadow: filter === f.key ? "0 4px 12px rgba(91,140,255,0.3)" : "none",
-              transition: "all 0.15s ease",
-            }}
-          >
-            {f.label}
-          </button>
-        ))}
-      </div>
-
-      {/* ── Rewards grid ── */}
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "1fr 1fr",
-          gap: 10,
-          marginBottom: 24,
-        }}
-      >
-        {filtered.map((reward) => {
-          const rarity = RARITY_CONFIG[reward.rarity as keyof typeof RARITY_CONFIG] ?? RARITY_CONFIG.common;
-          const isUnlocked = unlockedIds.has(reward.id);
-          const canAfford = gems >= reward.costGems;
-
-          return (
-            <div
-              key={reward.id}
-              style={{
-                borderRadius: 16, overflow: "hidden",
-                border: isUnlocked
-                  ? "2px solid rgba(16,185,129,0.35)"
-                  : `1.5px solid ${rarity.border}`,
-                background: isUnlocked ? "rgba(240,253,244,0.9)" : "rgba(255,255,255,0.95)",
-                boxShadow: "var(--card-shadow)",
-                opacity: !isUnlocked && !canAfford ? 0.7 : 1,
-                transition: "all 0.2s ease",
-              }}
-            >
-              {/* Emoji area */}
-              <div
-                style={{
-                  background: isUnlocked ? "#dcfce7" : rarity.bg,
-                  padding: "18px 12px 14px",
-                  textAlign: "center",
-                  position: "relative",
-                }}
-              >
-                <span style={{ fontSize: "2.25rem" }}>{reward.emoji}</span>
-                {isUnlocked && (
-                  <div
-                    style={{
-                      position: "absolute", top: 8, right: 8,
-                      width: 20, height: 20, borderRadius: "50%",
-                      background: "#10b981",
-                      display: "flex", alignItems: "center", justifyContent: "center",
-                    }}
-                  >
-                    <CheckCircle2 size={12} color="white" />
+      {/* Unlocked Rewards */}
+      {unlockedRewards.length > 0 && (
+        <div className="p-6">
+          <h2 className="text-lg font-bold text-gray-900 mb-4">Available Rewards</h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {unlockedRewards.map((reward) => {
+              const rarity = RARITY_CONFIG[reward.rarity as keyof typeof RARITY_CONFIG];
+              return (
+                <Card
+                  key={reward.id}
+                  className="p-4 hover:shadow-lg transition-all cursor-pointer"
+                  style={{ borderLeft: `4px solid ${rarity.color}` }}
+                  onClick={() => handleRedeem(reward)}
+                >
+                  <div className="text-center">
+                    <div style={{ fontSize: 48, marginBottom: 8 }}>{reward.emoji}</div>
+                    <h3 className="font-bold text-gray-900 mb-1">{reward.name}</h3>
+                    <p className="text-xs text-gray-600 mb-3">{reward.desc}</p>
+                    <div className="flex items-center justify-between">
+                      <span style={{ fontSize: 12, fontWeight: 600, color: rarity.color }}>
+                        {rarity.label}
+                      </span>
+                      <span className="font-bold text-amber-600">{reward.costGems} 💎</span>
+                    </div>
                   </div>
-                )}
-                <div style={{ marginTop: 8 }}>
-                  <span
-                    style={{
-                      fontSize: "0.6rem", fontWeight: 700, letterSpacing: "0.05em",
-                      color: rarity.color, background: rarity.bg,
-                      padding: "2px 8px", borderRadius: 99,
-                      border: `1px solid ${rarity.border}`,
-                    }}
-                  >
-                    {rarity.label.toUpperCase()}
-                  </span>
-                </div>
-              </div>
-
-              {/* Content */}
-              <div style={{ padding: "12px 12px 14px" }}>
-                <p style={{ fontWeight: 700, fontSize: "0.82rem", color: "var(--text-main)", marginBottom: 4, lineHeight: 1.3 }}>
-                  {reward.name}
-                </p>
-                <p style={{ fontSize: "0.7rem", color: "var(--text-sub)", lineHeight: 1.5, marginBottom: 10 }}>
-                  {reward.desc}
-                </p>
-
-                {isUnlocked ? (
-                  <div style={{ display: "flex", alignItems: "center", gap: 4, color: "#16a34a", fontSize: "0.75rem", fontWeight: 700 }}>
-                    <CheckCircle2 size={13} />
-                    Unlocked
-                  </div>
-                ) : (
-                  <button
-                    onClick={() => setConfirmReward(reward)}
-                    style={{
-                      width: "100%", padding: "8px 0",
-                      borderRadius: 10, border: "none",
-                      background: canAfford
-                        ? "linear-gradient(135deg, var(--primary), var(--accent))"
-                        : "rgba(226,232,240,0.7)",
-                      color: canAfford ? "white" : "var(--text-muted)",
-                      fontWeight: 700, fontSize: "0.78rem", cursor: canAfford ? "pointer" : "not-allowed",
-                      display: "flex", alignItems: "center", justifyContent: "center", gap: 4,
-                      transition: "all 0.15s ease",
-                    }}
-                  >
-                    {canAfford ? (
-                      <>{reward.costGems} 💎 Unlock</>
-                    ) : (
-                      <><Lock size={12} /> {reward.costGems} 💎</>
-                    )}
-                  </button>
-                )}
-              </div>
-            </div>
-          );
-        })}
-      </div>
-
-      {/* ── How to earn gems ── */}
-      <div className="academy-card" style={{ marginBottom: 16 }}>
-        <p className="section-title" style={{ marginBottom: 12 }}>How to Earn Gems</p>
-        {[
-          { icon: "📅", label: "Daily Activation", value: "+5 💎" },
-          { icon: "🎯", label: "Complete a Mission", value: "+8–20 💎" },
-          { icon: "🔥", label: "7-Day Streak Bonus", value: "+25 💎" },
-        ].map((item, i) => (
-          <div
-            key={item.label}
-            style={{
-              display: "flex", alignItems: "center", justifyContent: "space-between",
-              padding: "9px 0",
-              borderBottom: i < 2 ? "1px solid rgba(91,140,255,0.08)" : "none",
-            }}
-          >
-            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-              <span style={{ fontSize: "1rem" }}>{item.icon}</span>
-              <span style={{ fontSize: "0.8125rem", color: "var(--text-sub)" }}>{item.label}</span>
-            </div>
-            <span style={{ fontSize: "0.8125rem", fontWeight: 700, color: "#7c3aed" }}>{item.value}</span>
+                </Card>
+              );
+            })}
           </div>
-        ))}
-      </div>
+        </div>
+      )}
 
-      {/* Confirm Modal */}
-      {confirmReward && (
+      {/* Locked Rewards */}
+      {lockedRewards.length > 0 && (
+        <div className="p-6 border-t">
+          <h2 className="text-lg font-bold text-gray-900 mb-4">Locked Rewards</h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 opacity-50">
+            {lockedRewards.map((reward) => {
+              const rarity = RARITY_CONFIG[reward.rarity as keyof typeof RARITY_CONFIG];
+              return (
+                <Card
+                  key={reward.id}
+                  className="p-4"
+                  style={{ borderLeft: `4px solid ${rarity.color}` }}
+                >
+                  <div className="text-center">
+                    <div style={{ fontSize: 48, marginBottom: 8, opacity: 0.5 }}>{reward.emoji}</div>
+                    <h3 className="font-bold text-gray-900 mb-1">{reward.name}</h3>
+                    <p className="text-xs text-gray-600 mb-3">{reward.desc}</p>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-1 text-gray-500">
+                        <Lock size={14} />
+                        <span className="text-xs font-semibold">Level {reward.unlocksAtLevel}</span>
+                      </div>
+                      <span className="font-bold text-amber-600">{reward.costGems} 💎</span>
+                    </div>
+                  </div>
+                </Card>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {confirmingReward && (
         <ConfirmModal
-          reward={confirmReward}
-          gems={gems}
-          onConfirm={() => unlockReward.mutate({ rewardId: confirmReward.id })}
-          onCancel={() => setConfirmReward(null)}
-          loading={unlockReward.isPending}
+          reward={confirmingReward}
+          gems={500}
+          onConfirm={confirmRedeem}
+          onCancel={() => setConfirmingReward(null)}
+          loading={loading}
         />
       )}
     </div>
