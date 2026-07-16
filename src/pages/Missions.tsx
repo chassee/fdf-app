@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import { useOnboarding } from "@/_core/hooks/useOnboarding";
+import { useState, useEffect } from "react";
+import { useOnboarding } from "@/contexts/OnboardingContext";
 import { getProgressionState, ProgressionState, isMissionUnlocked } from "@/lib/progression";
 import { getUserProgressionState } from "@/lib/supabaseClient";
 import { getAvailableMissions } from "@/lib/missions";
@@ -102,7 +102,7 @@ export default function Missions() {
               <h3 className="text-lg font-semibold text-gray-800 mb-4">{getTierName(tier)}</h3>
               <div className="space-y-3">
                 {missions.map((mission) => {
-                  const isUnlocked = isMissionUnlocked(mission.levelRequired, progression.currentLevel);
+                  const isUnlocked = isMissionUnlocked(mission.level, progression.currentLevel);
                   
                   return (
                     <Card
@@ -126,7 +126,7 @@ export default function Missions() {
                           <div className="flex items-center gap-4 text-xs text-gray-500 mt-2">
                             <span>⏱ {mission.timeEstimate}</span>
                             <span>⚡ +{mission.xpReward} XP</span>
-                            <span>📊 {mission.difficulty}</span>
+                            <span>📊 {mission.tier}</span>
                           </div>
                         </div>
                         <div className="flex flex-col items-end gap-2">
@@ -144,7 +144,7 @@ export default function Missions() {
                           ) : (
                             <div className="flex items-center gap-1 text-gray-500">
                               <Lock size={16} />
-                              <span className="text-xs">Level {mission.levelRequired}</span>
+                              <span className="text-xs">Level {mission.level}</span>
                             </div>
                           )}
                         </div>

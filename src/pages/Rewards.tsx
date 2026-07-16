@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import { useOnboarding } from "@/_core/hooks/useOnboarding";
+import { useState, useEffect } from "react";
+import { useOnboarding } from "@/contexts/OnboardingContext";
 import { getProgressionState, ProgressionState } from "@/lib/progression";
 import { getUserProgressionState } from "@/lib/supabaseClient";
 import { ArrowRight, CheckCircle2, Lock, ShieldCheck } from "lucide-react";

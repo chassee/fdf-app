@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useOnboarding } from "@/_core/hooks/useOnboarding";
+import { useOnboarding } from "@/contexts/OnboardingContext";
 import { useFDF } from "@/contexts/FDFContext";
 import { getProgressionState, ProgressionState } from "@/lib/progression";
 import { getUserProgressionState } from "@/lib/supabaseClient";

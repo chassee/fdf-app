@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useLocation } from 'wouter';
-import { useOnboarding } from '@/_core/hooks/useOnboarding';
+import { useOnboarding } from '@/contexts/OnboardingContext';
 import { getProgressionState, ProgressionState } from '@/lib/progression';
 import { getUserProgressionState, updateUserXp, saveMissionResponse } from '@/lib/supabaseClient';
 import { getActivitySchema, ActivityResponse } from '@/lib/activitySchema';
@@ -71,21 +71,25 @@ export default function MissionDetail() {
 
     try {
       // Save mission response to database
-      await saveMissionResponse({
-        userId: profile.id,
-        missionId: mission.id,
+      // Save mission response to database
+      const responseData = {
         missionTitle: mission.title,
         responses,
         xpEarned: mission.xpReward,
         dnaCategory: mission.dnaCategory || 'General',
         levelAtCompletion: progression.currentLevel,
         totalXpAfterCompletion: progression.totalXp + mission.xpReward,
-      });
+      };
+      await saveMissionResponse(profile.id, mission.id, responseData);
 
       // Update user XP in canonical state
-      const newState = await updateUserXp(profile.id, mission.xpReward);
-      if (newState) {
-        setProgression(newState);
+      const success = await updateUserXp(profile.id, mission.xpReward);
+      if (success) {
+        // Fetch updated progression state
+        const updatedState = await getUserProgressionState(profile.id);
+        if (updatedState) {
+          setProgression(updatedState);
+        }
       }
 
       setCompleted(true);
