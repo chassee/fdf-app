@@ -1,11 +1,12 @@
 import { Link, useLocation } from "wouter";
-import { Home, Zap, BarChart3, Trophy, Vault, Menu, X, LogOut } from "lucide-react";
+import { Home, Zap, BarChart3, Trophy, Vault, Menu, X, LogOut, Flame } from "lucide-react";
 import { useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { useOnboarding } from "@/contexts/OnboardingContext";
 
 const NAV_ITEMS = [
   { href: "/", label: "Home", icon: Home },
+  { href: "/daily-checkin", label: "Check-In", icon: Flame },
   { href: "/missions", label: "Missions", icon: Zap },
   { href: "/dna", label: "DNA", icon: BarChart3 },
   { href: "/leaderboard", label: "Ranks", icon: Trophy },

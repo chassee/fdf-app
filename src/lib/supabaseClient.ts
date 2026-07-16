@@ -279,3 +279,99 @@ export async function getUserDnaEvents(userId: string) {
     return [];
   }
 }
+
+/**
+ * Record a daily check-in and update streak
+ */
+export async function recordDailyCheckin(
+  userId: string,
+  newStreak: number
+): Promise<boolean> {
+  try {
+    const today = new Date().toISOString().split('T')[0];
+    
+    // Record check-in event
+    const { error: checkinError } = await supabase
+      .from('daily_checkins')
+      .insert({
+        user_id: userId,
+        checkin_date: today,
+      });
+    
+    if (checkinError) {
+      console.error('Error recording check-in:', checkinError);
+      return false;
+    }
+    
+    // Update user_state with new streak
+    const { error: updateError } = await supabase
+      .from('user_state')
+      .update({
+        current_streak: newStreak,
+        longest_streak: Math.max(newStreak, 0), // Will be calculated properly on read
+        last_checkin_date: today,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('user_id', userId);
+    
+    if (updateError) {
+      console.error('Error updating streak:', updateError);
+      return false;
+    }
+    
+    return true;
+  } catch (err) {
+    console.error('Error in recordDailyCheckin:', err);
+    return false;
+  }
+}
+
+/**
+ * Check if user has already checked in today
+ */
+export async function hasCheckedInToday(userId: string): Promise<boolean> {
+  try {
+    const today = new Date().toISOString().split('T')[0];
+    
+    const { data, error } = await supabase
+      .from('daily_checkins')
+      .select('id')
+      .eq('user_id', userId)
+      .eq('checkin_date', today)
+      .single();
+    
+    if (error && error.code !== 'PGRST116') { // PGRST116 = no rows found
+      console.error('Error checking daily checkin:', error);
+      return false;
+    }
+    
+    return !!data;
+  } catch (err) {
+    console.error('Error in hasCheckedInToday:', err);
+    return false;
+  }
+}
+
+/**
+ * Get user's daily check-in history
+ */
+export async function getUserDailyCheckins(userId: string, limit: number = 30) {
+  try {
+    const { data, error } = await supabase
+      .from('daily_checkins')
+      .select('*')
+      .eq('user_id', userId)
+      .order('checkin_date', { ascending: false })
+      .limit(limit);
+    
+    if (error) {
+      console.error('Error fetching daily checkins:', error);
+      return [];
+    }
+    
+    return data || [];
+  } catch (err) {
+    console.error('Error in getUserDailyCheckins:', err);
+    return [];
+  }
+}

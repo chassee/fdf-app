@@ -34,6 +34,7 @@ import Approve from "./pages/Approve";
 import MissionDetail from "./pages/MissionDetail";
 import ProgressJournal from "./pages/ProgressJournal";
 import GraduationReport from "./pages/GraduationReport";
+import DailyCheckIn from "./pages/DailyCheckIn";
 
 // Full-screen routes (no bottom nav / layout chrome)
 const AUTH_ROUTES = ["/signup", "/signin", "/parent-approval", "/pending-approval", "/onboarding/dob", "/onboarding/username", "/approval-pending"];
@@ -223,6 +224,7 @@ function Router() {
     <Layout>
       <Switch>
         <Route path="/" component={Home} />
+        <Route path="/daily-checkin" component={DailyCheckIn} />
         <Route path="/missions" component={Missions} />
         <Route path="/mission/:id" component={MissionDetail} />
         <Route path="/progress-journal" component={ProgressJournal} />
